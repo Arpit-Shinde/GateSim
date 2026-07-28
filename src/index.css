@@ -5,9 +5,33 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: rgb(0, 0, 0);
 }
+
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.b1{
+  position: relative;
+  top: -5px;
+}
+
+
+
+.gate-wrapper{
+  background-color: chartreuse;
+}
+
+.on{
+  background-color: rgb(139, 255, 101);
+}
+
+.off{
+  background-color: rgb(255, 98, 98);
+}
+
+
+
