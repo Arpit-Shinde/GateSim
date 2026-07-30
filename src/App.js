@@ -68,8 +68,6 @@ function App() {
 
     // Append using functional state update (cleaner than manual cloning outside)
     setGraph((prev) => [...prev, newGate]);
-
-
   }
 
 
