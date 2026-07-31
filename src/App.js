@@ -211,7 +211,7 @@ function App() {
         {graph.map(node =>
           node.inputs.map((input, index) => {
             let endy = node.y + (index * 2 + 1) * GATE_HEIGHT / 4
-            if (node.type === "NOT"){
+            if (node.type === "NOT" || node.type === "BULB"){
               endy = node.y + GATE_HEIGHT / 2
             }
             return (<Wire
@@ -243,9 +243,25 @@ function App() {
 }
 
 function Wire({ start, end }) {
+  const dx = end[0] - start[0];
+
+  const controlOffset = Math.abs(dx) * 0.5;
+
+  const path = `
+    M ${start[0]},${start[1]}
+    C ${start[0] + controlOffset},${start[1]}
+      ${end[0] - controlOffset},${end[1]}
+      ${end[0]},${end[1]}
+  `;
+
   return (
-    <line x1={start[0]} x2={end[0]} y1={start[1]} y2={end[1]} stroke="black" strokeWidth="2" ></line>
-  )
+    <path
+      d={path}
+      stroke="black"
+      fill="none"
+      strokeWidth="3"
+    />
+  );
 }
 
 
