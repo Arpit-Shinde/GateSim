@@ -38,7 +38,7 @@ function evaluate(id, graph) {
 
     case "XNOR":
       return values[0] === values[1];
-    
+
     case "BULB":
       return values[0]
 
@@ -155,7 +155,7 @@ function App() {
       return (<g transform={`translate(${node.x}, ${node.y})`}>
         <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
         <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
-        <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 4} r="4" />
+        <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 2} r="4" />
 
         <circle onClick={() => { setoutputpin(node.id) }} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
       </g>
@@ -168,7 +168,7 @@ function App() {
         <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
         <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 2} r="4" />
 
-        
+
       </g>
       )
     }
@@ -196,7 +196,7 @@ function App() {
   return (
     <div>
 
-      {["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR","BULB"].map(gate => (
+      {["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR", "BULB"].map(gate => (
         <button key={gate} onClick={() => Add(gate)}>
           {gate}
         </button>
@@ -209,9 +209,12 @@ function App() {
         style={{ border: "1px solid black" }}
       >
         {graph.map(node =>
-          node.inputs.map((input, index) => (
-            
-            <Wire
+          node.inputs.map((input, index) => {
+            let endy = node.y + (index * 2 + 1) * GATE_HEIGHT / 4
+            if (node.type === "NOT"){
+              endy = node.y + GATE_HEIGHT / 2
+            }
+            return (<Wire
               key={`${node.id}-${input}`}
               start={[
                 graph[input].x + GATE_WIDTH,
@@ -219,10 +222,10 @@ function App() {
               ]}
               end={[
                 node.x,
-                node.y + (index * 2 + 1) * GATE_HEIGHT / 4
+                endy
               ]}
-            />
-          ))
+            />)
+          })
         )}
         {graph.map(node => (
 
