@@ -8,6 +8,7 @@ A logic gate simulator built with React.
 - Dynamic gate connections
 - Recursive graph evaluation
 - Live simulation
+- Click to Connect 
 - Supports:
   - AND
   - OR
@@ -20,7 +21,7 @@ A logic gate simulator built with React.
 ## Planned to do
 
 - Drag-and-drop gate placement
-- Wire drawing
+- Wire drawing (beizer curve)
 - Save/Load circuits
 - Clock support
 - Flip-flops

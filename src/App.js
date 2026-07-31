@@ -53,6 +53,8 @@ function App() {
     []
   )
 
+  let [opin, setoPin] = useState(null)
+
   function toggle(id) {
     const newgraph = structuredClone(graph);
     newgraph[id].value = !graph[id].value
@@ -84,23 +86,28 @@ function App() {
 
   }
 
+  function setoutputpin(id) {
+    setoPin({ gateId: id });
+  }
+
+  function setinputpin(id, index){
+    let newipin = {gateId:id, gateIndex:index}
+    Connect(newipin, opin)
+  }
 
 
-  function Connect() {
-    const gate = Number(window.prompt("Specify gate id:"));
-    let connections = window.prompt("Specify inputs (like 1,3):")
 
-    if (Number.isNaN(gate) || !connections) return
+  function Connect(inputpin,outputpin) {
 
-    connections = connections.split(",")
 
     let newgraph = structuredClone(graph)
-    if (connections.length === 1) {
-      newgraph[gate].inputs = [Number(connections[0])]
+
+    if (inputpin != null && outputpin != null) {
+      newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputpin.gateId;
     }
-    else {
-      newgraph[gate].inputs = [Number(connections[0]), Number(connections[1])]
-    }
+
+    
+    setoPin(null);
 
     setGraph(newgraph)
 
@@ -108,6 +115,67 @@ function App() {
 
   function print() {
     console.log(graph)
+  }
+
+  function Gate({ node, toggle, graph }) {
+
+    if (node.type === "INPUT") {
+      return (
+        <g
+          transform={`translate(${node.x}, ${node.y})`}
+          
+          style={{ cursor: "pointer" }}
+        >
+          <rect onClick={() => toggle(node.id)}
+            width="70"
+            height="40"
+            rx="5"
+            fill={node.value ? "limegreen" : "gray"}
+            stroke="black"
+            strokeWidth="2"
+          />
+
+          <text
+            x="35"
+            y="20"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="white"
+            pointerEvents="none"
+          >
+            INPUT
+          </text>
+
+          <circle onClick={()=>{setoutputpin(node.id)}} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
+        </g>
+      );
+    }
+
+    else if (node.type === "NOT"){
+      return(<g transform={`translate(${node.x}, ${node.y})`}>
+          <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
+          <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
+          <circle onClick={()=>{setinputpin(node.id, 0)}} cx={0} cy={GATE_HEIGHT / 4} r="4" />
+          
+          <circle onClick={()=>{setoutputpin(node.id)}} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
+        </g>
+      )
+    }
+
+    else {
+
+      return (
+        <g transform={`translate(${node.x}, ${node.y})`}>
+          <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
+          <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
+          <circle onClick={()=>{setinputpin(node.id, 0)}} cx={0} cy={GATE_HEIGHT / 4} r="4" />
+          <circle onClick={()=>{setinputpin(node.id, 1)}} cx={0} cy={3 * GATE_HEIGHT / 4} r="4" />
+          <circle onClick={()=>{setoutputpin(node.id)}} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
+        </g>
+      )
+
+
+    }
   }
 
 
@@ -126,7 +194,7 @@ function App() {
         style={{ border: "1px solid black" }}
       >
         {graph.map(node =>
-          node.inputs.map(input => (
+          node.inputs.map((input,index) => (
             <Wire
               key={`${node.id}-${input}`}
               start={[
@@ -135,7 +203,7 @@ function App() {
               ]}
               end={[
                 node.x,
-                node.y + GATE_HEIGHT / 2
+                node.y + (index*2 + 1)*GATE_HEIGHT / 4
               ]}
             />
           ))
@@ -161,50 +229,6 @@ function Wire({ start, end }) {
   )
 }
 
-function Gate({ node, toggle, graph }) {
 
-  if (node.type === "INPUT") {
-    return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        onClick={() => toggle(node.id)}
-        style={{ cursor: "pointer" }}
-      >
-        <rect
-          width="70"
-          height="40"
-          rx="5"
-          fill={node.value ? "limegreen" : "gray"}
-          stroke="black"
-          strokeWidth="2"
-        />
-
-        <text
-          x="35"
-          y="20"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="white"
-          pointerEvents="none"
-        >
-          INPUT
-        </text>
-      </g>
-    );
-  }
-
-  else {
-    
-      return (
-        <g transform={`translate(${node.x}, ${node.y})`}>
-          <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
-          <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
-        </g>
-
-      )
-    
-
-  }
-}
 
 export default App; 
