@@ -38,6 +38,9 @@ function evaluate(id, graph) {
 
     case "XNOR":
       return values[0] === values[1];
+    
+    case "BULB":
+      return values[0]
 
     default:
       throw new Error(`Unknown gate: ${node.type}`);
@@ -61,11 +64,8 @@ function App() {
     setGraph(newgraph)
   }
 
-  function Add() {
-    const gate = window
-      .prompt("Enter gate type:")
-      ?.trim()
-      .toUpperCase();
+  function Add(gate) {
+
 
     let newGate;
 
@@ -90,14 +90,14 @@ function App() {
     setoPin({ gateId: id });
   }
 
-  function setinputpin(id, index){
-    let newipin = {gateId:id, gateIndex:index}
+  function setinputpin(id, index) {
+    let newipin = { gateId: id, gateIndex: index }
     Connect(newipin, opin)
   }
 
 
 
-  function Connect(inputpin,outputpin) {
+  function Connect(inputpin, outputpin) {
 
 
     let newgraph = structuredClone(graph)
@@ -106,7 +106,7 @@ function App() {
       newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputpin.gateId;
     }
 
-    
+
     setoPin(null);
 
     setGraph(newgraph)
@@ -123,7 +123,7 @@ function App() {
       return (
         <g
           transform={`translate(${node.x}, ${node.y})`}
-          
+
           style={{ cursor: "pointer" }}
         >
           <rect onClick={() => toggle(node.id)}
@@ -146,19 +146,30 @@ function App() {
             INPUT
           </text>
 
-          <circle onClick={()=>{setoutputpin(node.id)}} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
+          <circle onClick={() => { setoutputpin(node.id) }} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
         </g>
       );
     }
 
-    else if (node.type === "NOT"){
-      return(<g transform={`translate(${node.x}, ${node.y})`}>
-          <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
-          <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
-          <circle onClick={()=>{setinputpin(node.id, 0)}} cx={0} cy={GATE_HEIGHT / 4} r="4" />
-          
-          <circle onClick={()=>{setoutputpin(node.id)}} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
-        </g>
+    else if (node.type === "NOT") {
+      return (<g transform={`translate(${node.x}, ${node.y})`}>
+        <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
+        <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
+        <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 4} r="4" />
+
+        <circle onClick={() => { setoutputpin(node.id) }} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
+      </g>
+      )
+    }
+
+    else if (node.type === "BULB") {
+      return (<g transform={`translate(${node.x}, ${node.y})`}>
+        <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
+        <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
+        <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 2} r="4" />
+
+        
+      </g>
       )
     }
 
@@ -168,9 +179,9 @@ function App() {
         <g transform={`translate(${node.x}, ${node.y})`}>
           <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
           <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
-          <circle onClick={()=>{setinputpin(node.id, 0)}} cx={0} cy={GATE_HEIGHT / 4} r="4" />
-          <circle onClick={()=>{setinputpin(node.id, 1)}} cx={0} cy={3 * GATE_HEIGHT / 4} r="4" />
-          <circle onClick={()=>{setoutputpin(node.id)}} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
+          <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 4} r="4" />
+          <circle onClick={() => { setinputpin(node.id, 1) }} cx={0} cy={3 * GATE_HEIGHT / 4} r="4" />
+          <circle onClick={() => { setoutputpin(node.id) }} cx={GATE_WIDTH} cy={GATE_HEIGHT / 2} r="4" />
         </g>
       )
 
@@ -185,7 +196,11 @@ function App() {
   return (
     <div>
 
-      <button onClick={Add}>ADD</button>
+      {["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR","BULB"].map(gate => (
+        <button key={gate} onClick={() => Add(gate)}>
+          {gate}
+        </button>
+      ))}
       <button onClick={print}>print</button>
       <button onClick={Connect}>connect</button>
       <svg
@@ -194,7 +209,8 @@ function App() {
         style={{ border: "1px solid black" }}
       >
         {graph.map(node =>
-          node.inputs.map((input,index) => (
+          node.inputs.map((input, index) => (
+            
             <Wire
               key={`${node.id}-${input}`}
               start={[
@@ -203,7 +219,7 @@ function App() {
               ]}
               end={[
                 node.x,
-                node.y + (index*2 + 1)*GATE_HEIGHT / 4
+                node.y + (index * 2 + 1) * GATE_HEIGHT / 4
               ]}
             />
           ))
