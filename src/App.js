@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const GATE_WIDTH = 70
 const GATE_HEIGHT = 40
@@ -58,6 +58,39 @@ function App() {
 
   let [opin, setoPin] = useState(null)
 
+  const [selectedWire, setSelectedWire] = useState(null);
+
+  const [dragging, setDragging] = useState(null);
+  const [didDrag, setDidDrag] = useState(false);
+
+  function startDrag(e, id) {
+  setDragging({
+    gateId: id,
+    offsetX: e.clientX - graph[id].x,
+    offsetY: e.clientY - graph[id].y
+  });
+
+  setDidDrag(false);
+}
+
+  useEffect(() => {
+    function handleKey(e) {
+      if (e.key !== "Delete") return;
+      if (!selectedWire) return;
+
+      const newGraph = structuredClone(graph);
+
+      newGraph[selectedWire.to].inputs.splice(selectedWire.inputIndex, 1);
+
+      setGraph(newGraph);
+      setSelectedWire(null);
+    }
+
+    window.addEventListener("keydown", handleKey);
+
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [graph, selectedWire]);
+
   function toggle(id) {
     const newgraph = structuredClone(graph);
     newgraph[id].value = !graph[id].value
@@ -69,13 +102,11 @@ function App() {
 
     let newGate;
 
-    if (gate === "INPUT") {
-      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30, y: 30 + graph.length * 100 };
-    }
-
-    else {
-      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 100, y: 30 };
-    }
+    
+      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length*10, y: 30+graph.length*10};
+  
+      
+    
 
     if (!gate) return
 
@@ -126,13 +157,16 @@ function App() {
 
           style={{ cursor: "pointer" }}
         >
-          <rect onClick={() => toggle(node.id)}
+          <rect onMouseUp={() => {
+    if (!didDrag) toggle(node.id);
+}}
             width="70"
             height="40"
             rx="5"
             fill={node.value ? "limegreen" : "gray"}
             stroke="black"
             strokeWidth="2"
+            onMouseDown={(e) => startDrag(e, node.id)}
           />
 
           <text
@@ -153,7 +187,7 @@ function App() {
 
     else if (node.type === "NOT") {
       return (<g transform={`translate(${node.x}, ${node.y})`}>
-        <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
+        <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} onMouseDown={(e) => startDrag(e, node.id)} />
         <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
         <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 2} r="4" />
 
@@ -164,7 +198,7 @@ function App() {
 
     else if (node.type === "BULB") {
       return (<g transform={`translate(${node.x}, ${node.y})`}>
-        <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
+        <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} onMouseDown={(e) => startDrag(e, node.id)} />
         <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
         <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 2} r="4" />
 
@@ -177,7 +211,7 @@ function App() {
 
       return (
         <g transform={`translate(${node.x}, ${node.y})`}>
-          <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} />
+          <rect width="70" height="40" rx="5" fill={evaluate(node.id, graph) ? "limegreen" : "gray"} onMouseDown={(e) => startDrag(e, node.id)} />
           <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
           <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 4} r="4" />
           <circle onClick={() => { setinputpin(node.id, 1) }} cx={0} cy={3 * GATE_HEIGHT / 4} r="4" />
@@ -189,50 +223,78 @@ function App() {
     }
   }
 
+  function selectWire(wire) {
+    setSelectedWire(wire)
+  }
+
+  function drag(e) {
+  if (!dragging) return;
+
+  setDidDrag(true);
+
+  const newGraph = structuredClone(graph);
+  newGraph[dragging.gateId].x = e.clientX - dragging.offsetX;
+  newGraph[dragging.gateId].y = e.clientY - dragging.offsetY;
+  setGraph(newGraph);
+}
+
+function stopDrag() {
+  setDragging(null);
+}
+
 
 
 
 
   return (
     <div>
-
-      {["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR", "BULB"].map(gate => (
-        <button key={gate} onClick={() => Add(gate)}>
-          {gate}
-        </button>
-      ))}
-      <button onClick={print}>print</button>
-      <button onClick={Connect}>connect</button>
-      <svg
-        width="1000"
-        height="700"
-        style={{ border: "1px solid black" }}
-      >
-        {graph.map(node =>
-          node.inputs.map((input, index) => {
-            let endy = node.y + (index * 2 + 1) * GATE_HEIGHT / 4
-            if (node.type === "NOT" || node.type === "BULB"){
-              endy = node.y + GATE_HEIGHT / 2
-            }
-            return (<Wire
-              key={`${node.id}-${input}`}
-              start={[
-                graph[input].x + GATE_WIDTH,
-                graph[input].y + GATE_HEIGHT / 2
-              ]}
-              end={[
-                node.x,
-                endy
-              ]}
-            />)
-          })
-        )}
-        {graph.map(node => (
-
-          <Gate key={node.id} node={node} toggle={toggle} graph={graph} />
+      <div>
+        {["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR", "BULB"].map(gate => (
+          <button key={gate} onClick={() => Add(gate)}>
+            {gate}
+          </button>
         ))}
-      </svg>
+        <button onClick={print}>print</button>
+      </div>
+      <div>
+        <svg
+          width="4000"
+          height="3000"
+          style={{ border: "1px solid black" }}
+          onMouseMove={drag}
+          onMouseUp={stopDrag}
+          onMouseLeave={stopDrag}
+        >
+          {graph.map(node =>
+            node.inputs.map((input, index) => {
+              let endy = node.y + (index * 2 + 1) * GATE_HEIGHT / 4
+              if (node.type === "NOT" || node.type === "BULB") {
+                endy = node.y + GATE_HEIGHT / 2
+              }
+              return (<Wire
+                key={`${node.id}-${input}`}
+                start={[
+                  graph[input].x + GATE_WIDTH,
+                  graph[input].y + GATE_HEIGHT / 2
+                ]}
+                end={[
+                  node.x,
+                  endy
+                ]}
+                from={input}
+                to={node.id}
+                style={{ pointerEvents: "stroke" }}
+                inputIndex={index}
+                onClick={selectWire}
+              />)
+            })
+          )}
+          {graph.map(node => (
 
+            <Gate key={node.id} node={node} toggle={toggle} graph={graph} />
+          ))}
+        </svg>
+      </div>
 
 
 
@@ -242,7 +304,7 @@ function App() {
 
 }
 
-function Wire({ start, end }) {
+function Wire({ start, end, from, to, inputIndex, onClick }) {
   const dx = end[0] - start[0];
 
   const controlOffset = Math.abs(dx) * 0.5;
@@ -260,6 +322,8 @@ function Wire({ start, end }) {
       stroke="black"
       fill="none"
       strokeWidth="3"
+      onClick={() => { onClick({ from, to, inputIndex }) }}
+      style={{ pointerEvents: "stroke" }}
     />
   );
 }

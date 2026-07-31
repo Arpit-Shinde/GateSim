@@ -9,6 +9,9 @@ A logic gate simulator built with React.
 - Recursive graph evaluation
 - Live simulation
 - Click to Connect 
+- Wire drawing (beizer curve)
+- Drag-and-drop gate placement
+- wire deletion
 - Supports:
   - AND
   - OR
@@ -20,8 +23,7 @@ A logic gate simulator built with React.
 
 ## Planned to do
 
-- Drag-and-drop gate placement
-- Wire drawing (beizer curve)
+- gate deletion
 - Save/Load circuits
 - Clock support
 - Flip-flops
