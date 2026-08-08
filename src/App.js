@@ -7,43 +7,124 @@ import { GATE_WIDTH, GATE_HEIGHT, GATE_TYPES } from "./constants";
 function App() {
 
   let [graph, setGraph] = useState(
-    []
+    [
+  {
+    type: "INPUT",
+    id: 0,
+    value: false,
+    inputs: [],
+    x: 30,
+    y: 30
+  },
+  {
+    type: "INPUT",
+    id: 1,
+    value: false,
+    inputs: [],
+    x: 30,
+    y: 110
+  },
+  {
+    type: "AND",
+    id: 2,
+    value: false,
+    inputs: [3, 3],
+    x: 296,
+    y: 75
+  },
+  {
+    type: "AND",
+    id: 3,
+    value: false,
+    inputs: [0, 1],
+    x: 180,
+    y: 72
+  },
+  {
+    type: "AND",
+    id: 4,
+    value: false,
+    inputs: [2, 2],
+    x: 421,
+    y: 73
+  }
+]
   )
 
   let [opin, setoPin] = useState(null)
 
   const [selectedWire, setSelectedWire] = useState(null);
+  const [selectedGate, setSelectedGate] = useState(null)
 
-  const [dragging, setDragging] = useState(null);
+  const [draginfo, setdraginfo] = useState(null);
   const [didDrag, setDidDrag] = useState(false);
 
   function startDrag(e, id) {
-  setDragging({
-    gateId: id,
-    offsetX: e.clientX - graph[id].x,
-    offsetY: e.clientY - graph[id].y
-  });
+    setdraginfo({
+      gateId: id,
+      offsetX: e.clientX - graph[id].x,
+      offsetY: e.clientY - graph[id].y
+    });
 
-  setDidDrag(false);
-}
+    setDidDrag(false);
+  }
 
-  useEffect(() => {
+  useEffect(() => { //for deletion
     function handleKey(e) {
       if (e.key !== "Delete") return;
-      if (!selectedWire) return;
+      
 
-      const newGraph = structuredClone(graph);
+      if (selectedWire){
+        const newGraph = structuredClone(graph);
 
-      newGraph[selectedWire.to].inputs.splice(selectedWire.inputIndex, 1);
+        newGraph[selectedWire.to].inputs.splice(selectedWire.inputIndex, 1);
 
-      setGraph(newGraph);
-      setSelectedWire(null);
+        setGraph(newGraph);
+        setSelectedWire(null);
+      }
+
+      else if (selectedGate){
+        const newGraph = structuredClone(graph)
+        let deleted = false
+        
+
+        for (let i=0;i<newGraph.length;i++){
+          // console.log(`i=${i}`)
+          if (i===selectedGate.id && !deleted){
+            newGraph.splice(i, 1)
+            // console.log(`deleted i=${i}`)
+            i-=1
+            deleted = true
+            
+            continue
+          }
+
+          if (newGraph[i].id>selectedGate.id) newGraph[i].id -= 1
+          if (newGraph[i].inputs.length===2){ //we check the case for two inputs first because if any input is to be removed, then the length reduces to 1 and the next if are still applicable. if we put next ifs before this length=2, and if inputs length=2 and they change, then inputs length=1. this time, the (length===2) wont be executed. This will cause infinite recursion.
+            if (newGraph[i].inputs[1]===selectedGate.id) newGraph[i].inputs.splice(1,1)
+            if (newGraph[i].inputs[1] > selectedGate.id) newGraph[i].inputs[1] -=1
+          }
+          if (newGraph[i].inputs[0] > selectedGate.id) newGraph[i].inputs[0] -=1
+          if (newGraph[i].inputs[0]===selectedGate.id) newGraph[i].inputs.splice(0,1)
+          
+          
+          
+          
+          
+        }
+
+        setGraph(newGraph);
+        // console.log(newGraph)
+        setSelectedGate(null)
+      }
+
+      
     }
 
     window.addEventListener("keydown", handleKey);
 
     return () => window.removeEventListener("keydown", handleKey);
-  }, [graph, selectedWire]);
+  }, [selectedWire, selectedGate, graph]);
 
   function toggle(id) {
     const newgraph = structuredClone(graph);
@@ -56,11 +137,11 @@ function App() {
 
     let newGate;
 
-    
-      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length*10, y: 30+graph.length*10};
-  
-      
-    
+
+    newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 10, y: 30 + graph.length * 10 };
+
+
+
 
     if (!gate) return
 
@@ -100,28 +181,29 @@ function App() {
 
   function print() {
     console.log(graph)
+    console.log(selectedGate)
   }
 
-  
+
 
   function selectWire(wire) {
     setSelectedWire(wire)
   }
 
   function drag(e) {
-  if (!dragging) return;
+    if (!draginfo) return;
 
-  setDidDrag(true);
+    setDidDrag(true);
 
-  const newGraph = structuredClone(graph);
-  newGraph[dragging.gateId].x = e.clientX - dragging.offsetX;
-  newGraph[dragging.gateId].y = e.clientY - dragging.offsetY;
-  setGraph(newGraph);
-}
+    const newGraph = structuredClone(graph);
+    newGraph[draginfo.gateId].x = e.clientX - draginfo.offsetX;
+    newGraph[draginfo.gateId].y = e.clientY - draginfo.offsetY;
+    setGraph(newGraph);
+  }
 
-function stopDrag() {
-  setDragging(null);
-}
+  function stopDrag() {
+    setdraginfo(null);
+  }
 
 
 
@@ -144,7 +226,7 @@ function stopDrag() {
           style={{ border: "1px solid black" }}
           onMouseMove={drag}
           onMouseUp={stopDrag}
-          onMouseLeave={stopDrag}
+          
         >
           {graph.map(node =>
             node.inputs.map((input, index) => {
@@ -172,7 +254,17 @@ function stopDrag() {
           )}
           {graph.map(node => (
 
-            <Gate key={node.id} node={node} toggle={toggle} graph={graph} didDrag = {didDrag} startDrag = {startDrag} setoutputpin = {setoutputpin} setinputpin = {setinputpin} />
+            <Gate 
+            key={node.id} 
+            node={node} 
+            toggle={toggle} 
+            graph={graph} 
+            didDrag={didDrag} 
+            startDrag={startDrag} 
+            setoutputpin={setoutputpin} 
+            setinputpin={setinputpin} 
+            setSelectedGate={setSelectedGate}
+            />
           ))}
         </svg>
       </div>
