@@ -12,27 +12,35 @@ function evaluate(id, graph) {
 
   switch (node.type) {
     case "AND":
+      if (values.length!==2) return false
       return values[0] && values[1];
 
     case "OR":
+      if (values.length!==2) return false
       return values[0] || values[1];
 
     case "NOT":
+      if (values.length!==1) return false
       return !values[0];
 
     case "XOR":
+      if (values.length!==2) return false
       return values[0] !== values[1]
 
     case "NAND":
+      if (values.length!==2) return false
       return !(values[0] && values[1]);
 
     case "NOR":
+      if (values.length!==2) return false
       return !(values[0] || values[1]);
 
     case "XNOR":
+      if (values.length!==2) return false
       return values[0] === values[1];
 
     case "BULB":
+      if (values.length!==1) return false
       return values[0]
 
     default:
