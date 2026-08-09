@@ -8,13 +8,14 @@ function App() {
 
   let [graph, setGraph] = useState(
     [
+  // Inputs
   {
     type: "INPUT",
     id: 0,
     value: false,
     inputs: [],
     x: 30,
-    y: 30
+    y: 50
   },
   {
     type: "INPUT",
@@ -22,31 +23,65 @@ function App() {
     value: false,
     inputs: [],
     x: 30,
-    y: 110
+    y: 150
   },
   {
-    type: "AND",
+    type: "INPUT",
     id: 2,
     value: false,
-    inputs: [3, 3],
-    x: 296,
-    y: 75
+    inputs: [],
+    x: 30,
+    y: 250
   },
+
+  // X1 = A XOR B
   {
-    type: "AND",
+    type: "XOR",
     id: 3,
     value: false,
     inputs: [0, 1],
     x: 180,
-    y: 72
+    y: 100
   },
+
+  // Sum = X1 XOR Cin
   {
-    type: "AND",
+    type: "XOR",
     id: 4,
     value: false,
-    inputs: [2, 2],
-    x: 421,
-    y: 73
+    inputs: [3, 2],
+    x: 330,
+    y: 100
+  },
+
+  // C1 = A AND B
+  {
+    type: "AND",
+    id: 5,
+    value: false,
+    inputs: [0, 1],
+    x: 180,
+    y: 250
+  },
+
+  // C2 = X1 AND Cin
+  {
+    type: "AND",
+    id: 6,
+    value: false,
+    inputs: [3, 2],
+    x: 330,
+    y: 250
+  },
+
+  // Cout = C1 OR C2
+  {
+    type: "OR",
+    id: 7,
+    value: false,
+    inputs: [5, 6],
+    x: 480,
+    y: 250
   }
 ]
   )
@@ -90,22 +125,38 @@ function App() {
 
         for (let i=0;i<newGraph.length;i++){
           // console.log(`i=${i}`)
-          if (i===selectedGate.id && !deleted){
+          if (newGraph[i].id===selectedGate.id && !deleted){
             newGraph.splice(i, 1)
-            // console.log(`deleted i=${i}`)
+            //console.log(`deleted i=${i}`)
             i-=1
             deleted = true
             
             continue
           }
 
-          if (newGraph[i].id>selectedGate.id) newGraph[i].id -= 1
-          if (newGraph[i].inputs.length===2){ //we check the case for two inputs first because if any input is to be removed, then the length reduces to 1 and the next if are still applicable. if we put next ifs before this length=2, and if inputs length=2 and they change, then inputs length=1. this time, the (length===2) wont be executed. This will cause infinite recursion.
-            if (newGraph[i].inputs[1]===selectedGate.id) newGraph[i].inputs.splice(1,1)
-            if (newGraph[i].inputs[1] > selectedGate.id) newGraph[i].inputs[1] -=1
+          if (newGraph[i].id>selectedGate.id) {
+            //console.log(`decrement i=${i}`)
+            newGraph[i].id -= 1
+            
           }
-          if (newGraph[i].inputs[0] > selectedGate.id) newGraph[i].inputs[0] -=1
-          if (newGraph[i].inputs[0]===selectedGate.id) newGraph[i].inputs.splice(0,1)
+          if (newGraph[i].inputs.length===2){ //we check the case for two inputs first because if any input is to be removed, then the length reduces to 1 and the next if are still applicable. if we put next ifs before this length=2, and if inputs length=2 and they change, then inputs length=1. this time, the (length===2) wont be executed. This will cause infinite recursion.
+            if (newGraph[i].inputs[1]===selectedGate.id){
+              newGraph[i].inputs.splice(1,1)
+              //console.log(`removed wire from i=${i}`)
+            }
+            else if (newGraph[i].inputs[1] > selectedGate.id){ //put else if conditions, cuz we are modifying the inputs array
+              //console.log(`decremented wire inside length 2 loop ${newGraph[i].inputs[1]} - ${selectedGate.id}`)
+              newGraph[i].inputs[1] -=1
+            }
+          }
+          if (newGraph[i].inputs[0] > selectedGate.id){
+            //console.log(`decremented wire inside length 2 loop ${newGraph[i].inputs[1]} - ${selectedGate.id}`)
+            newGraph[i].inputs[0] -=1
+          }
+          else if (newGraph[i].inputs[0]===selectedGate.id){
+            newGraph[i].inputs.splice(0,1)
+            //console.log(`removed wire ${newGraph[i].inputs[0]} - ${selectedGate.id}`)
+          }
           
           
           
@@ -205,10 +256,6 @@ function App() {
     setdraginfo(null);
   }
 
-
-
-
-
   return (
     <div>
       <div>
@@ -234,8 +281,9 @@ function App() {
               if (node.type === "NOT" || node.type === "BULB") {
                 endy = node.y + GATE_HEIGHT / 2
               }
+              // console.log(`Wire key=${node.id} - ${index}`)
               return (<Wire
-                key={`${node.id}-${input}`}
+                key={`${node.id}-${index}`}
                 start={[
                   graph[input].x + GATE_WIDTH,
                   graph[input].y + GATE_HEIGHT / 2
@@ -252,6 +300,8 @@ function App() {
               />)
             })
           )}
+          {/* {console.log(`-----------------------`)} */}
+          
           {graph.map(node => (
 
             <Gate 
