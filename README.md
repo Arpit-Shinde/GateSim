@@ -12,6 +12,7 @@ A logic gate simulator built with React.
 - Wire drawing (beizer curve)
 - Drag-and-drop gate placement
 - wire deletion
+- gate deletion
 - Supports:
   - AND
   - OR
@@ -23,8 +24,10 @@ A logic gate simulator built with React.
 
 ## Planned to do
 
-- gate deletion
+- Better SVG for gates
+- UI including menu, options,etc
 - Save/Load circuits
+- Sequential Circuits
 - Clock support
 - Flip-flops
 - Propagation delay simulation
