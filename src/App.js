@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 
 import Gate from "./gate"
-import Wire from "./wire"
-import { GATE_WIDTH, GATE_HEIGHT, GATE_TYPES } from "./constants";
+import {Wire, LiveWire} from "./wire"
+import { GATE_WIDTH, GATE_HEIGHT, GATE_TYPES, CANVAS_START } from "./constants";
 
 function App() {
 
@@ -93,6 +93,7 @@ function App() {
 
   const [draginfo, setdraginfo] = useState(null);
   const [didDrag, setDidDrag] = useState(false);
+  const [mouse, setMouse] = useState(null)
 
   function startDrag(e, id) {
     setdraginfo({
@@ -205,6 +206,7 @@ function App() {
 
   function setoutputpin(id) {
     setoPin({ gateId: id });
+    setMouse({x : graph[id].x + GATE_WIDTH,y:graph[id].y + GATE_HEIGHT / 2})
   }
 
   function setinputpin(id, index) {
@@ -239,17 +241,23 @@ function App() {
 
   function selectWire(wire) {
     setSelectedWire(wire)
+    setSelectedGate(null) //when selected wire, clear selected gate 
   }
 
   function drag(e) {
-    if (!draginfo) return;
+    if (draginfo){
 
-    setDidDrag(true);
+      setDidDrag(true);
 
-    const newGraph = structuredClone(graph);
-    newGraph[draginfo.gateId].x = e.clientX - draginfo.offsetX;
-    newGraph[draginfo.gateId].y = e.clientY - draginfo.offsetY;
-    setGraph(newGraph);
+      const newGraph = structuredClone(graph);
+      newGraph[draginfo.gateId].x = e.clientX - draginfo.offsetX;
+      newGraph[draginfo.gateId].y = e.clientY - draginfo.offsetY;
+      setGraph(newGraph);
+    }
+
+    else if (opin){
+      setMouse({x : e.clientX - CANVAS_START.x, y : e.clientY - CANVAS_START.y})
+    }
   }
 
   function stopDrag() {
@@ -270,7 +278,13 @@ function App() {
         <svg
           width="4000"
           height="3000"
-          style={{ border: "1px solid black" }}
+          style={{ 
+            position: "absolute",
+            border: "1px solid black",
+            top: CANVAS_START.x,
+            left: CANVAS_START.y
+
+           }}
           onMouseMove={drag}
           onMouseUp={stopDrag}
           
@@ -301,6 +315,13 @@ function App() {
             })
           )}
           {/* {console.log(`-----------------------`)} */}
+
+          {opin && 
+          <LiveWire 
+          start={[graph[opin.gateId].x + GATE_WIDTH,graph[opin.gateId].y + GATE_HEIGHT / 2]}
+          end={[mouse.x, mouse.y]}
+          >
+          </LiveWire>}
           
           {graph.map(node => (
 
@@ -314,6 +335,7 @@ function App() {
             setoutputpin={setoutputpin} 
             setinputpin={setinputpin} 
             setSelectedGate={setSelectedGate}
+            setSelectedWire={setSelectedWire}
             />
           ))}
         </svg>

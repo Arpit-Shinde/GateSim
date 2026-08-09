@@ -1,7 +1,7 @@
 import evaluate from "./evaluate"
 import { GATE_WIDTH, GATE_HEIGHT } from "./constants";
 
-function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, setinputpin,setSelectedGate }) {
+function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, setinputpin,setSelectedGate, setSelectedWire }) {
 
   if (node.type === "INPUT") {
     return (
@@ -45,7 +45,11 @@ function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, setinputp
       rx="5" 
       fill={evaluate(node.id, graph) ? "limegreen" : "gray"} 
       onMouseDown={(e) => startDrag(e, node.id)} 
-      onClick={()=>{return setSelectedGate({id:node.id})}} 
+      onClick={()=>{
+          setSelectedGate({id:node.id})
+          setSelectedWire(null)
+          return true}
+        }
       />
       <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
       <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 2} r="4" />
@@ -63,7 +67,11 @@ function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, setinputp
       rx="5" 
       fill={evaluate(node.id, graph) ? "limegreen" : "gray"} 
       onMouseDown={(e) => startDrag(e, node.id)} 
-      onClick={()=>{return setSelectedGate({id:node.id})}} 
+      onClick={()=>{
+          setSelectedGate({id:node.id})
+          setSelectedWire(null)
+          return true}
+        } 
       />
       <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
       <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 2} r="4" />
@@ -83,7 +91,11 @@ function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, setinputp
         rx="5" 
         fill={evaluate(node.id, graph) ? "limegreen" : "gray"} 
         onMouseDown={(e) => startDrag(e, node.id)} 
-        onClick={()=>{return setSelectedGate({id:node.id})}} 
+        onClick={()=>{
+          setSelectedGate({id:node.id})
+          setSelectedWire(null)
+          return true}
+        } 
         />
         <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
         <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={GATE_HEIGHT / 4} r="4" />
