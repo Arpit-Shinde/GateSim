@@ -5,7 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: rgb(239, 230, 230);
+  background-color: rgb(254, 254, 254);
 }
 
 
@@ -31,6 +31,14 @@ code {
 
 .off{
   background-color: rgb(255, 98, 98);
+}
+
+.pin {
+  transition: r 0.1s ease;
+}
+
+.pin:hover {
+  r: 6px;
 }
 
 

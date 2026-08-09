@@ -1,88 +1,13 @@
 import { useState, useEffect } from "react";
 
-import Gate from "./gate"
+import {Gate, FancyGate} from "./gate"
 import {Wire, LiveWire} from "./wire"
-import { GATE_WIDTH, GATE_HEIGHT, GATE_TYPES, CANVAS_START } from "./constants";
+import * as CONSTANTS from "./constants";
 
 function App() {
 
   let [graph, setGraph] = useState(
     [
-  // Inputs
-  {
-    type: "INPUT",
-    id: 0,
-    value: false,
-    inputs: [],
-    x: 30,
-    y: 50
-  },
-  {
-    type: "INPUT",
-    id: 1,
-    value: false,
-    inputs: [],
-    x: 30,
-    y: 150
-  },
-  {
-    type: "INPUT",
-    id: 2,
-    value: false,
-    inputs: [],
-    x: 30,
-    y: 250
-  },
-
-  // X1 = A XOR B
-  {
-    type: "XOR",
-    id: 3,
-    value: false,
-    inputs: [0, 1],
-    x: 180,
-    y: 100
-  },
-
-  // Sum = X1 XOR Cin
-  {
-    type: "XOR",
-    id: 4,
-    value: false,
-    inputs: [3, 2],
-    x: 330,
-    y: 100
-  },
-
-  // C1 = A AND B
-  {
-    type: "AND",
-    id: 5,
-    value: false,
-    inputs: [0, 1],
-    x: 180,
-    y: 250
-  },
-
-  // C2 = X1 AND Cin
-  {
-    type: "AND",
-    id: 6,
-    value: false,
-    inputs: [3, 2],
-    x: 330,
-    y: 250
-  },
-
-  // Cout = C1 OR C2
-  {
-    type: "OR",
-    id: 7,
-    value: false,
-    inputs: [5, 6],
-    x: 480,
-    y: 250
-  }
 ]
   )
 
@@ -206,7 +131,9 @@ function App() {
 
   function setoutputpin(id) {
     setoPin({ gateId: id });
-    setMouse({x : graph[id].x + GATE_WIDTH,y:graph[id].y + GATE_HEIGHT / 2})
+    setMouse({
+      x : graph[id].x + +CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X,
+      y:graph[id].y + + CONSTANTS.INPUT_PIN_Y})
   }
 
   function setinputpin(id, index) {
@@ -256,7 +183,7 @@ function App() {
     }
 
     else if (opin){
-      setMouse({x : e.clientX - CANVAS_START.x, y : e.clientY - CANVAS_START.y})
+      setMouse({x : e.clientX - CONSTANTS.CANVAS_START.x, y : e.clientY - CONSTANTS.CANVAS_START.y})
     }
   }
 
@@ -267,7 +194,7 @@ function App() {
   return (
     <div>
       <div>
-        {GATE_TYPES.map(gate => (
+        {CONSTANTS.GATE_TYPES.map(gate => (
           <button key={gate} onClick={() => Add(gate)}>
             {gate}
           </button>
@@ -281,29 +208,49 @@ function App() {
           style={{ 
             position: "absolute",
             border: "1px solid black",
-            top: CANVAS_START.x,
-            left: CANVAS_START.y
+            top: CONSTANTS.CANVAS_START.x,
+            left: CONSTANTS.CANVAS_START.y,
+            backgroundColor:CONSTANTS.CANVAS_BACKGROUND
 
            }}
           onMouseMove={drag}
           onMouseUp={stopDrag}
           
         >
+          
           {graph.map(node =>
             node.inputs.map((input, index) => {
-              let endy = node.y + (index * 2 + 1) * GATE_HEIGHT / 4
-              if (node.type === "NOT" || node.type === "BULB") {
-                endy = node.y + GATE_HEIGHT / 2
+              let startx = graph[input].x +CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X
+              let starty = graph[input].y + CONSTANTS.INPUT_PIN_Y
+              let endx = node.x + CONSTANTS.INPUT_PIN_X
+              let endy
+              if(index===0) endy = node.y + CONSTANTS.INPUT_PIN_Y_TOP
+              else endy = node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM
+              
+              if (node.type === "BULB") {
+                endx = node.x + CONSTANTS.BULB_PIN_X
+                endy = node.y + CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH
+              }
+              if (node.type === "NOT") {
+                
+                endy = node.y + CONSTANTS.INPUT_PIN_Y
+              }
+
+            
+
+              if (graph[input].type === "INPUT"){
+                startx = graph[input].x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X
+                starty = graph[input].y + CONSTANTS.TOGGLE_HEIGHT/2
               }
               // console.log(`Wire key=${node.id} - ${index}`)
               return (<Wire
                 key={`${node.id}-${index}`}
                 start={[
-                  graph[input].x + GATE_WIDTH,
-                  graph[input].y + GATE_HEIGHT / 2
+                  startx,
+                  starty
                 ]}
                 end={[
-                  node.x,
+                  endx,
                   endy
                 ]}
                 from={input}
@@ -314,11 +261,14 @@ function App() {
               />)
             })
           )}
-          {/* {console.log(`-----------------------`)} */}
+          
 
           {opin && 
           <LiveWire 
-          start={[graph[opin.gateId].x + GATE_WIDTH,graph[opin.gateId].y + GATE_HEIGHT / 2]}
+          start={[
+            graph[opin.gateId].x +CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X,
+            graph[opin.gateId].y + CONSTANTS.INPUT_PIN_Y
+          ]}
           end={[mouse.x, mouse.y]}
           >
           </LiveWire>}
