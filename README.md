@@ -2,6 +2,8 @@
 
 A logic gate simulator built with React.
 
+Link to deployed website : https://arpit-shinde.github.io/GateSim/
+
 ## Features
 
 - Dynamic gate creation
