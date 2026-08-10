@@ -3,9 +3,7 @@ import * as CONSTANTS from "./constants";
 
 const r = CONSTANTS.GATE_HEIGHT / 2;
 
-
-
-const and_path = `
+export const and_path = `
   M 0 0
   H ${CONSTANTS.GATE_WIDTH - r}
   A ${r} ${r} 0 0 1 ${CONSTANTS.GATE_WIDTH} ${r}
@@ -14,8 +12,7 @@ const and_path = `
   Z
 `;
 
-
-const bulb_path = `
+export const bulb_path = `
   M 0 ${CONSTANTS.BULB_WIDTH}
   V ${CONSTANTS.BULB_WIDTH/2}
   A ${CONSTANTS.BULB_WIDTH/2} ${CONSTANTS.BULB_WIDTH/2} 0 0 1 ${CONSTANTS.BULB_WIDTH} ${CONSTANTS.BULB_WIDTH/2}
@@ -23,7 +20,7 @@ const bulb_path = `
   Z
 `;
 
-const nand_path = `
+export const nand_path = `
   M 0 0
   H ${CONSTANTS.GATE_WIDTH - (CONSTANTS.GATE_HEIGHT / 2) - 8}
   A ${CONSTANTS.GATE_HEIGHT / 2} ${CONSTANTS.GATE_HEIGHT / 2} 0 0 1 ${CONSTANTS.GATE_WIDTH - 8} ${CONSTANTS.GATE_HEIGHT / 2}
@@ -32,7 +29,7 @@ const nand_path = `
   Z
 `;
 
-const or_path = `
+export const or_path = `
   M 0 0
   
   H ${CONSTANTS.GATE_WIDTH * 0.4}
@@ -56,19 +53,17 @@ const or_path = `
   Z
 `;
 
-const not_path = `
+export const not_path = `
   M 0 0
   L ${CONSTANTS.GATE_WIDTH} ${CONSTANTS.GATE_HEIGHT * 0.5}
   L 0 ${CONSTANTS.GATE_HEIGHT}
   Z
 `;
 
-const xor_extra_curve_path = `
+export const xor_extra_curve_path = `
   M ${CONSTANTS.GATE_WIDTH * -0.08} 0
   Q ${CONSTANTS.GATE_WIDTH * 0.17} ${CONSTANTS.GATE_HEIGHT * 0.5}, ${CONSTANTS.GATE_WIDTH * -0.08} ${CONSTANTS.GATE_HEIGHT}
 `;
-
-
 
 export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, setinputpin, setSelectedGate, setSelectedWire }) {
 
@@ -76,7 +71,13 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
-        style={{ cursor: "pointer" }}
+        className="actual-gate"
+        onClick={() => {
+            setSelectedGate({ id: node.id })
+            setSelectedWire(null)
+            return true
+          }
+          }
       >
         <line
         x1={CONSTANTS.TOGGLE_WIDTH}
@@ -93,9 +94,8 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         onMouseDown={(e) => startDrag(e, node.id)}
-        onMouseUp={() => {
-          if (!didDrag) toggle(node.id);
-        }}>
+        
+        >
         </rect>
 
         <rect 
@@ -134,41 +134,14 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-
-        
- 
-
-        {/* <rect onMouseUp={() => {
-          if (!didDrag) toggle(node.id);
-        }}
-          width="70"
-          height="40"
-          rx="5"
-          fill={node.value ? "limegreen" : "gray"}
-          stroke="black"
-          strokeWidth="2"
-          onMouseDown={(e) => startDrag(e, node.id)}
-        />
-
-        <text
-          x="35"
-          y="20"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="white"
-          pointerEvents="none"
-        >
-          INPUT
-        </text>
-
-        <circle onClick={() => { setoutputpin(node.id) }} cx={CONSTANTS.GATE_WIDTH} cy={CONSTANTS.GATE_HEIGHT / 2} r="4" /> */}
       </g>
     );
   }
 
   else if (node.type === "BULB") {
   return (
-    <g transform={`translate(${node.x}, ${node.y})`}>
+    <g transform={`translate(${node.x}, ${node.y})`}
+    className="actual-gate">
       
       <line
         x1={CONSTANTS.BULB_PIN_X}
@@ -214,6 +187,7 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
+        className="actual-gate"
       >
         <line
           x1={10}
@@ -292,6 +266,7 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
+        className="actual-gate"
       >
         <line
           x1={10}
@@ -370,6 +345,7 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
+        className="actual-gate"
       >
         <line
           x1={10}
@@ -453,6 +429,7 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
+        className="actual-gate"
       >
         <line
           x1={10}
@@ -536,6 +513,7 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
+        className="actual-gate"
       >
         <line
           x1={10}
@@ -618,6 +596,7 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
+        className="actual-gate"
       >
         <line
           x1={10}
@@ -714,6 +693,7 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
   return (
     <g
       transform={`translate(${node.x}, ${node.y})`}
+      className="actual-gate"
     >
       <line
         x1={10}
@@ -768,31 +748,6 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
   )
 }
 
-  else {
-
-    return (
-      <g transform={`translate(${node.x}, ${node.y})`}>
-        <rect
-          width="70"
-          height="40"
-          rx="5"
-          fill={evaluate(node.id, graph) ? "limegreen" : "gray"}
-          onMouseDown={(e) => startDrag(e, node.id)}
-          onClick={() => {
-            setSelectedGate({ id: node.id })
-            setSelectedWire(null)
-            return true
-          }
-          }
-        />
-        <text x="35" y="25" textAnchor="middle" fill="black"> {node.type} </text>
-        <circle onClick={() => { setinputpin(node.id, 0) }} cx={0} cy={CONSTANTS.GATE_HEIGHT / 4} r="4" />
-        <circle onClick={() => { setinputpin(node.id, 1) }} cx={0} cy={3 * CONSTANTS.GATE_HEIGHT / 4} r="4" />
-        <circle onClick={() => { setoutputpin(node.id) }} cx={CONSTANTS.GATE_WIDTH} cy={CONSTANTS.GATE_HEIGHT / 2} r="4" />
-      </g>
-    )
-
-
-  }
+  
 }
 

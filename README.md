@@ -13,6 +13,8 @@ A logic gate simulator built with React.
 - Drag-and-drop gate placement
 - wire deletion
 - gate deletion
+- Better SVG for gates
+- UI including menu, options,etc
 - Supports:
   - AND
   - OR
@@ -24,10 +26,13 @@ A logic gate simulator built with React.
 
 ## Planned to do
 
-- Better SVG for gates
-- UI including menu, options,etc
+
+
 - Save/Load circuits
 - Sequential Circuits
 - Clock support
 - Flip-flops
 - Propagation delay simulation
+
+## To be looked
+- Handle one input case for two input gates as invalid state rather than false state

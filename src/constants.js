@@ -8,7 +8,7 @@ export const OUTPUT_PIN_Y = GATE_HEIGHT / 2;
 export const INPUT_PIN_Y = GATE_HEIGHT / 2;
 export const PIN_RADIUS = 5;
 
-export const GATE_STROKE_WIDTH = 0.5;
+export const GATE_STROKE_WIDTH = 0.7;
 export const GATE_STROKE_COLOR = "#000000";
 export const GATE_FILL_COLOR = "#ffffff"
 
@@ -28,7 +28,8 @@ export const TOGGLE_WIDTH = 60
 export const TOGGLE_HEIGHT = 40
 export const TOGGLE_CAPSULE_RADIUS = 10
 
-
+export const WIRE_COLOR = "#000000"
+export const WIRE_STROKE_WIDTH = 3
 
 
 
@@ -36,5 +37,6 @@ export const TOGGLE_CAPSULE_RADIUS = 10
 
 export const GATE_TYPES = ["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR", "BULB"]
 
-export const CANVAS_START = {x:50,y:50}
-export const CANVAS_BACKGROUND="#e2e2e2"
+export const CANVAS_START = {x:150,y:10}
+export const CANVAS_BACKGROUND="#efeded"
+export const GATE_CARD_BACKGROUND = "#c4c4c4"
