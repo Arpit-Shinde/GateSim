@@ -1,52 +1,70 @@
-function evaluate(id, graph) {
+function evaluate(graph) {
+  for (const node of graph) {
 
-  let node = graph[id]
+    if (node.type === "INPUT") {
+      continue;
+    }
+    console.log(`inputs = ${node.inputs}`)
 
-  if (node.type === "INPUT") {
-    return node.value
+    const values = node.inputs.map(inputId => {
+      if (inputId === -1) return false;
+      return graph[inputId].value;
+    });
+
+    let a = values[0]
+    let b = values[1]
+
+    if (values[0] === undefined) a = false
+    if (values[1] === undefined) b = false
+
+
+    
+
+    switch (node.type) {
+      case "AND":
+        node.value =
+          a &&
+          b;
+        break;
+
+      case "OR":
+        node.value = 
+          (a || b);
+        break;
+
+      case "NOT":
+        node.value =         
+          !a;
+        break;
+
+      case "XOR":
+        node.value =
+          a !== b;
+        break;
+
+      case "NAND":
+        node.value =    
+          !(a && b);
+        break;
+
+      case "NOR":
+        node.value =  
+          !(a || b);
+        break;
+
+      case "XNOR":
+        node.value =
+          a === b;
+        break;
+
+      case "BULB":
+        node.value =
+            a    
+        break;
+    }
+    console.log(`at ${node.id}, val = ${node.value}, val_length = ${values.length}`)
+    console.log("----------------")
   }
-
-  let values = node.inputs.map((id) => {
-    return evaluate(id, graph)
-  })
-
-  switch (node.type) {
-    case "AND":
-      if (values.length!==2) return false
-      return values[0] && values[1];
-
-    case "OR":
-      if (values.length!==2) return false
-      return values[0] || values[1];
-
-    case "NOT":
-      if (values.length!==1) return false
-      return !values[0];
-
-    case "XOR":
-      if (values.length!==2) return false
-      return values[0] !== values[1]
-
-    case "NAND":
-      if (values.length!==2) return false
-      return !(values[0] && values[1]);
-
-    case "NOR":
-      if (values.length!==2) return false
-      return !(values[0] || values[1]);
-
-    case "XNOR":
-      if (values.length!==2) return false
-      return values[0] === values[1];
-
-    case "BULB":
-      if (values.length!==1) return false
-      return values[0]
-
-    default:
-      throw new Error(`Unknown gate: ${node.type}`);
-  }
-
 }
 
 export default evaluate;

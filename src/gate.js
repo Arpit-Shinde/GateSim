@@ -155,7 +155,7 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
       {/* Tiny Bulb shape pointing up */}
       <path
         d={bulb_path}
-        fill={evaluate(node.id, graph) ? CONSTANTS.BULB_ON_COLOR : CONSTANTS.GATE_FILL_COLOR}
+        fill={node.value ? CONSTANTS.BULB_ON_COLOR : CONSTANTS.GATE_FILL_COLOR}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         onMouseDown={(e) => startDrag(e, node.id)}
@@ -750,4 +750,5 @@ export function Gate({ node, toggle, graph, didDrag, startDrag, setoutputpin, se
 
   
 }
+
 
