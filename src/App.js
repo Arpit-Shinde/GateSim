@@ -45,8 +45,14 @@ function GateCard({ renderFxn, gateType }) {
 function App() {
 
   let [graph, setGraph] = useState(
-    []
+    [
+  
+]
+
   )
+  let [change, setChange] = useState(0)
+
+  let [clock_delays, setClockDelays] = useState([])
   let [opin, setoPin] = useState(null)
 
   const [selectedWire, setSelectedWire] = useState(null);
@@ -73,7 +79,7 @@ function App() {
       if (selectedWire) {
         const newGraph = structuredClone(graph);
 
-        newGraph[selectedWire.to].inputs[selectedWire.inputIndex]=-1;
+        newGraph[selectedWire.to].inputs[selectedWire.inputIndex] = -1;
         evaluate(newGraph)
         evaluate(newGraph)
         evaluate(newGraph)
@@ -135,24 +141,61 @@ function App() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [selectedWire, selectedGate, graph]);
 
+  // 1. Generate ~60 FPS heartbeat
+  useEffect(() => {
+    function tick() {
+      setChange(c => c + 1);
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  }, []);
+
+
+  // 2. Run simulation whenever heartbeat changes
+  useEffect(() => {
+    const now = performance.now();
+
+    for (let i of clock_delays) {
+      if (now >= i.next_delay) {
+        toggle(i.id);
+        i.next_delay += i.delay;
+      }
+    }
+  }, [change]);
+
   function toggle(id) {
-    const newgraph = structuredClone(graph);
-    newgraph[id].value = !graph[id].value
-    
-    evaluate(newgraph)
-    evaluate(newgraph)
-    evaluate(newgraph)
-    
-    setGraph(newgraph)
+    setGraph(prevGraph => {
+      const newgraph = structuredClone(prevGraph);
+      newgraph[id].value = !newgraph[id].value;
+
+      for (let i = 0; i < 100; i++) {
+        evaluate(newgraph);
+      }
+
+      return newgraph;
+    });
   }
 
   function Add(gate) {
-    let newGate;
-    newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 10, y: 30 + graph.length * 10 };
-
     if (!gate) return
+    let newGate;
+
+    if (gate === "CLOCK") {
+      let input = window.prompt("Clock Delay")
+      if (input === null) return
+      let delay = Number(input)
+      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 10, y: 30 + graph.length * 10, delay: delay };
+      let newdelay = { id: graph.length, delay: delay, next_delay: performance.now() + delay }
+      setClockDelays((prev) => [...prev, newdelay])
+
+    }
+    else newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 10, y: 30 + graph.length * 10 };
+
+
 
     setGraph((prev) => [...prev, newGate]);
+    console.log(graph)
   }
 
   function setoutputpin(id) {
@@ -174,13 +217,11 @@ function App() {
 
     if (inputpin != null && outputpin != null) {
       newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputpin.gateId;
-      evaluate(newgraph)
-      evaluate(newgraph)
-      evaluate(newgraph)
+
     }
-    
-    
-    
+
+
+
     setoPin(null);
     setGraph(newgraph)
 
@@ -231,6 +272,15 @@ function App() {
               }
             )
           }
+        </div>
+        <div><button onClick={() => { Add("CLOCK") }}>clock</button></div>
+        <div><button onClick={() => { Add("NAND3") }}>nand3</button></div>
+        <div>
+          <button onClick={() => {
+            console.log(JSON.stringify(graph, null, 2));
+          }}>
+            print
+          </button>
         </div>
         <div className="outputSection">
           {
@@ -310,6 +360,9 @@ function App() {
                 startx = graph[input].x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X
                 starty = graph[input].y + CONSTANTS.TOGGLE_HEIGHT / 2
               }
+              if (node.type === "NAND3" && index===2){
+                endy = node.y + CONSTANTS.GATE_HEIGHT/2
+              }
               // console.log(`Wire key=${node.id} - ${index}`)
               return (<Wire
                 key={`${node.id}-${index}`}
@@ -359,8 +412,8 @@ function App() {
             }
           })()}
 
-          {graph.map(node => (
-            <Gate
+          {graph.map((node) => {
+            return (<Gate
               key={node.id}
               node={node}
               toggle={toggle}
@@ -371,8 +424,9 @@ function App() {
               setinputpin={setinputpin}
               setSelectedGate={setSelectedGate}
               setSelectedWire={setSelectedWire}
-            />
-          ))}
+            />)
+          })}
+
         </svg>
       </div>
     </div>
