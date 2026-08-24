@@ -165,16 +165,15 @@ function App() {
   }, [change]);
 
   function toggle(id) {
-    setGraph(prevGraph => {
-      const newgraph = structuredClone(prevGraph);
-      newgraph[id].value = !newgraph[id].value;
+    let newGraph = structuredClone(graph);
 
-      for (let i = 0; i < 100; i++) {
-        evaluate(newgraph);
-      }
+    newGraph[id].value = !newGraph[id].value;
 
-      return newgraph;
-    });
+    for (let i = 0; i < 10; i++) {
+      evaluate(newGraph);
+    }
+
+    setGraph(newGraph);
   }
 
   function Add(gate) {
@@ -252,6 +251,116 @@ function App() {
     setdraginfo(null);
   }
 
+  function topologicalOrderAndReindex(graph) {
+
+    // Clone graph so the original graph is never mutated
+    let remaining = graph.map(node => ({
+      ...node,
+      inputs: [...node.inputs]
+    }));
+
+    const newGraph = [];
+    const idMap = new Map();
+
+    // --------------------------------------------------
+    // 1. Add source nodes
+    // --------------------------------------------------
+
+    for (let i = remaining.length - 1; i >= 0; i--) {
+      const node = remaining[i];
+
+      if (node.inputs.length === 0) {
+        const oldId = node.id;
+        const newId = newGraph.length;
+
+        idMap.set(oldId, newId);
+
+        node.id = newId;
+        newGraph.push(node);
+
+        remaining.splice(i, 1);
+      }
+    }
+
+    // --------------------------------------------------
+    // 2. Topological ordering
+    // --------------------------------------------------
+
+    let progress = true;
+
+    while (remaining.length > 0 && progress) {
+      progress = false;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const node = remaining[i];
+
+        // -1 means an unconnected input, so it is
+        // NOT a dependency.
+        const allInputsReady = node.inputs.every(inputId =>
+          inputId === -1 || idMap.has(inputId)
+        );
+
+        if (allInputsReady) {
+          const oldId = node.id;
+          const newId = newGraph.length;
+
+          idMap.set(oldId, newId);
+
+          node.id = newId;
+          newGraph.push(node);
+
+          remaining.splice(i, 1);
+
+          progress = true;
+          break;
+        }
+      }
+    }
+
+    // --------------------------------------------------
+    // 3. Remaining nodes are part of cycles
+    // --------------------------------------------------
+    //
+    // They cannot be topologically ordered.
+    // Preserve them, but assign new IDs.
+    //
+
+    for (const node of remaining) {
+      const oldId = node.id;
+      const newId = newGraph.length;
+
+      idMap.set(oldId, newId);
+
+      node.id = newId;
+      newGraph.push(node);
+    }
+
+    // --------------------------------------------------
+    // 4. Remap every input reference
+    // --------------------------------------------------
+
+    for (const node of newGraph) {
+      node.inputs = node.inputs.map(inputId => {
+        if (inputId === -1) {
+          return -1;
+        }
+
+        return idMap.get(inputId);
+      });
+    }
+
+    setGraph(newGraph)
+
+    let new_clock_delays = []
+    for (let node of newGraph){
+      if (node.type === "CLOCK"){
+        new_clock_delays.push({id:node.id, delay:node.delay, next_delay: performance.now() + node.delay})
+      }
+    }
+    setClockDelays(new_clock_delays)
+  }
+
+
   return (
     <div>
       <div className="toolsBar">
@@ -275,6 +384,7 @@ function App() {
         </div>
         <div><button onClick={() => { Add("CLOCK") }}>clock</button></div>
         <div><button onClick={() => { Add("NAND3") }}>nand3</button></div>
+        <div><button onClick={() => { topologicalOrderAndReindex(graph) }}>sort</button></div>
         <div>
           <button onClick={() => {
             console.log(JSON.stringify(graph, null, 2));
@@ -360,8 +470,8 @@ function App() {
                 startx = graph[input].x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X
                 starty = graph[input].y + CONSTANTS.TOGGLE_HEIGHT / 2
               }
-              if (node.type === "NAND3" && index===2){
-                endy = node.y + CONSTANTS.GATE_HEIGHT/2
+              if (node.type === "NAND3" && index === 2) {
+                endy = node.y + CONSTANTS.GATE_HEIGHT / 2
               }
               // console.log(`Wire key=${node.id} - ${index}`)
               return (<Wire
