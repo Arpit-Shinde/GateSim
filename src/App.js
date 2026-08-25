@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import evaluate from "./evaluate"
+import { useState, useEffect, useRef } from "react";
+import { evaluate, topologicalOrderAndReindex } from "./evaluate"
 import { Gate } from "./gate"
 import { Wire, LiveWire } from "./wire"
 import * as CONSTANTS from "./constants";
@@ -44,15 +44,23 @@ function GateCard({ renderFxn, gateType }) {
 
 function App() {
 
-  let [graph, setGraph] = useState(
-    [
+  let [graph, setGraph] = useState([
   
-]
+])
+  let [clock_delays, setClockDelays] = useState([
+])
+  const graphRef = useRef(graph);
+  const clockDelaysRef = useRef(clock_delays);
 
-  )
-  let [change, setChange] = useState(0)
+  useEffect(() => {
+    graphRef.current = graph;
+  }, [graph]);
 
-  let [clock_delays, setClockDelays] = useState([])
+  useEffect(() => {
+    clockDelaysRef.current = clock_delays;
+  }, [clock_delays]);
+
+
   let [opin, setoPin] = useState(null)
 
   const [selectedWire, setSelectedWire] = useState(null);
@@ -76,104 +84,147 @@ function App() {
     function handleKey(e) {
       if (e.key !== "Delete") return;
 
+      const newGraph = structuredClone(graph);
       if (selectedWire) {
-        const newGraph = structuredClone(graph);
 
         newGraph[selectedWire.to].inputs[selectedWire.inputIndex] = -1;
-        evaluate(newGraph)
-        evaluate(newGraph)
-        evaluate(newGraph)
+        for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) evaluate(newGraph);
         setGraph(newGraph);
-        setSelectedWire(null);
+        setSelectedWire(null); // Clear the selected wire
       }
 
       else if (selectedGate) {
-        const newGraph = structuredClone(graph)
-        let deleted = false
 
+        const idToDelete = selectedGate.id;
 
+        // Find the index of the gate to delete
+        let deleteIndex = -1;
         for (let i = 0; i < newGraph.length; i++) {
-          // console.log(`i=${i}`)
-          if (newGraph[i].id === selectedGate.id && !deleted) {
-            newGraph.splice(i, 1)
-            //console.log(`deleted i=${i}`)
-            i -= 1
-            deleted = true
-
-            continue
-          }
-
-          if (newGraph[i].id > selectedGate.id) {
-            //console.log(`decrement i=${i}`)
-            newGraph[i].id -= 1
-
-          }
-          if (newGraph[i].inputs.length === 2) { //we check the case for two inputs first because if any input is to be removed, then the length reduces to 1 and the next if are still applicable. if we put next ifs before this length=2, and if inputs length=2 and they change, then inputs length=1. this time, the (length===2) wont be executed. This will cause infinite recursion.
-            if (newGraph[i].inputs[1] === selectedGate.id) {
-              newGraph[i].inputs[1] = -1
-              //console.log(`removed wire from i=${i}`)
-            }
-            else if (newGraph[i].inputs[1] > selectedGate.id) { //put else if conditions, cuz we are modifying the inputs array
-              //console.log(`decremented wire inside length 2 loop ${newGraph[i].inputs[1]} - ${selectedGate.id}`)
-              newGraph[i].inputs[1] -= 1
-            }
-          }
-          if (newGraph[i].inputs[0] > selectedGate.id) {
-            //console.log(`decremented wire inside length 2 loop ${newGraph[i].inputs[1]} - ${selectedGate.id}`)
-            newGraph[i].inputs[0] -= 1
-          }
-          else if (newGraph[i].inputs[0] === selectedGate.id) {
-            newGraph[i].inputs[0] = -1
-            //console.log(`removed wire ${newGraph[i].inputs[0]} - ${selectedGate.id}`)
+          if (newGraph[i].id === idToDelete) {
+            deleteIndex = i;
+            break;
           }
         }
-        evaluate(newGraph)
-        evaluate(newGraph)
-        evaluate(newGraph)
-        setGraph(newGraph);
-        // console.log(newGraph)
-        setSelectedGate(null)
+
+        if (deleteIndex === -1) return;
+
+        newGraph.splice(deleteIndex, 1);
+
+        // Clear selectedWire if it was connected to the deleted gate
+        if (selectedWire) {
+          // Check if the wire is from or to the deleted gate
+          if (selectedWire.from === idToDelete || selectedWire.to === idToDelete) {
+            setSelectedWire(null);
+          } else {
+            // If the wire's IDs need to be updated
+            const updatedWire = { ...selectedWire };
+            if (updatedWire.from > idToDelete) updatedWire.from -= 1;
+            if (updatedWire.to > idToDelete) updatedWire.to -= 1;
+            setSelectedWire(updatedWire);
+          }
+        }
+
+        // Update IDs and fix connections for all remaining gates
+        for (let i = 0; i < newGraph.length; i++) {
+          const node = newGraph[i];
+
+          // Update ID
+          if (node.id > idToDelete) {
+            node.id -= 1;
+          }
+
+          // Update inputs - handle all positions properly
+          for (let j = 0; j < node.inputs.length; j++) {
+            const input = node.inputs[j];
+
+            if (input === idToDelete) {
+              // This input was connected to the deleted gate
+              node.inputs[j] = -1;
+            } else if (input > idToDelete) {
+              // This input referenced a gate with higher ID, shift it down
+              node.inputs[j] = input - 1;
+            }
+            // If input < idToDelete, it stays the same
+          }
+        }
+
+
+
       }
+      let [newGraph2, new_clock_delays] = topologicalOrderAndReindex(newGraph)
+
+      // Evaluate the circuit
+      for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) evaluate(newGraph2);
+
+      setGraph(newGraph2)
+      setClockDelays(new_clock_delays)
+      // Clear selected gate
+      setSelectedGate(null);
     }
 
     window.addEventListener("keydown", handleKey);
-
     return () => window.removeEventListener("keydown", handleKey);
-  }, [selectedWire, selectedGate, graph]);
+  }, [selectedWire, selectedGate]);
 
-  // 1. Generate ~60 FPS heartbeat
   useEffect(() => {
-    function tick() {
-      setChange(c => c + 1);
-      requestAnimationFrame(tick);
-    }
+    const intervalId = setInterval(() => {
+      const now = performance.now();
 
-    requestAnimationFrame(tick);
-  }, []);
+      const graph = graphRef.current;
+      const clocks = clockDelaysRef.current;
 
+      let changed = false;
+      const newGraph = structuredClone(graph);
 
-  // 2. Run simulation whenever heartbeat changes
-  useEffect(() => {
-    const now = performance.now();
+      const newClockDelays = clocks.map(clock => {
+        if (now >= clock.next_delay) {
+          newGraph[clock.id].value =
+            !newGraph[clock.id].value;
 
-    for (let i of clock_delays) {
-      if (now >= i.next_delay) {
-        toggle(i.id);
-        i.next_delay += i.delay;
+          changed = true;
+
+          return {
+            ...clock,
+            next_delay: clock.next_delay + clock.delay
+          };
+        }
+
+        return clock;
+      });
+
+      if (changed) {
+        for (
+          let i = 0;
+          i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
+          i++
+        ) {
+          evaluate(newGraph);
+        }
+
+        graphRef.current = newGraph;
+        clockDelaysRef.current = newClockDelays;
+
+        setGraph(newGraph);
+        setClockDelays(newClockDelays);
       }
-    }
-  }, [change]);
+    }, CONSTANTS.MIN_FRAME_TIME);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   function toggle(id) {
     let newGraph = structuredClone(graph);
 
     newGraph[id].value = !newGraph[id].value;
 
-    for (let i = 0; i < 10; i++) {
+
+
+    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
       evaluate(newGraph);
     }
 
     setGraph(newGraph);
+
   }
 
   function Add(gate) {
@@ -181,9 +232,13 @@ function App() {
     let newGate;
 
     if (gate === "CLOCK") {
-      let input = window.prompt("Clock Delay")
+      let input = window.prompt(`Clock Delay (minimum:${CONSTANTS.MIN_FRAME_TIME})`)
       if (input === null) return
       let delay = Number(input)
+      if (delay<50){
+        alert(`Delay entered less than ${CONSTANTS.MIN_FRAME_TIME}`);
+        return;
+      }
       newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 10, y: 30 + graph.length * 10, delay: delay };
       let newdelay = { id: graph.length, delay: delay, next_delay: performance.now() + delay }
       setClockDelays((prev) => [...prev, newdelay])
@@ -192,8 +247,12 @@ function App() {
     else newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 10, y: 30 + graph.length * 10 };
 
 
-
-    setGraph((prev) => [...prev, newGate]);
+    let [newGraph, new_clock_delays] = topologicalOrderAndReindex([...graph, newGate])
+    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+      evaluate(newGraph);
+    }
+    setGraph(newGraph);
+    setClockDelays(new_clock_delays)
     console.log(graph)
   }
 
@@ -218,6 +277,8 @@ function App() {
       newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputpin.gateId;
 
     }
+
+    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) evaluate(newgraph)
 
 
 
@@ -251,114 +312,14 @@ function App() {
     setdraginfo(null);
   }
 
-  function topologicalOrderAndReindex(graph) {
-
-    // Clone graph so the original graph is never mutated
-    let remaining = graph.map(node => ({
-      ...node,
-      inputs: [...node.inputs]
-    }));
-
-    const newGraph = [];
-    const idMap = new Map();
-
-    // --------------------------------------------------
-    // 1. Add source nodes
-    // --------------------------------------------------
-
-    for (let i = remaining.length - 1; i >= 0; i--) {
-      const node = remaining[i];
-
-      if (node.inputs.length === 0) {
-        const oldId = node.id;
-        const newId = newGraph.length;
-
-        idMap.set(oldId, newId);
-
-        node.id = newId;
-        newGraph.push(node);
-
-        remaining.splice(i, 1);
-      }
-    }
-
-    // --------------------------------------------------
-    // 2. Topological ordering
-    // --------------------------------------------------
-
-    let progress = true;
-
-    while (remaining.length > 0 && progress) {
-      progress = false;
-
-      for (let i = 0; i < remaining.length; i++) {
-        const node = remaining[i];
-
-        // -1 means an unconnected input, so it is
-        // NOT a dependency.
-        const allInputsReady = node.inputs.every(inputId =>
-          inputId === -1 || idMap.has(inputId)
-        );
-
-        if (allInputsReady) {
-          const oldId = node.id;
-          const newId = newGraph.length;
-
-          idMap.set(oldId, newId);
-
-          node.id = newId;
-          newGraph.push(node);
-
-          remaining.splice(i, 1);
-
-          progress = true;
-          break;
-        }
-      }
-    }
-
-    // --------------------------------------------------
-    // 3. Remaining nodes are part of cycles
-    // --------------------------------------------------
-    //
-    // They cannot be topologically ordered.
-    // Preserve them, but assign new IDs.
-    //
-
-    for (const node of remaining) {
-      const oldId = node.id;
-      const newId = newGraph.length;
-
-      idMap.set(oldId, newId);
-
-      node.id = newId;
-      newGraph.push(node);
-    }
-
-    // --------------------------------------------------
-    // 4. Remap every input reference
-    // --------------------------------------------------
-
-    for (const node of newGraph) {
-      node.inputs = node.inputs.map(inputId => {
-        if (inputId === -1) {
-          return -1;
-        }
-
-        return idMap.get(inputId);
-      });
-    }
-
+  function sortgraph(graph) {
+    let [newGraph, new_clock_delays] = topologicalOrderAndReindex(graph)
     setGraph(newGraph)
-
-    let new_clock_delays = []
-    for (let node of newGraph){
-      if (node.type === "CLOCK"){
-        new_clock_delays.push({id:node.id, delay:node.delay, next_delay: performance.now() + node.delay})
-      }
-    }
     setClockDelays(new_clock_delays)
   }
+  
+
+
 
 
   return (
@@ -384,10 +345,11 @@ function App() {
         </div>
         <div><button onClick={() => { Add("CLOCK") }}>clock</button></div>
         <div><button onClick={() => { Add("NAND3") }}>nand3</button></div>
-        <div><button onClick={() => { topologicalOrderAndReindex(graph) }}>sort</button></div>
+        <div><button onClick={() => { sortgraph(graph) }}>sort</button></div>
         <div>
           <button onClick={() => {
             console.log(JSON.stringify(graph, null, 2));
+            console.log(JSON.stringify(clock_delays, null, 2));
           }}>
             print
           </button>

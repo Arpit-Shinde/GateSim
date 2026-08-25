@@ -31,6 +31,9 @@ export const TOGGLE_CAPSULE_RADIUS = 10
 export const WIRE_COLOR = "#000000"
 export const WIRE_STROKE_WIDTH = 3
 
+export const MAX_EVALUATION_ITERATIONS = 10;
+export const MIN_FRAME_TIME = 50;
+
 
 
 
