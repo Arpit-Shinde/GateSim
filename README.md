@@ -17,6 +17,9 @@ Link to deployed website : https://arpit-shinde.github.io/GateSim/
 - gate deletion
 - Better SVG for gates
 - UI including menu, options,etc
+- Sequential Circuits
+- Clock support
+- Flip-flops
 - Supports:
   - AND
   - OR
@@ -31,10 +34,4 @@ Link to deployed website : https://arpit-shinde.github.io/GateSim/
 
 
 - Save/Load circuits
-- Sequential Circuits
-- Clock support
-- Flip-flops
-- Propagation delay simulation
 
-## To be looked
-- Handle one input case for two input gates as invalid state rather than false state
