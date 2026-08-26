@@ -8,18 +8,16 @@ Link to deployed website : https://arpit-shinde.github.io/GateSim/
 
 - Dynamic gate creation
 - Dynamic gate connections
-- Recursive graph evaluation
-- Live simulation
 - Click to Connect 
-- Wire drawing (beizer curve)
 - Drag-and-drop gate placement
 - wire deletion
 - gate deletion
 - Better SVG for gates
-- UI including menu, options,etc
+- Simple UI
 - Sequential Circuits
-- Clock support
+- Clocks
 - Flip-flops
+- Infinite canvas with pan and zoom
 - Supports:
   - AND
   - OR
@@ -28,10 +26,12 @@ Link to deployed website : https://arpit-shinde.github.io/GateSim/
   - NAND
   - NOR
   - XNOR
+  (upto three inputs)
 
 ## Planned to do
-
-
-
 - Save/Load circuits
+- Component Creation
 
+## Limitations
+- Not based on propogation delay. So circuits like ring oscillator won't work
+- Doesn't handle race condition in level triggered flip flops. Instead use master slave flip flops

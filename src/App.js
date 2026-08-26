@@ -6,7 +6,8 @@ import * as CONSTANTS from "./constants";
 import * as RENDER_GATES from "./gates_svg"
 
 const inputGateRenderList = [
-  { type: 'INPUT', render: RENDER_GATES.RenderINPUT }
+  { type: 'INPUT', render: RENDER_GATES.RenderINPUT },
+  { type: 'CLOCK', render: RENDER_GATES.RenderCLOCK }
 ];
 
 const logicGateRenderList = [
@@ -17,6 +18,12 @@ const logicGateRenderList = [
   { type: 'NOR', render: RENDER_GATES.RenderNOR },
   { type: 'XOR', render: RENDER_GATES.RenderXOR },
   { type: 'XNOR', render: RENDER_GATES.RenderXNOR },
+  { type: 'AND3', render: RENDER_GATES.RenderAND3 },
+  { type: 'OR3', render: RENDER_GATES.RenderOR3 },
+  { type: 'NOR3', render: RENDER_GATES.RenderNOR3 },
+  { type: 'XOR3', render: RENDER_GATES.RenderXOR3 },
+  { type: 'XNOR3', render: RENDER_GATES.RenderXNOR3 },
+  { type: 'NAND3', render: RENDER_GATES.RenderNAND3 }
 
 ];
 
@@ -44,13 +51,19 @@ function GateCard({ renderFxn, gateType }) {
 
 function App() {
 
-  let [graph, setGraph] = useState([
-  
-])
+  let [graph, setGraph] = useState([])
   let [clock_delays, setClockDelays] = useState([
-])
-  const graphRef = useRef(graph);
-  const clockDelaysRef = useRef(clock_delays);
+  ])
+  let [view, setView] = useState({
+    x: 0,
+    y: 0,
+    width: 1500,
+    height: 1200
+  })
+  let [pan, setPan] = useState(null)
+  let svgRef = useRef(null)
+  const graphRef = useRef(graph)
+  const clockDelaysRef = useRef(clock_delays)
 
   useEffect(() => {
     graphRef.current = graph;
@@ -71,13 +84,39 @@ function App() {
   const [mouse, setMouse] = useState(null)
 
   function startDrag(e, id) {
+    if (e.button === 1) return;
+
+    const point = getSVGPoint(e);
+
     setdraginfo({
       gateId: id,
-      offsetX: e.clientX - graph[id].x,
-      offsetY: e.clientY - graph[id].y
+      offsetX: point.x - graph[id].x,
+      offsetY: point.y - graph[id].y
     });
 
     setDidDrag(false);
+  }
+
+  function zoom(e) {
+    e.preventDefault();
+
+    const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
+
+    const rect = svgRef.current.getBoundingClientRect();
+
+    // Mouse position in SVG/world coordinates
+    const mouseX =
+      view.x + ((e.clientX - rect.left) / rect.width) * view.width;
+
+    const mouseY =
+      view.y + ((e.clientY - rect.top) / rect.height) * view.height;
+
+    setView(prev => ({
+      x: mouseX - (mouseX - prev.x) * zoomFactor,
+      y: mouseY - (mouseY - prev.y) * zoomFactor,
+      width: prev.width * zoomFactor,
+      height: prev.height * zoomFactor
+    }));
   }
 
   useEffect(() => { //for deletion
@@ -168,6 +207,7 @@ function App() {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
+      if (document.hidden) return; //if user switches to another website, clocks wont tick very fast to catch up performance.now() when user opens again the sim
       const now = performance.now();
 
       const graph = graphRef.current;
@@ -235,16 +275,16 @@ function App() {
       let input = window.prompt(`Clock Delay (minimum:${CONSTANTS.MIN_FRAME_TIME})`)
       if (input === null) return
       let delay = Number(input)
-      if (delay<50){
+      if (delay < 50) {
         alert(`Delay entered less than ${CONSTANTS.MIN_FRAME_TIME}`);
         return;
       }
-      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 10, y: 30 + graph.length * 10, delay: delay };
+      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: view.x + view.width/2, y: view.y + view.height/2, delay: delay };
       let newdelay = { id: graph.length, delay: delay, next_delay: performance.now() + delay }
       setClockDelays((prev) => [...prev, newdelay])
 
     }
-    else newGate = { type: gate, id: graph.length, value: false, inputs: [], x: 30 + graph.length * 10, y: 30 + graph.length * 10 };
+    else newGate = { type: gate, id: graph.length, value: false, inputs: [], x: view.x + view.width/2, y: view.y + view.height/2 };
 
 
     let [newGraph, new_clock_delays] = topologicalOrderAndReindex([...graph, newGate])
@@ -271,20 +311,24 @@ function App() {
 
   function Connect(inputpin, outputpin) {
 
-    let newgraph = structuredClone(graph)
+    let newgraph = structuredClone(graph);
 
     if (inputpin != null && outputpin != null) {
       newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputpin.gateId;
-
     }
 
-    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) evaluate(newgraph)
+    // Sort + reindex first
+    let [sortedGraph, new_clock_delays] =
+      topologicalOrderAndReindex(newgraph);
 
-
+    // Then evaluate
+    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+      evaluate(sortedGraph);
+    }
 
     setoPin(null);
-    setGraph(newgraph)
-
+    setGraph(sortedGraph);
+    setClockDelays(new_clock_delays);
   }
 
   function selectWire(wire) {
@@ -293,23 +337,72 @@ function App() {
   }
 
   function drag(e) {
-    if (draginfo) {
+
+    if (pan) {
+      const rect = svgRef.current.getBoundingClientRect();
+
+      const dx = (e.clientX - pan.startX) / rect.width * view.width;
+      const dy = (e.clientY - pan.startY) / rect.height * view.height;
+
+      setView(prev => ({
+        ...prev,
+        x: pan.viewX - dx,
+        y: pan.viewY - dy
+      }));
+    }
+    else if (draginfo) {
 
       setDidDrag(true);
 
+      const point = getSVGPoint(e);
+
       const newGraph = structuredClone(graph);
-      newGraph[draginfo.gateId].x = e.clientX - draginfo.offsetX;
-      newGraph[draginfo.gateId].y = e.clientY - draginfo.offsetY;
+
+      newGraph[draginfo.gateId].x =
+        point.x - draginfo.offsetX;
+
+      newGraph[draginfo.gateId].y =
+        point.y - draginfo.offsetY;
+
       setGraph(newGraph);
     }
 
     else if (opin) {
-      setMouse({ x: e.clientX - CONSTANTS.CANVAS_START.x, y: e.clientY - CONSTANTS.CANVAS_START.y })
+      const point = getSVGPoint(e);
+
+      setMouse({
+        x: point.x,
+        y: point.y
+      });
+    }
+
+
+  }
+
+  function cancelWire(e) {
+    if (e.button === 2 && opin) {
+      e.preventDefault();
+      setoPin(null);
+      setMouse(null);
     }
   }
 
   function stopDrag() {
     setdraginfo(null);
+    setPan(null);
+  }
+
+  function startPan(e) {
+    if (e.button !== 1) return;
+
+    e.preventDefault();
+
+    setPan({
+      startX: e.clientX,
+      startY: e.clientY,
+      viewX: view.x,
+      viewY: view.y
+    });
   }
 
   function sortgraph(graph) {
@@ -317,13 +410,22 @@ function App() {
     setGraph(newGraph)
     setClockDelays(new_clock_delays)
   }
-  
+
+function getSVGPoint(e) {
+  const rect = svgRef.current.getBoundingClientRect();
+
+  return {
+    x: view.x + ((e.clientX - rect.left) / rect.width) * view.width,
+    y: view.y + ((e.clientY - rect.top) / rect.height) * view.height
+  };
+}
+
 
 
 
 
   return (
-    <div>
+    <div className="homepage">
       <div className="toolsBar">
         <div className="inputSection">
           {
@@ -343,17 +445,8 @@ function App() {
             )
           }
         </div>
-        <div><button onClick={() => { Add("CLOCK") }}>clock</button></div>
-        <div><button onClick={() => { Add("NAND3") }}>nand3</button></div>
-        <div><button onClick={() => { sortgraph(graph) }}>sort</button></div>
-        <div>
-          <button onClick={() => {
-            console.log(JSON.stringify(graph, null, 2));
-            console.log(JSON.stringify(clock_delays, null, 2));
-          }}>
-            print
-          </button>
-        </div>
+        {/* <div><button onClick={() => { sortgraph(graph) }}>sort</button></div> */}
+        
         <div className="outputSection">
           {
             outputGateRenderList.map(
@@ -390,21 +483,32 @@ function App() {
             )
           }
         </div>
+        <div>
+          <button onClick={() => {
+            console.log(JSON.stringify(graph, null, 2));
+            console.log(JSON.stringify(clock_delays, null, 2));
+          }}>
+            print
+          </button>
+        </div>
 
       </div>
-      <div>
+      <div className="canvas">
         <svg
-          width="4000"
-          height="3000"
+          width="100%"
+          height="100%"
+          ref={svgRef}
+          viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
           style={{
-            position: "absolute",
-
-            top: CONSTANTS.CANVAS_START.y,
-            left: CONSTANTS.CANVAS_START.x,
-            backgroundColor: CONSTANTS.CANVAS_BACKGROUND
+            backgroundColor: CONSTANTS.CANVAS_BACKGROUND,
+            border: '2px solid #4a5568',
+            boxSizing: 'border-box'
           }}
+          onMouseDown={startPan}
           onMouseMove={drag}
           onMouseUp={stopDrag}
+          onWheel={zoom}
+          onContextMenu={cancelWire}
         >
 
           {graph.map(node =>
@@ -432,7 +536,7 @@ function App() {
                 startx = graph[input].x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X
                 starty = graph[input].y + CONSTANTS.TOGGLE_HEIGHT / 2
               }
-              if (node.type === "NAND3" && index === 2) {
+              if ((node.type === "NAND3" || node.type === "AND3" || node.type === "OR3" || node.type === "NOR3" || node.type === "XOR3" || node.type === "XNOR3") && index === 1) {
                 endy = node.y + CONSTANTS.GATE_HEIGHT / 2
               }
               // console.log(`Wire key=${node.id} - ${index}`)

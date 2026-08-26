@@ -150,7 +150,46 @@ code {
   display: block;
 }
 
+.homepage {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.toolsBar {
+    width: 180px;
+    height: 100%;
+    flex-shrink: 0;
+    overflow-y: auto; /* ← THIS ENABLES SCROLLING! */
+}
+
+.canvas {
+    height: 1200px;
+    width:1500px;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
 
 
+
+/* Custom scrollbar styling (optional) */
+.toolsBar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.toolsBar::-webkit-scrollbar-track {
+    background: #2d3748;
+}
+
+.toolsBar::-webkit-scrollbar-thumb {
+    background: #4a5568;
+    border-radius: 3px;
+}
+
+.toolsBar::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+}
 
 

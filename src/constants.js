@@ -41,5 +41,5 @@ export const MIN_FRAME_TIME = 50;
 export const GATE_TYPES = ["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR", "BULB"]
 
 export const CANVAS_START = {x:150,y:10}
-export const CANVAS_BACKGROUND="#efeded"
+export const CANVAS_BACKGROUND="#e5e5e5"
 export const GATE_CARD_BACKGROUND = "#c4c4c4"
