@@ -18,6 +18,8 @@ Link to deployed website : https://arpit-shinde.github.io/GateSim/
 - Clocks
 - Flip-flops
 - Infinite canvas with pan and zoom
+- Save/Load circuits
+- Mini utilites like reset view, clear circuit, undo,redo,etc
 - Supports:
   - AND
   - OR
@@ -29,7 +31,7 @@ Link to deployed website : https://arpit-shinde.github.io/GateSim/
   (upto three inputs)
 
 ## Planned to do
-- Save/Load circuits
+
 - Component Creation
 
 ## Limitations

@@ -152,24 +152,51 @@ code {
 
 .homepage {
     display: flex;
+    flex-direction: column;
     width: 100vw;
     height: 100vh;
     overflow: hidden;
+    background: #ffffff;
 }
 
-.toolsBar {
-    width: 180px;
-    height: 100%;
+/* Utilities bar - top horizontal */
+.utilites {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 16px;
+    background: #dedede;
+    border-bottom: 2px solid #4a5568;
     flex-shrink: 0;
-    overflow-y: auto; /* ← THIS ENABLES SCROLLING! */
+    flex-wrap: wrap;
+    min-height: 50px;
 }
 
+/* Container for tools + canvas (side by side) */
+.tools-and-canvas {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Canvas - right side, takes remaining space */
 .canvas {
     height: 1200px;
     width:1500px;
     overflow: hidden;
     flex-shrink: 0;
     box-sizing: border-box;
+}
+.toolsBar {
+    min-width: 180px;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+
+
+    flex-shrink: 0;
+
 }
 
 
@@ -199,5 +226,10 @@ code {
 
 .wire.selected-wire {
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 1));
+}
+
+.utilities{
+  display: flex;
+  flex-direction: column;
 }
 
