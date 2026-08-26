@@ -1,0 +1,104 @@
+{
+  "graph": [
+    {
+      "type": "INPUT",
+      "id": 0,
+      "value": true,
+      "inputs": [],
+      "x": 411,
+      "y": 695.0000000000001
+    },
+    {
+      "type": "INPUT",
+      "id": 1,
+      "value": true,
+      "inputs": [],
+      "x": 410,
+      "y": 391
+    },
+    {
+      "type": "INPUT",
+      "id": 2,
+      "value": true,
+      "inputs": [],
+      "x": 409.0000000000001,
+      "y": 455
+    },
+    {
+      "type": "XOR",
+      "id": 3,
+      "value": false,
+      "inputs": [
+        1,
+        2
+      ],
+      "x": 588,
+      "y": 408.00000000000006
+    },
+    {
+      "type": "AND",
+      "id": 4,
+      "value": false,
+      "inputs": [
+        3,
+        0
+      ],
+      "x": 889,
+      "y": 599
+    },
+    {
+      "type": "AND",
+      "id": 5,
+      "value": true,
+      "inputs": [
+        1,
+        2
+      ],
+      "x": 690,
+      "y": 592
+    },
+    {
+      "type": "OR",
+      "id": 6,
+      "value": true,
+      "inputs": [
+        4,
+        5
+      ],
+      "x": 1101,
+      "y": 601
+    },
+    {
+      "type": "BULB",
+      "id": 7,
+      "value": true,
+      "inputs": [
+        6
+      ],
+      "x": 1229,
+      "y": 589
+    },
+    {
+      "type": "XOR",
+      "id": 8,
+      "value": true,
+      "inputs": [
+        3,
+        0
+      ],
+      "x": 780.0000000000001,
+      "y": 409
+    },
+    {
+      "type": "BULB",
+      "id": 9,
+      "value": true,
+      "inputs": [
+        8
+      ],
+      "x": 1204,
+      "y": 393
+    }
+  ],
+  "clock_delays": []
+}

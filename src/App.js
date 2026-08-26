@@ -705,14 +705,14 @@ function App() {
               )
             }
           </div>
-          <div>
+          {/* <div>
             <button onClick={() => {
               console.log(JSON.stringify(graph, null, 2));
               console.log(JSON.stringify(clock_delays, null, 2));
             }}>
               print
             </button>
-          </div>
+          </div> */}
 
         </div>
         <div className="canvas">
