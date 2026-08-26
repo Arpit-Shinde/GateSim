@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/GateSim/static/css/main.5888f2a4.css",
-    "main.js": "/GateSim/static/js/main.d8d8c7e2.js",
+    "main.css": "/GateSim/static/css/main.4bd8868d.css",
+    "main.js": "/GateSim/static/js/main.83590a31.js",
     "static/js/453.2d2ddec2.chunk.js": "/GateSim/static/js/453.2d2ddec2.chunk.js",
     "index.html": "/GateSim/index.html",
-    "main.5888f2a4.css.map": "/GateSim/static/css/main.5888f2a4.css.map",
-    "main.d8d8c7e2.js.map": "/GateSim/static/js/main.d8d8c7e2.js.map",
+    "main.4bd8868d.css.map": "/GateSim/static/css/main.4bd8868d.css.map",
+    "main.83590a31.js.map": "/GateSim/static/js/main.83590a31.js.map",
     "453.2d2ddec2.chunk.js.map": "/GateSim/static/js/453.2d2ddec2.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.5888f2a4.css",
-    "static/js/main.d8d8c7e2.js"
+    "static/css/main.4bd8868d.css",
+    "static/js/main.83590a31.js"
   ]
 }
