@@ -192,4 +192,12 @@ code {
     background: #718096;
 }
 
+.actual-gate.selected-gate {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+  
+}
+
+.wire.selected-wire {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 1));
+}
 

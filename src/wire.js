@@ -1,4 +1,4 @@
-export function Wire({ start, end, from, to, inputIndex, onClick }) {
+export function Wire({ start, end, from, to, inputIndex, onClick,isSelected }) {
   const dx = end[0] - start[0];
 
   const controlOffset = Math.abs(dx) * 0.5;
@@ -18,6 +18,7 @@ export function Wire({ start, end, from, to, inputIndex, onClick }) {
       strokeWidth="3"
       onClick={() => { onClick({ from, to, inputIndex }) }}
       style={{ pointerEvents: "stroke" }}
+      className={`wire ${isSelected ? 'selected-wire' : ''}`}
     />
   );
 }

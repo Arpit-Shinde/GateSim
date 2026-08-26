@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { evaluate, topologicalOrderAndReindex } from "./evaluate"
 import { Gate } from "./gate"
 import { Wire, LiveWire } from "./wire"
+import { showTutorial } from "./utilities";
 import * as CONSTANTS from "./constants";
 import * as RENDER_GATES from "./gates_svg"
 
@@ -279,12 +280,12 @@ function App() {
         alert(`Delay entered less than ${CONSTANTS.MIN_FRAME_TIME}`);
         return;
       }
-      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: view.x + view.width/2, y: view.y + view.height/2, delay: delay };
+      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: view.x + view.width / 2, y: view.y + view.height / 2, delay: delay };
       let newdelay = { id: graph.length, delay: delay, next_delay: performance.now() + delay }
       setClockDelays((prev) => [...prev, newdelay])
 
     }
-    else newGate = { type: gate, id: graph.length, value: false, inputs: [], x: view.x + view.width/2, y: view.y + view.height/2 };
+    else newGate = { type: gate, id: graph.length, value: false, inputs: [], x: view.x + view.width / 2, y: view.y + view.height / 2 };
 
 
     let [newGraph, new_clock_delays] = topologicalOrderAndReindex([...graph, newGate])
@@ -327,6 +328,8 @@ function App() {
     }
 
     setoPin(null);
+    setSelectedGate(null);
+    setSelectedWire(null);
     setGraph(sortedGraph);
     setClockDelays(new_clock_delays);
   }
@@ -411,14 +414,14 @@ function App() {
     setClockDelays(new_clock_delays)
   }
 
-function getSVGPoint(e) {
-  const rect = svgRef.current.getBoundingClientRect();
+  function getSVGPoint(e) {
+    const rect = svgRef.current.getBoundingClientRect();
 
-  return {
-    x: view.x + ((e.clientX - rect.left) / rect.width) * view.width,
-    y: view.y + ((e.clientY - rect.top) / rect.height) * view.height
-  };
-}
+    return {
+      x: view.x + ((e.clientX - rect.left) / rect.width) * view.width,
+      y: view.y + ((e.clientY - rect.top) / rect.height) * view.height
+    };
+  }
 
 
 
@@ -427,6 +430,20 @@ function getSVGPoint(e) {
   return (
     <div className="homepage">
       <div className="toolsBar">
+
+        <button onClick={showTutorial} style={{
+          background: '#adadad',
+          color: 'black',
+          border: 'none',
+          borderRadius: '12px',
+          padding: '8px 16px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          marginTop: '8px',
+          width: '100%'
+        }}>
+          TUTORIAL
+        </button>
         <div className="inputSection">
           {
             inputGateRenderList.map(
@@ -446,7 +463,7 @@ function getSVGPoint(e) {
           }
         </div>
         {/* <div><button onClick={() => { sortgraph(graph) }}>sort</button></div> */}
-        
+
         <div className="outputSection">
           {
             outputGateRenderList.map(
@@ -555,6 +572,11 @@ function getSVGPoint(e) {
                 style={{ pointerEvents: "stroke" }}
                 inputIndex={index}
                 onClick={selectWire}
+                isSelected={
+                  selectedWire?.from === input &&
+                  selectedWire?.to === node.id &&
+                  selectedWire?.inputIndex === index
+                }
               />)
             })
           )}
@@ -600,6 +622,7 @@ function getSVGPoint(e) {
               setinputpin={setinputpin}
               setSelectedGate={setSelectedGate}
               setSelectedWire={setSelectedWire}
+              isSelected={selectedGate?.id === node.id}
             />)
           })}
 

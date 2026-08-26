@@ -1,4 +1,3 @@
-import evaluate from "./evaluate"
 import * as CONSTANTS from "./constants";
 
 const r = CONSTANTS.GATE_HEIGHT / 2;
@@ -31,25 +30,11 @@ export const nand_path = `
 
 export const or_path = `
   M 0 0
-  
   H ${CONSTANTS.GATE_WIDTH * 0.4}
-  
-  C 
-    ${CONSTANTS.GATE_WIDTH * 0.8} 0,
-    ${CONSTANTS.GATE_WIDTH} ${CONSTANTS.GATE_HEIGHT * 0.2},
-    ${CONSTANTS.GATE_WIDTH} ${CONSTANTS.GATE_HEIGHT * 0.5}
-  
-  C 
-    ${CONSTANTS.GATE_WIDTH} ${CONSTANTS.GATE_HEIGHT * 0.8},
-    ${CONSTANTS.GATE_WIDTH * 0.8} ${CONSTANTS.GATE_HEIGHT},
-    ${CONSTANTS.GATE_WIDTH * 0.4} ${CONSTANTS.GATE_HEIGHT}
-  
+  C ${CONSTANTS.GATE_WIDTH * 0.8} 0, ${CONSTANTS.GATE_WIDTH} ${CONSTANTS.GATE_HEIGHT * 0.2}, ${CONSTANTS.GATE_WIDTH} ${CONSTANTS.GATE_HEIGHT * 0.5}
+  C ${CONSTANTS.GATE_WIDTH} ${CONSTANTS.GATE_HEIGHT * 0.8}, ${CONSTANTS.GATE_WIDTH * 0.8} ${CONSTANTS.GATE_HEIGHT}, ${CONSTANTS.GATE_WIDTH * 0.4} ${CONSTANTS.GATE_HEIGHT}
   H 0
-  
-  Q 
-    ${CONSTANTS.GATE_WIDTH * 0.3} ${CONSTANTS.GATE_HEIGHT * 0.5},
-    0 0
-    
+  Q ${CONSTANTS.GATE_WIDTH * 0.3} ${CONSTANTS.GATE_HEIGHT * 0.5}, 0 0
   Z
 `;
 
@@ -65,20 +50,20 @@ export const xor_extra_curve_path = `
   Q ${CONSTANTS.GATE_WIDTH * 0.17} ${CONSTANTS.GATE_HEIGHT * 0.5}, ${CONSTANTS.GATE_WIDTH * -0.08} ${CONSTANTS.GATE_HEIGHT}
 `;
 
+export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputpin, setSelectedGate, setSelectedWire, isSelected }) {
 
-export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputpin, setSelectedGate, setSelectedWire }) {
+  const gateClass = `actual-gate ${isSelected ? 'selected-gate' : ''}`;
 
   if (node.type === "INPUT") {
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
+        className={gateClass}
         onClick={() => {
           setSelectedGate({ id: node.id })
           setSelectedWire(null)
           return true
-        }
-        }
+        }}
       >
         <line
           x1={CONSTANTS.TOGGLE_WIDTH}
@@ -95,9 +80,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
           onMouseDown={(e) => startDrag(e, node.id)}
-
-        >
-        </rect>
+        />
 
         <rect
           x={CONSTANTS.TOGGLE_WIDTH / 4}
@@ -109,8 +92,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
           rx={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
           ry={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
-        >
-        </rect>
+        />
 
         <circle
           cx={node.value ? 3 * CONSTANTS.TOGGLE_WIDTH / 4 - CONSTANTS.TOGGLE_CAPSULE_RADIUS : CONSTANTS.TOGGLE_WIDTH / 4 + CONSTANTS.TOGGLE_CAPSULE_RADIUS}
@@ -141,19 +123,16 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "BULB") {
     return (
-      <g transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate">
-
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={CONSTANTS.BULB_PIN_X}
           y1={CONSTANTS.BULB_PIN_Y}
           x2={CONSTANTS.BULB_PIN_X}
-          y2={CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH} // Length of the pin wire
+          y2={CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
 
-        {/* Tiny Bulb shape pointing up */}
         <path
           d={bulb_path}
           fill={node.value ? CONSTANTS.BULB_ON_COLOR : CONSTANTS.GATE_FILL_COLOR}
@@ -167,9 +146,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           }}
         />
 
-
-
-        {/* Input pin at the very bottom of the wire */}
         <circle
           className="pin"
           onClick={() => { setinputpin(node.id, 0) }}
@@ -186,10 +162,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "AND") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -224,11 +197,8 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             setSelectedGate({ id: node.id })
             setSelectedWire(null)
             return true
-          }
-          }
+          }}
         />
-
-
         <circle
           className="pin"
           onClick={() => setinputpin(node.id, 0)}
@@ -265,10 +235,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "OR") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -303,11 +270,8 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             setSelectedGate({ id: node.id })
             setSelectedWire(null)
             return true
-          }
-          }
+          }}
         />
-
-
         <circle
           className="pin"
           onClick={() => setinputpin(node.id, 0)}
@@ -344,10 +308,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "NAND") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -428,10 +389,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "NOR") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -512,10 +470,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "XOR") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -595,10 +550,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "XNOR") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -623,8 +575,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Main Filled Gate Body */}
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -637,8 +587,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             return true
           }}
         />
-
-        {/* Extra XNOR Curve (Stroke only, no fill!) */}
         <path
           d={xor_extra_curve_path}
           fill="none"
@@ -646,8 +594,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
           pointerEvents="none"
         />
-
-        {/* Inversion Bubble */}
         <circle
           cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
           cy={CONSTANTS.OUTPUT_PIN_Y}
@@ -656,7 +602,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
         <circle
           className="pin"
           onClick={() => setinputpin(node.id, 0)}
@@ -692,70 +637,82 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   }
 
   else if (node.type === "NOT") {
-    return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <path
-          d={not_path}
-          fill={CONSTANTS.GATE_FILL_COLOR}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-          onMouseDown={(e) => startDrag(e, node.id)}
-          onClick={() => {
-            setSelectedGate({ id: node.id })
-            setSelectedWire(null)
-            return true
-          }}
-        />
-
-        <circle
-          className="pin"
-          onClick={() => setinputpin(node.id, 0)}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y}
-          r={CONSTANTS.PIN_RADIUS}
-          fill={CONSTANTS.GATE_FILL_COLOR}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <circle
-          className="pin"
-          onClick={() => { setoutputpin(node.id) }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.OUTPUT_PIN_Y}
-          r={CONSTANTS.PIN_RADIUS}
-          fill={CONSTANTS.GATE_FILL_COLOR}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-      </g>
-    )
-  }
+  return (
+    <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
+      {/* Input wire stub */}
+      <line
+        x1={10}
+        y1={CONSTANTS.INPUT_PIN_Y}
+        x2={CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.INPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      
+      {/* Output wire stub - goes from bubble to pin */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS * 2}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2 }
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      
+      {/* NOT triangle */}
+      <path
+        d={not_path}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        onMouseDown={(e) => startDrag(e, node.id)}
+        onClick={() => {
+          setSelectedGate({ id: node.id })
+          setSelectedWire(null)
+          return true
+        }}
+      />
+      
+      {/* Inversion Bubble at output */}
+      <circle
+        cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
+        cy={CONSTANTS.OUTPUT_PIN_Y}
+        r={CONSTANTS.NAND_PIN_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      
+      {/* Input pin */}
+      <circle
+        className="pin"
+        onClick={() => setinputpin(node.id, 0)}
+        cx={CONSTANTS.INPUT_PIN_X}
+        cy={CONSTANTS.INPUT_PIN_Y}
+        r={CONSTANTS.PIN_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      
+      {/* Output pin (after bubble) */}
+      <circle
+        className="pin"
+        onClick={() => { setoutputpin(node.id) }}
+        cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2 -2}
+        cy={CONSTANTS.OUTPUT_PIN_Y}
+        r={CONSTANTS.PIN_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+    </g>
+  )
+}
 
   else if (node.type === "CLOCK") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <rect
           x={0}
           y={0}
@@ -769,8 +726,8 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             setSelectedGate({ id: node.id })
             setSelectedWire(null)
             return true
-          }}>
-        </rect>
+          }}
+        />
         <line
           x1={CONSTANTS.GATE_WIDTH}
           y1={CONSTANTS.OUTPUT_PIN_Y}
@@ -795,10 +752,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "NAND3") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -881,7 +835,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-        
         <circle
           className="pin"
           onClick={() => { setoutputpin(node.id) }}
@@ -895,13 +848,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
       </g>
     )
   }
+
   else if (node.type === "AND3") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
-        {/* Input wire stubs - TOP, MIDDLE, BOTTOM */}
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -926,8 +876,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output wire stub */}
         <line
           x1={CONSTANTS.GATE_WIDTH}
           y1={CONSTANTS.OUTPUT_PIN_Y}
@@ -936,8 +884,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* AND3 gate shape - AND shape with 3 inputs */}
         <path
           d={and_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -950,8 +896,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             return true
           }}
         />
-
-        {/* Input pins - TOP, MIDDLE, BOTTOM */}
         <circle
           className="pin"
           onClick={() => setinputpin(node.id, 0)}
@@ -982,8 +926,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output pin */}
         <circle
           className="pin"
           onClick={() => { setoutputpin(node.id) }}
@@ -1000,11 +942,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "OR3") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
-        {/* Input wire stubs - TOP, MIDDLE, BOTTOM */}
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -1029,8 +967,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output wire stub */}
         <line
           x1={CONSTANTS.GATE_WIDTH}
           y1={CONSTANTS.OUTPUT_PIN_Y}
@@ -1039,8 +975,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* OR3 gate shape - OR shape with 3 inputs */}
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1053,8 +987,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             return true
           }}
         />
-
-        {/* Input pins - TOP, MIDDLE, BOTTOM */}
         <circle
           className="pin"
           onClick={() => setinputpin(node.id, 0)}
@@ -1085,8 +1017,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output pin */}
         <circle
           className="pin"
           onClick={() => { setoutputpin(node.id) }}
@@ -1103,11 +1033,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "NOR3") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
-        {/* Input wire stubs - TOP, MIDDLE, BOTTOM */}
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -1132,8 +1058,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output wire stub */}
         <line
           x1={CONSTANTS.GATE_WIDTH}
           y1={CONSTANTS.OUTPUT_PIN_Y}
@@ -1142,8 +1066,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* NOR3 gate shape - OR shape with 3 inputs */}
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1156,8 +1078,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             return true
           }}
         />
-
-        {/* Inversion Bubble */}
         <circle
           cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
           cy={CONSTANTS.OUTPUT_PIN_Y}
@@ -1166,8 +1086,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Input pins - TOP, MIDDLE, BOTTOM */}
         <circle
           className="pin"
           onClick={() => setinputpin(node.id, 0)}
@@ -1198,8 +1116,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output pin */}
         <circle
           className="pin"
           onClick={() => { setoutputpin(node.id) }}
@@ -1216,11 +1132,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "XOR3") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
-        {/* Input wire stubs - TOP, MIDDLE, BOTTOM */}
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -1245,8 +1157,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output wire stub */}
         <line
           x1={CONSTANTS.GATE_WIDTH}
           y1={CONSTANTS.OUTPUT_PIN_Y}
@@ -1255,8 +1165,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* XOR3 gate shape - OR shape with 3 inputs */}
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1269,8 +1177,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             return true
           }}
         />
-
-        {/* Extra XOR Curve */}
         <path
           d={xor_extra_curve_path}
           fill="none"
@@ -1278,8 +1184,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
           pointerEvents="none"
         />
-
-        {/* Input pins - TOP, MIDDLE, BOTTOM */}
         <circle
           className="pin"
           onClick={() => setinputpin(node.id, 0)}
@@ -1310,8 +1214,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output pin */}
         <circle
           className="pin"
           onClick={() => { setoutputpin(node.id) }}
@@ -1328,11 +1230,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
   else if (node.type === "XNOR3") {
     return (
-      <g
-        transform={`translate(${node.x}, ${node.y})`}
-        className="actual-gate"
-      >
-        {/* Input wire stubs - TOP, MIDDLE, BOTTOM */}
+      <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y_TOP}
@@ -1357,8 +1255,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output wire stub */}
         <line
           x1={CONSTANTS.GATE_WIDTH}
           y1={CONSTANTS.OUTPUT_PIN_Y}
@@ -1367,8 +1263,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* XNOR3 gate shape - OR shape with 3 inputs */}
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1381,8 +1275,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             return true
           }}
         />
-
-        {/* Extra XOR Curve */}
         <path
           d={xor_extra_curve_path}
           fill="none"
@@ -1390,8 +1282,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
           pointerEvents="none"
         />
-
-        {/* Inversion Bubble */}
         <circle
           cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
           cy={CONSTANTS.OUTPUT_PIN_Y}
@@ -1400,8 +1290,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Input pins - TOP, MIDDLE, BOTTOM */}
         <circle
           className="pin"
           onClick={() => setinputpin(node.id, 0)}
@@ -1432,8 +1320,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-
-        {/* Output pin */}
         <circle
           className="pin"
           onClick={() => { setoutputpin(node.id) }}
@@ -1448,8 +1334,5 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
     )
   }
 
-
+  return null;
 }
-
-
-

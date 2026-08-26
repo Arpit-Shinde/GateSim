@@ -522,6 +522,7 @@ export function RenderXNOR() {
 export function RenderNOT() {
   return (
     <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stub */}
       <line
         x1={10}
         y1={CONSTANTS.INPUT_PIN_Y}
@@ -530,20 +531,37 @@ export function RenderNOT() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
+      
+      {/* Output wire stub - from bubble to pin */}
       <line
-        x1={CONSTANTS.GATE_WIDTH}
+        x1={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS * 2}
         y1={CONSTANTS.OUTPUT_PIN_Y}
-        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2}
         y2={CONSTANTS.OUTPUT_PIN_Y}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
+      
+      {/* NOT triangle */}
       <path
         d={GATE.not_path}
         fill={CONSTANTS.GATE_FILL_COLOR}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
+      
+      {/* Inversion Bubble at output */}
+      <circle
+        className="render-gate-pin"
+        cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
+        cy={CONSTANTS.OUTPUT_PIN_Y}
+        r={CONSTANTS.NAND_PIN_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      
+      {/* Input pin */}
       <circle
         className="render-gate-pin"
         cx={CONSTANTS.INPUT_PIN_X}
@@ -553,9 +571,11 @@ export function RenderNOT() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
+      
+      {/* Output pin (after bubble) */}
       <circle
         className="render-gate-pin"
-        cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2}
         cy={CONSTANTS.OUTPUT_PIN_Y}
         r={CONSTANTS.PIN_RADIUS}
         fill={CONSTANTS.GATE_FILL_COLOR}
