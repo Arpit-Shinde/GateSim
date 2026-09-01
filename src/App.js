@@ -1,60 +1,22 @@
 import { useState, useEffect, useRef } from "react";
-import { evaluate, topologicalOrderAndReindex } from "./evaluate"
-import { Gate } from "./gate"
-import { Wire, LiveWire } from "./wire"
-import { showTutorial } from "./utilities";
-import * as CONSTANTS from "./constants";
-import * as RENDER_GATES from "./gates_svg"
-
-const inputGateRenderList = [
-  { type: 'INPUT', render: RENDER_GATES.RenderINPUT },
-  { type: 'CLOCK', render: RENDER_GATES.RenderCLOCK }
-];
-
-const logicGateRenderList = [
-  { type: 'AND', render: RENDER_GATES.RenderAND },
-  { type: 'OR', render: RENDER_GATES.RenderOR },
-  { type: 'NOT', render: RENDER_GATES.RenderNOT },
-  { type: 'NAND', render: RENDER_GATES.RenderNAND },
-  { type: 'NOR', render: RENDER_GATES.RenderNOR },
-  { type: 'XOR', render: RENDER_GATES.RenderXOR },
-  { type: 'XNOR', render: RENDER_GATES.RenderXNOR },
-  { type: 'AND3', render: RENDER_GATES.RenderAND3 },
-  { type: 'OR3', render: RENDER_GATES.RenderOR3 },
-  { type: 'NOR3', render: RENDER_GATES.RenderNOR3 },
-  { type: 'XOR3', render: RENDER_GATES.RenderXOR3 },
-  { type: 'XNOR3', render: RENDER_GATES.RenderXNOR3 },
-  { type: 'NAND3', render: RENDER_GATES.RenderNAND3 }
-
-];
-
-const outputGateRenderList = [
-  { type: 'BULB', render: RENDER_GATES.RenderBULB }
-];
-
-function GateCard({ renderFxn, gateType }) {
-  const RenderFn = renderFxn;
-  return (
-    <div className="gate-card">
-      <div className="gate-preview">
-        <svg width="110" height="60" viewBox="0 0 110 60">
-          <rect width="110" height="60" fill={CONSTANTS.GATE_CARD_BACKGROUND} rx="8" />
-          <g transform="translate(15, 10)">
-            <RenderFn />
-          </g>
-        </svg>
-      </div>
-      <span className="gate-label">{gateType}</span>
-    </div>
-  );
-}
+import { evaluate } from "./utils/evaluate"
+import { topologicalOrderAndReindex } from "./utils/topologicalSort"
+import { Gate } from "./components/gate"
+import { Wire, LiveWire } from "./components/wire"
+import { showTutorial } from "./components/tutorial_modal";
+import * as CONSTANTS from "./constants/constants";
+import { getWireEnd, getWireStart } from "./utils/wireHelpers";
+import { GateCard } from "./components/gatecard";
+import { getSVGPoint } from "./utils/svgHelpers";
+import { useCircuit } from "./hooks/useCircuit";
+import { AboutModal } from "./components/about_modal";
+import { inputGateRenderList, logicGateRenderList, outputGateRenderList } from "./constants/gates";
 
 
 function App() {
 
   let [graph, setGraph] = useState([])
-  let [clock_delays, setClockDelays] = useState([
-  ])
+  let [clock_delays, setClockDelays] = useState([])
   let [view, setView] = useState({
     x: 0,
     y: 0,
@@ -63,8 +25,25 @@ function App() {
   })
   let [pan, setPan] = useState(null)
   let svgRef = useRef(null)
-  const graphRef = useRef(graph)
-  const clockDelaysRef = useRef(clock_delays)
+  let graphRef = useRef(graph)
+  let clockDelaysRef = useRef(clock_delays)
+  let [opin, setoPin] = useState(null)
+  let [selectedWire, setSelectedWire] = useState(null);
+  let [selectedGate, setSelectedGate] = useState(null)
+  let [draginfo, setdraginfo] = useState(null);
+  let [didDrag, setDidDrag] = useState(false);
+  let [mouse, setMouse] = useState(null)
+  let { toggle, Add, Connect, clearGraph } = useCircuit(
+    graph,
+    setGraph,
+    clock_delays,
+    setClockDelays,
+    view,
+    addToUndoStack,
+    setoPin,
+    setSelectedGate,
+    setSelectedWire
+  );
 
   useEffect(() => {
     graphRef.current = graph;
@@ -75,19 +54,10 @@ function App() {
   }, [clock_delays]);
 
 
-  let [opin, setoPin] = useState(null)
-
-  const [selectedWire, setSelectedWire] = useState(null);
-  const [selectedGate, setSelectedGate] = useState(null)
-
-  const [draginfo, setdraginfo] = useState(null);
-  const [didDrag, setDidDrag] = useState(false);
-  const [mouse, setMouse] = useState(null)
-
   function startDrag(e, id) {
     if (e.button === 1) return;
     addToUndoStack(graph, clock_delays)
-    const point = getSVGPoint(e);
+    const point = getSVGPoint(e, svgRef, view);
 
     setdraginfo({
       gateId: id,
@@ -255,51 +225,6 @@ function App() {
     return () => clearInterval(intervalId);
   }, []);
 
-  function toggle(id) {
-    let newGraph = structuredClone(graph);
-    addToUndoStack(graph, clock_delays)
-
-    newGraph[id].value = !newGraph[id].value;
-
-
-
-    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-      evaluate(newGraph);
-    }
-
-    setGraph(newGraph);
-
-  }
-
-  function Add(gate) {
-    if (!gate) return
-    addToUndoStack(graph, clock_delays)
-    let newGate;
-
-    if (gate === "CLOCK") {
-      let input = window.prompt(`Clock Delay (minimum:${CONSTANTS.MIN_FRAME_TIME})`)
-      if (input === null) return
-      let delay = Number(input)
-      if (delay < 50) {
-        alert(`Delay entered less than ${CONSTANTS.MIN_FRAME_TIME}`);
-        return;
-      }
-      newGate = { type: gate, id: graph.length, value: false, inputs: [], x: view.x + view.width / 2, y: view.y + view.height / 2, delay: delay };
-      let newdelay = { id: graph.length, delay: delay, next_delay: performance.now() + delay }
-      setClockDelays((prev) => [...prev, newdelay])
-
-    }
-    else newGate = { type: gate, id: graph.length, value: false, inputs: [], x: view.x + view.width / 2, y: view.y + view.height / 2 };
-
-
-    let [newGraph, new_clock_delays] = topologicalOrderAndReindex([...graph, newGate])
-    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-      evaluate(newGraph);
-    }
-    setGraph(newGraph);
-    setClockDelays(new_clock_delays)
-    console.log(graph)
-  }
 
   function setoutputpin(id) {
     setoPin({ gateId: id });
@@ -312,31 +237,6 @@ function App() {
   function setinputpin(id, index) {
     let newipin = { gateId: id, gateIndex: index }
     Connect(newipin, opin)
-  }
-
-  function Connect(inputpin, outputpin) {
-
-    let newgraph = structuredClone(graph);
-    addToUndoStack(graph, clock_delays)
-
-    if (inputpin != null && outputpin != null) {
-      newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputpin.gateId;
-    }
-
-    // Sort + reindex first
-    let [sortedGraph, new_clock_delays] =
-      topologicalOrderAndReindex(newgraph);
-
-    // Then evaluate
-    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-      evaluate(sortedGraph);
-    }
-
-    setoPin(null);
-    setSelectedGate(null);
-    setSelectedWire(null);
-    setGraph(sortedGraph);
-    setClockDelays(new_clock_delays);
   }
 
   function selectWire(wire) {
@@ -362,7 +262,7 @@ function App() {
 
       setDidDrag(true);
 
-      const point = getSVGPoint(e);
+      const point = getSVGPoint(e, svgRef, view);
 
       const newGraph = structuredClone(graph);
 
@@ -376,7 +276,7 @@ function App() {
     }
 
     else if (opin) {
-      const point = getSVGPoint(e);
+      const point = getSVGPoint(e, svgRef, view);
 
       setMouse({
         x: point.x,
@@ -411,21 +311,6 @@ function App() {
       viewX: view.x,
       viewY: view.y
     });
-  }
-
-  function sortgraph(graph) {
-    let [newGraph, new_clock_delays] = topologicalOrderAndReindex(graph)
-    setGraph(newGraph)
-    setClockDelays(new_clock_delays)
-  }
-
-  function getSVGPoint(e) {
-    const rect = svgRef.current.getBoundingClientRect();
-
-    return {
-      x: view.x + ((e.clientX - rect.left) / rect.width) * view.width,
-      y: view.y + ((e.clientY - rect.top) / rect.height) * view.height
-    };
   }
 
   let [undoStack, setUndoStack] = useState([])
@@ -579,7 +464,7 @@ function App() {
           };
         });
 
-        
+
 
         // ✅ Evaluate the circuit
         for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
@@ -610,16 +495,15 @@ function App() {
 
   }
 
-  function clearGraph() {
-    addToUndoStack(graph, clock_delays)
-    setGraph([]);
-    setClockDelays([]);
+  const [showAbout, setShowAbout] = useState(false);
+
+  function showabout() {
+    setShowAbout(true);
   }
 
-
-
-
-
+  function closeAbout() {
+    setShowAbout(false);
+  }
 
   return (
     <div className="homepage">
@@ -637,6 +521,11 @@ function App() {
         <button onClick={() => { clearGraph() }}>CLEAR CIRCUIT</button>
         <button onClick={() => undo()} style={{ fontSize: '20px' }}>↶</button>
         <button onClick={() => redo()} style={{ fontSize: '20px' }}>↷</button>
+        <button onClick={showabout} style={{
+
+        }}>
+          ABOUT
+        </button>
         <input
           ref={fileInputRef}
           type="file"
@@ -736,41 +625,19 @@ function App() {
             {graph.map(node =>
               node.inputs.map((input, index) => {
                 if (input === -1) return
-                let startx = graph[input].x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X
-                let starty = graph[input].y + CONSTANTS.INPUT_PIN_Y
-                let endx = node.x + CONSTANTS.INPUT_PIN_X
-                let endy
-                if (index === 0) endy = node.y + CONSTANTS.INPUT_PIN_Y_TOP
-                else endy = node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM
+                let start = getWireStart(graph, input)
+                let end = getWireEnd(node, index)
 
-                if (node.type === "BULB") {
-                  endx = node.x + CONSTANTS.BULB_PIN_X
-                  endy = node.y + CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH
-                }
-                if (node.type === "NOT") {
-
-                  endy = node.y + CONSTANTS.INPUT_PIN_Y
-                }
-
-
-
-                if (graph[input].type === "INPUT") {
-                  startx = graph[input].x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X
-                  starty = graph[input].y + CONSTANTS.TOGGLE_HEIGHT / 2
-                }
-                if ((node.type === "NAND3" || node.type === "AND3" || node.type === "OR3" || node.type === "NOR3" || node.type === "XOR3" || node.type === "XNOR3") && index === 1) {
-                  endy = node.y + CONSTANTS.GATE_HEIGHT / 2
-                }
                 // console.log(`Wire key=${node.id} - ${index}`)
                 return (<Wire
                   key={`${node.id}-${index}`}
                   start={[
-                    startx,
-                    starty
+                    start.x,
+                    start.y
                   ]}
                   end={[
-                    endx,
-                    endy
+                    end.x,
+                    end.y
                   ]}
                   from={input}
                   to={node.id}
@@ -834,6 +701,7 @@ function App() {
           </svg>
         </div>
       </div>
+      {showAbout && <AboutModal onClose={closeAbout} />}
 
     </div>
   )

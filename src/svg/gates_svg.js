@@ -1,5 +1,5 @@
-import * as CONSTANTS from "./constants";
-import * as GATE from "./gate"
+import * as CONSTANTS from "../constants/constants";
+import * as GATE from "../components/gate"
 
 
 export function RenderINPUT() {

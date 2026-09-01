@@ -1,4 +1,4 @@
-import * as CONSTANTS from "./constants";
+import * as CONSTANTS from "../constants/constants";
 
 const r = CONSTANTS.GATE_HEIGHT / 2;
 
