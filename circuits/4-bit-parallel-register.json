@@ -1,0 +1,206 @@
+{
+  "graph": [
+    {
+      "type": "INPUT",
+      "id": 0,
+      "value": false,
+      "inputs": [],
+      "x": 171.469,
+      "y": -23.0920000000001
+    },
+    {
+      "type": "INPUT",
+      "id": 1,
+      "value": true,
+      "inputs": [],
+      "x": 174,
+      "y": 189
+    },
+    {
+      "type": "INPUT",
+      "id": 2,
+      "value": true,
+      "inputs": [],
+      "x": 180,
+      "y": 686
+    },
+    {
+      "type": "INPUT",
+      "id": 3,
+      "value": true,
+      "inputs": [],
+      "x": 182.00000000000006,
+      "y": 546
+    },
+    {
+      "type": "INPUT",
+      "id": 4,
+      "value": false,
+      "inputs": [],
+      "x": 178,
+      "y": 378
+    },
+    {
+      "type": "CLOCK",
+      "id": 5,
+      "value": true,
+      "inputs": [],
+      "x": 171.16599999999994,
+      "y": 69.697,
+      "delay": 1000
+    },
+    {
+      "type": "AND",
+      "id": 6,
+      "value": false,
+      "inputs": [
+        0,
+        5
+      ],
+      "x": 323,
+      "y": 15.000000000000057
+    },
+    {
+      "type": "NOT",
+      "id": 7,
+      "value": false,
+      "inputs": [
+        2
+      ],
+      "x": 304,
+      "y": 717
+    },
+    {
+      "type": "NOT",
+      "id": 8,
+      "value": false,
+      "inputs": [
+        3
+      ],
+      "x": 304,
+      "y": 579
+    },
+    {
+      "type": "NOT",
+      "id": 9,
+      "value": true,
+      "inputs": [
+        4
+      ],
+      "x": 296,
+      "y": 428.99999999999994
+    },
+    {
+      "type": "NOT",
+      "id": 10,
+      "value": false,
+      "inputs": [
+        1
+      ],
+      "x": 294,
+      "y": 262.99999999999994
+    },
+    {
+      "type": "JK",
+      "id": 11,
+      "value": true,
+      "inputs": [
+        1,
+        6,
+        10
+      ],
+      "x": 553,
+      "y": 265,
+      "lastClock": false,
+      "notQ": false
+    },
+    {
+      "type": "BULB",
+      "id": 12,
+      "value": true,
+      "inputs": [
+        11
+      ],
+      "x": 739,
+      "y": 260
+    },
+    {
+      "type": "JK",
+      "id": 13,
+      "value": false,
+      "inputs": [
+        4,
+        6,
+        9
+      ],
+      "x": 544,
+      "y": 427,
+      "lastClock": false,
+      "notQ": true
+    },
+    {
+      "type": "BULB",
+      "id": 14,
+      "value": false,
+      "inputs": [
+        13
+      ],
+      "x": 744,
+      "y": 432
+    },
+    {
+      "type": "JK",
+      "id": 15,
+      "value": true,
+      "inputs": [
+        3,
+        6,
+        8
+      ],
+      "x": 546,
+      "y": 574,
+      "lastClock": false,
+      "notQ": false
+    },
+    {
+      "type": "BULB",
+      "id": 16,
+      "value": true,
+      "inputs": [
+        15
+      ],
+      "x": 747.9999999999999,
+      "y": 555
+    },
+    {
+      "type": "JK",
+      "id": 17,
+      "value": true,
+      "inputs": [
+        2,
+        6,
+        7
+      ],
+      "x": 544,
+      "y": 713,
+      "lastClock": false,
+      "notQ": false
+    },
+    {
+      "type": "BULB",
+      "id": 18,
+      "value": true,
+      "inputs": [
+        17
+      ],
+      "x": 745,
+      "y": 712
+    }
+  ],
+  "clock_delays": [
+    {
+      "id": 5,
+      "delay": 1000
+    }
+  ]
+}

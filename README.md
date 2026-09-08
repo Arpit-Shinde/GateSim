@@ -4,7 +4,7 @@
   <img src="public/gatesim-logo2.svg" width="120">
 </td>
 <td>
-  <h1 style="font-size: 48px; margin: 0; color: #68d391; font-weight: 700;">GateSim</h1>
+  <h1 style="font-size: 48px; margin: 0; ">GateSim</h1>
 </td>
 </tr>
 </table>
