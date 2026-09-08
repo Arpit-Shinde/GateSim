@@ -18,7 +18,8 @@ export const logicGateRenderList = [
   { type: 'NOR3', render: RENDER_GATES.RenderNOR3 },
   { type: 'XOR3', render: RENDER_GATES.RenderXOR3 },
   { type: 'XNOR3', render: RENDER_GATES.RenderXNOR3 },
-  { type: 'NAND3', render: RENDER_GATES.RenderNAND3 }
+  { type: 'NAND3', render: RENDER_GATES.RenderNAND3 },
+  { type: 'JK', render: RENDER_GATES.RenderJK }
 
 ];
 

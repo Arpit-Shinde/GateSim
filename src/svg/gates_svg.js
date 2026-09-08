@@ -1228,3 +1228,100 @@ export function RenderXNOR3() {
     </g>
   );
 }
+
+// svg/gates_svg.js
+
+export function RenderJK() {
+  const w = 50;
+  const h = 40;
+  
+  return (
+    <g transform="scale(0.65) translate(25, 5)">
+      {/* JK Flip-Flop Box */}
+      <rect
+        x={0}
+        y={0}
+        width={w}
+        height={h}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        rx={3}
+      />
+      
+      {/* Label */}
+      <text
+        x={w / 2}
+        y={h / 2 + 4}
+        textAnchor="middle"
+        fontSize={14}
+        fill="#a0aec0"
+        fontWeight="bold"
+      >
+        JK
+      </text>
+      
+      {/* Input pins with labels */}
+      {/* J (top) */}
+      <circle
+        className="render-gate-pin"
+        cx={0}
+        cy={10}
+        r={4}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      <text x={-12} y={13} fontSize={8} fill="#a0aec0" textAnchor="end">J</text>
+      
+      {/* CLK (middle) */}
+      <circle
+        className="render-gate-pin"
+        cx={0}
+        cy={20}
+        r={4}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      <text x={-12} y={23} fontSize={8} fill="#a0aec0" textAnchor="end">CLK</text>
+      
+      {/* K (bottom) */}
+      <circle
+        className="render-gate-pin"
+        cx={0}
+        cy={30}
+        r={4}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      <text x={-12} y={33} fontSize={8} fill="#a0aec0" textAnchor="end">K</text>
+      
+      {/* Output pins with labels */}
+      {/* Q (top) */}
+      <circle
+        className="render-gate-pin"
+        cx={w}
+        cy={10}
+        r={4}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      <text x={w + 8} y={13} fontSize={8} fill="#a0aec0">Q</text>
+      
+      {/* Q' (bottom) */}
+      <circle
+        className="render-gate-pin"
+        cx={w}
+        cy={30}
+        r={4}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      <text x={w + 8} y={33} fontSize={8} fill="#a0aec0">Q'</text>
+    </g>
+  );
+}

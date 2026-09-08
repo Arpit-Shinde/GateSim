@@ -20,8 +20,8 @@ function App() {
   let [view, setView] = useState({
     x: 0,
     y: 0,
-    width: 1500,
-    height: 1200
+    width: 1080,
+    height: 720
   })
   let [pan, setPan] = useState(null)
   let svgRef = useRef(null)
@@ -33,6 +33,8 @@ function App() {
   let [draginfo, setdraginfo] = useState(null);
   let [didDrag, setDidDrag] = useState(false);
   let [mouse, setMouse] = useState(null)
+  let [pauseSim, setPauseSim] = useState(false)
+  let [pausedClocks, setPausedClocks] = useState([]); //to store remaining time for clock tick after pause
   let { toggle, Add, Connect, clearGraph } = useCircuit(
     graph,
     setGraph,
@@ -67,9 +69,46 @@ function App() {
 
     setDidDrag(false);
   }
-
+function togglePauseSim() {
+  const newPauseState = !pauseSim;
+  
+  if (newPauseState === true) {
+    // ✅ PAUSING: Store remaining time for each clock
+    const now = performance.now();
+    const remainingTimes = clock_delays.map(clock => ({
+      id: clock.id,
+      remaining: Math.max(0, clock.next_delay - now),
+      delay: clock.delay
+    }));
+    setPausedClocks(remainingTimes);
+    
+  } else {
+    // ✅ RESUMING: Restore clock delays with remaining time
+    const now = performance.now();
+    setClockDelays(prev => 
+      prev.map(clock => {
+        const paused = pausedClocks.find(p => p.id === clock.id);
+        if (paused) {
+          // Resume with remaining time
+          return {
+            ...clock,
+            next_delay: now + paused.remaining
+          };
+        }
+        return {
+          ...clock,
+          next_delay: now + clock.delay
+        };
+      })
+    );
+  }
+  
+  setPauseSim(newPauseState);
+}
   function zoom(e) {
     e.preventDefault();
+
+    if (e.ctrlKey) return
 
     const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
 
@@ -180,6 +219,8 @@ function App() {
   }, [selectedWire, selectedGate]);
 
   useEffect(() => {
+
+    if (pauseSim) return
     const intervalId = setInterval(() => {
       let now = performance.now()
 
@@ -223,7 +264,7 @@ function App() {
     }, CONSTANTS.MIN_FRAME_TIME);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [pauseSim]);
 
 
   function setoutputpin(id) {
@@ -521,6 +562,9 @@ function App() {
         <button onClick={() => { clearGraph() }}>CLEAR CIRCUIT</button>
         <button onClick={() => undo()} style={{ fontSize: '20px' }}>↶</button>
         <button onClick={() => redo()} style={{ fontSize: '20px' }}>↷</button>
+        <button onClick={togglePauseSim}>
+  {pauseSim ? '▶ START CLOCKS' : '⏸ PAUSE CLOCKS'}
+</button>
         <button onClick={showabout} style={{
 
         }}>
@@ -604,6 +648,7 @@ function App() {
           </div> */}
 
         </div>
+        <div className="canvas-wrapper">
         <div className="canvas">
           <svg
             width="100%"
@@ -699,6 +744,7 @@ function App() {
             })}
 
           </svg>
+        </div>
         </div>
       </div>
       {showAbout && <AboutModal onClose={closeAbout} />}

@@ -29,6 +29,35 @@ export function evaluate(graph) {
             case "NOR3": node.value = !(a || b || c); break;
             case "XOR3": node.value = (a !== b) !== c; break;  // XOR of 3 inputs
             case "XNOR3": node.value = (a === b) === c; break; // XNOR of 3 inputs
+
+            case "JK": {
+                const j = a;
+                const clk = b;
+                const k = c;
+                
+
+                // Rising edge detection
+                if (!clk && node.lastClock) { // do clk && !node.lastClock for + edge triggered
+                    if (j && k) {
+                        // Toggle
+                        node.value = !node.value;
+                    } else if (j && !k) {
+                        // Set
+                        node.value = true;
+                    } else if (!j && k) {
+                        // Reset
+                        node.value = false;
+                    }
+                    // else: Hold (no change)
+                }
+
+                // Update last clock state for edge detection
+                node.lastClock = clk;
+
+                // Store Q' (complement)
+                node.notQ = !node.value;
+                break;
+            }
         }
     }
 }

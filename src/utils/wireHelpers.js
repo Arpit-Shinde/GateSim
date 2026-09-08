@@ -8,6 +8,18 @@ export function getWireStart(graph, input) {
         startx = graph[input].x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X
         starty = graph[input].y + CONSTANTS.TOGGLE_HEIGHT / 2
     }
+    if (graph[input].type === "JK") {
+        // Default to Q (top output)
+        const outputIndex = graph[input]._outputIndex || 0;
+        const yPos = outputIndex === 0
+            ? CONSTANTS.INPUT_PIN_Y_TOP
+            : CONSTANTS.INPUT_PIN_Y_BOTTOM;
+
+        return {
+            x: graph[input].x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X,
+            y: graph[input].y + yPos
+        };
+    }
 
     return { x: startx, y: starty }
 }
@@ -27,6 +39,18 @@ export function getWireEnd(node, index) {
     }
     if ((node.type === "NAND3" || node.type === "AND3" || node.type === "OR3" || node.type === "NOR3" || node.type === "XOR3" || node.type === "XNOR3") && index === 1) {
         endy = node.y + CONSTANTS.GATE_HEIGHT / 2
+    }
+
+    if (node.type === "JK") {
+        const yPositions = [
+            CONSTANTS.INPUT_PIN_Y_TOP,    // J
+            CONSTANTS.GATE_HEIGHT / 2,     // CLK
+            CONSTANTS.INPUT_PIN_Y_BOTTOM   // K
+        ];
+        return {
+            x: node.x + CONSTANTS.INPUT_PIN_X,
+            y: node.y + (yPositions[index] || CONSTANTS.INPUT_PIN_Y_BOTTOM)
+        };
     }
 
     return { x: endx, y: endy }

@@ -40,7 +40,7 @@ export function useCircuit(
       let input = window.prompt(`Clock Delay (minimum:${CONSTANTS.MIN_FRAME_TIME})`);
       if (input === null) return;
       let delay = Number(input);
-      if (delay < 50) {
+      if (delay < CONSTANTS.MIN_FRAME_TIME) {
         alert(`Delay entered less than ${CONSTANTS.MIN_FRAME_TIME}`);
         return;
       }

@@ -43,3 +43,17 @@ export const GATE_TYPES = ["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "X
 export const CANVAS_START = {x:150,y:10}
 export const CANVAS_BACKGROUND="#e5e5e5"
 export const GATE_CARD_BACKGROUND = "#c4c4c4"
+
+// constants/constants.js
+
+// JK Flip-Flop specific constants
+export const JK_INPUT_PINS = {
+  J: { x: 0, y: 10 },
+  CLK: { x: 0, y: 20 },
+  K: { x: 0, y: 30 }
+};
+
+export const JK_OUTPUT_PINS = {
+  Q: { x: 60, y: 10 },
+  Q_NOT: { x: 60, y: 30 }
+};
