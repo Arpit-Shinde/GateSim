@@ -39,6 +39,7 @@ export function topologicalOrderAndReindex(graph) {
             );
 
             if (allInputsReady) {
+                if (node.type==="WIRE") console.log("its a wire")
                 const oldId = node.id;
                 const newId = newGraph.length;
 
@@ -54,6 +55,18 @@ export function topologicalOrderAndReindex(graph) {
             }
         }
     }
+    console.table(
+    remaining.map(n => ({
+        id: n.id,
+        type: n.type,
+        inputs: JSON.stringify(n.inputs),
+        unresolved: JSON.stringify(
+            n.inputs.filter(
+                inputId => inputId !== -1 && !idMap.has(inputId)
+            )
+        )
+    }))
+);
 
     // 3. Add cyclic nodes
     for (const node of remaining) {
@@ -101,6 +114,6 @@ export function topologicalOrderAndReindex(graph) {
     }
 
 
-    return [newGraph, new_clock_delays]
+    return [newGraph, new_clock_delays, idMap]
 }
 

@@ -12,7 +12,9 @@ export function useCircuit(
   addToUndoStack,
   setoPin,
   setSelectedGate,
-  setSelectedWire
+  setSelectedWire,
+  setShowClockWindow,
+  setClockDelayInput
 ) {
 
   // ─── TOGGLE ───
@@ -30,77 +32,110 @@ export function useCircuit(
   }
 
   // ─── ADD GATE ───
-  function Add(gate) {
+  function Add(gate, wireData = null, inputpin = null, clockDelay = null) {
     if (!gate) return;
+
+    // CLOCK needs user input first
+    if (gate === "CLOCK" && clockDelay === null) {
+        setClockDelayInput("");
+        setShowClockWindow(true);
+        return;
+    }
+
     addToUndoStack(graph, clock_delays);
 
     let newGate;
 
     if (gate === "CLOCK") {
-      let input = window.prompt(`Clock Delay (minimum:${CONSTANTS.MIN_FRAME_TIME})`);
-      if (input === null) return;
-      let delay = Number(input);
-      if (delay < CONSTANTS.MIN_FRAME_TIME) {
-        alert(`Delay entered less than ${CONSTANTS.MIN_FRAME_TIME}`);
-        return;
-      }
-      newGate = {
-        type: gate,
-        id: graph.length,
-        value: false,
-        inputs: [],
-        x: view.x + view.width / 2,
-        y: view.y + view.height / 2,
-        delay: delay
-      };
-      let newdelay = {
-        id: graph.length,
-        delay: delay,
-        next_delay: performance.now() + delay
-      };
-      setClockDelays((prev) => [...prev, newdelay]);
-    } else {
-      newGate = {
-        type: gate,
-        id: graph.length,
-        value: false,
-        inputs: [],
-        x: view.x + view.width / 2,
-        y: view.y + view.height / 2
-      };
+
+        let delay = Number(clockDelay);
+
+        newGate = {
+            type: gate,
+            id: graph.length,
+            value: false,
+            inputs: [],
+            x: view.x + view.width / 2,
+            y: view.y + view.height / 2,
+            delay: delay
+        };
+
+        let newdelay = {
+            id: graph.length,
+            delay: delay,
+            next_delay: performance.now() + delay
+        };
+
+        setClockDelays((prev) => [...prev, newdelay]);
     }
 
-    let [newGraph, new_clock_delays] = topologicalOrderAndReindex([...graph, newGate]);
-    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-      evaluate(newGraph);
+    else if (gate === "WIRE") {
+
+        newGate = {
+            type: gate,
+            id: graph.length,
+            value: false,
+            path: wireData.path,
+            inputs: [wireData.inputId]
+        };
+
     }
+
+    else {
+
+        newGate = {
+            type: gate,
+            id: graph.length,
+            value: false,
+            inputs: [],
+            x: view.x + view.width / 2,
+            y: view.y + view.height / 2
+        };
+    }
+
+    // CONNECT HERE, BEFORE setGraph()
+    let oldId = newGate.id;
+
+    if (inputpin) {
+        graph[inputpin.gateId].inputs[inputpin.gateIndex] = newGate.id;
+    }
+
+    let [newGraph, new_clock_delays, idMap] =
+        topologicalOrderAndReindex([...graph, newGate]);
+
+    for (
+        let i = 0;
+        i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
+        i++
+    ) {
+        evaluate(newGraph);
+    }
+
+    let newId = idMap.get(oldId);
+
     setGraph(newGraph);
     setClockDelays(new_clock_delays);
-  }
+
+    console.log(`in Add(), newId = ${newId}`);
+
+    return newId;
+}
 
   // ─── CONNECT ───
-  function Connect(inputpin, outputpin) {
-    if (!inputpin || !outputpin) return;
+  function Connect(inputpin, outputId) {
+    if (!inputpin || outputId === undefined) return;
 
     let newgraph = structuredClone(graph);
     addToUndoStack(graph, clock_delays);
+    console.log(`inputpin id: ${inputpin.gateId} outputpin id:${outputId}`)
 
-    newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputpin.gateId;
-
-    let [sortedGraph, new_clock_delays] = topologicalOrderAndReindex(newgraph);
-
-    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-      evaluate(sortedGraph);
-    }
+    newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputId;
 
     // ✅ Clear selections
     setoPin(null);
     setSelectedGate(null);
     setSelectedWire(null);
 
-    // ✅ Update state
-    setGraph(sortedGraph);
-    setClockDelays(new_clock_delays);
   }
 
   // ─── CLEAR GRAPH ───

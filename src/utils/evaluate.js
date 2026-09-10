@@ -15,6 +15,7 @@ export function evaluate(graph) {
         const c = values[2] ?? false;
 
         switch (node.type) {
+            case "WIRE": node.value = a; break;
             case "AND": node.value = a && b; break;
             case "OR": node.value = a || b; break;
             case "NOT": node.value = !a; break;

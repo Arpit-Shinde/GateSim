@@ -11,6 +11,8 @@ import { getSVGPoint } from "./utils/svgHelpers";
 import { useCircuit } from "./hooks/useCircuit";
 import { AboutModal } from "./components/about_modal";
 import { inputGateRenderList, logicGateRenderList, outputGateRenderList } from "./constants/gates";
+import logo from './gatesim-logo2.png';
+import { RenderUncommitedWire } from "./components/wire";
 
 
 function App() {
@@ -33,8 +35,12 @@ function App() {
   let [draginfo, setdraginfo] = useState(null);
   let [didDrag, setDidDrag] = useState(false);
   let [mouse, setMouse] = useState(null)
+  let [theme, setTheme] = useState(false)
   let [pauseSim, setPauseSim] = useState(false)
+  let [showClockWindow, setShowClockWindow] = useState(false);
+  let [clockDelayInput, setClockDelayInput] = useState("");
   let [pausedClocks, setPausedClocks] = useState([]); //to store remaining time for clock tick after pause
+  let [wirePath, setWirePath] = useState([]); //to store bending points of wire which is being drawn 
   let { toggle, Add, Connect, clearGraph } = useCircuit(
     graph,
     setGraph,
@@ -44,8 +50,48 @@ function App() {
     addToUndoStack,
     setoPin,
     setSelectedGate,
-    setSelectedWire
+    setSelectedWire,
+    setShowClockWindow,
+    setClockDelayInput
   );
+
+  let [openTool, setOpenTool] = useState(null);
+
+  function ToolSection({ name, list }) {
+    const isOpen = openTool === name;
+
+    return (
+      <div className="toolSection">
+
+        <button
+          className="toolButton"
+          onClick={() =>
+            setOpenTool(isOpen ? null : name)
+          }
+        >
+          <span>{name}</span>
+          <span>{isOpen ? "▲" : "▼"}</span>
+        </button>
+
+        {isOpen && (
+          <div className="toolGateCards">
+            {list.map((object) => (
+              <div
+                key={object.type}
+                onClick={() => Add(object.type)}
+              >
+                <GateCard
+                  renderFxn={object.render}
+                  gateType={object.type}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    );
+  }
 
   useEffect(() => {
     graphRef.current = graph;
@@ -69,42 +115,42 @@ function App() {
 
     setDidDrag(false);
   }
-function togglePauseSim() {
-  const newPauseState = !pauseSim;
-  
-  if (newPauseState === true) {
-    // ✅ PAUSING: Store remaining time for each clock
-    const now = performance.now();
-    const remainingTimes = clock_delays.map(clock => ({
-      id: clock.id,
-      remaining: Math.max(0, clock.next_delay - now),
-      delay: clock.delay
-    }));
-    setPausedClocks(remainingTimes);
-    
-  } else {
-    // ✅ RESUMING: Restore clock delays with remaining time
-    const now = performance.now();
-    setClockDelays(prev => 
-      prev.map(clock => {
-        const paused = pausedClocks.find(p => p.id === clock.id);
-        if (paused) {
-          // Resume with remaining time
+  function togglePauseSim() {
+    const newPauseState = !pauseSim;
+
+    if (newPauseState === true) {
+      // ✅ PAUSING: Store remaining time for each clock
+      const now = performance.now();
+      const remainingTimes = clock_delays.map(clock => ({
+        id: clock.id,
+        remaining: Math.max(0, clock.next_delay - now),
+        delay: clock.delay
+      }));
+      setPausedClocks(remainingTimes);
+
+    } else {
+      // ✅ RESUMING: Restore clock delays with remaining time
+      const now = performance.now();
+      setClockDelays(prev =>
+        prev.map(clock => {
+          const paused = pausedClocks.find(p => p.id === clock.id);
+          if (paused) {
+            // Resume with remaining time
+            return {
+              ...clock,
+              next_delay: now + paused.remaining
+            };
+          }
           return {
             ...clock,
-            next_delay: now + paused.remaining
+            next_delay: now + clock.delay
           };
-        }
-        return {
-          ...clock,
-          next_delay: now + clock.delay
-        };
-      })
-    );
+        })
+      );
+    }
+
+    setPauseSim(newPauseState);
   }
-  
-  setPauseSim(newPauseState);
-}
   function zoom(e) {
     e.preventDefault();
 
@@ -129,96 +175,215 @@ function togglePauseSim() {
     }));
   }
 
-  useEffect(() => { //for deletion
+  function confirmClock() {
+    if (clockDelayInput.trim() === "") return;
+
+    const delay = Number(clockDelayInput);
+
+    if (!Number.isFinite(delay)) {
+      alert("Enter a valid number");
+      return;
+    }
+
+    if (delay < CONSTANTS.MIN_FRAME_TIME) {
+      alert(`Delay entered less than ${CONSTANTS.MIN_FRAME_TIME}`);
+      return;
+    }
+
+    setShowClockWindow(false);
+    setClockDelayInput("");
+
+    Add("CLOCK", null, null, delay);
+  }
+
+  useEffect(() => {
     function handleKey(e) {
       if (e.key !== "Delete") return;
 
-      addToUndoStack(graph, clock_delays)
+      addToUndoStack(graph, clock_delays);
 
       const newGraph = structuredClone(graph);
-      if (selectedWire) {
 
-        newGraph[selectedWire.to].inputs[selectedWire.inputIndex] = -1;
-        for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) evaluate(newGraph);
-
-        setGraph(newGraph);
-        setSelectedWire(null); // Clear the selected wire
-      }
-
-      else if (selectedGate) {
+      if (selectedGate !== null) {
 
         const idToDelete = selectedGate.id;
 
-        // Find the index of the gate to delete
-        let deleteIndex = -1;
-        for (let i = 0; i < newGraph.length; i++) {
-          if (newGraph[i].id === idToDelete) {
-            deleteIndex = i;
-            break;
-          }
+        const deleteIndex = newGraph.findIndex(
+          node => node.id === idToDelete
+        );
+
+        if (deleteIndex === -1) {
+          setSelectedGate(null);
+          return;
         }
 
-        if (deleteIndex === -1) return;
+        const nodeToDelete = newGraph[deleteIndex];
 
-        newGraph.splice(deleteIndex, 1);
+        // =====================================================
+        // DELETE WIRE
+        // =====================================================
+        if (nodeToDelete.type === "WIRE") {
 
-        // Clear selectedWire if it was connected to the deleted gate
-        if (selectedWire) {
-          // Check if the wire is from or to the deleted gate
-          if (selectedWire.from === idToDelete || selectedWire.to === idToDelete) {
-            setSelectedWire(null);
-          } else {
-            // If the wire's IDs need to be updated
-            const updatedWire = { ...selectedWire };
-            if (updatedWire.from > idToDelete) updatedWire.from -= 1;
-            if (updatedWire.to > idToDelete) updatedWire.to -= 1;
-            setSelectedWire(updatedWire);
-          }
-        }
+          const idsToDelete = new Set([idToDelete]);
 
-        // Update IDs and fix connections for all remaining gates
-        for (let i = 0; i < newGraph.length; i++) {
-          const node = newGraph[i];
+          let changed = true;
 
-          // Update ID
-          if (node.id > idToDelete) {
-            node.id -= 1;
-          }
+          // Find all downstream child wires recursively
+          while (changed) {
+            changed = false;
 
-          // Update inputs - handle all positions properly
-          for (let j = 0; j < node.inputs.length; j++) {
-            const input = node.inputs[j];
+            for (const node of newGraph) {
 
-            if (input === idToDelete) {
-              // This input was connected to the deleted gate
-              node.inputs[j] = -1;
-            } else if (input > idToDelete) {
-              // This input referenced a gate with higher ID, shift it down
-              node.inputs[j] = input - 1;
+              if (node.type !== "WIRE") continue;
+
+              // Child wire gets its signal from
+              // a wire that is already being deleted
+              if (
+                node.inputs &&
+                node.inputs.length > 0 &&
+                idsToDelete.has(node.inputs[0])
+              ) {
+                if (!idsToDelete.has(node.id)) {
+                  idsToDelete.add(node.id);
+                  changed = true;
+                }
+              }
             }
-            // If input < idToDelete, it stays the same
+          }
+
+          // Disconnect everything referencing
+          // any wire that is being deleted
+          for (const node of newGraph) {
+
+            if (!node.inputs) continue;
+
+            node.inputs = node.inputs.map(input =>
+              idsToDelete.has(input) ? -1 : input
+            );
+          }
+
+          // Delete all collected wires
+          for (let i = newGraph.length - 1; i >= 0; i--) {
+
+            if (idsToDelete.has(newGraph[i].id)) {
+              newGraph.splice(i, 1);
+            }
           }
         }
 
+        // =====================================================
+        // DELETE GATE / COMPONENT
+        // =====================================================
+        else {
 
+          const idsToDelete = new Set([idToDelete]);
 
+          let changed = true;
+
+          // -------------------------------------------------
+          // Collect connected wires
+          // -------------------------------------------------
+          while (changed) {
+
+            changed = false;
+
+            for (const node of newGraph) {
+
+              if (node.type !== "WIRE") continue;
+
+              // -----------------------------------------
+              // Child wire
+              // -----------------------------------------
+              if (
+                node.inputs &&
+                node.inputs.length > 0 &&
+                idsToDelete.has(node.inputs[0])
+              ) {
+                if (!idsToDelete.has(node.id)) {
+
+                  idsToDelete.add(node.id);
+                  changed = true;
+                }
+              }
+
+              // -----------------------------------------
+              // Parent wire
+              //
+              // Gate contains the wire ID in its inputs
+              // -----------------------------------------
+              if (
+                nodeToDelete.inputs &&
+                nodeToDelete.inputs.includes(node.id)
+              ) {
+                if (!idsToDelete.has(node.id)) {
+
+                  idsToDelete.add(node.id);
+                  changed = true;
+                }
+              }
+            }
+          }
+
+          // -------------------------------------------------
+          // Disconnect references to deleted nodes
+          // -------------------------------------------------
+          for (const node of newGraph) {
+
+            if (!node.inputs) continue;
+
+            node.inputs = node.inputs.map(input =>
+              idsToDelete.has(input) ? -1 : input
+            );
+          }
+
+          // -------------------------------------------------
+          // Delete gate + all collected wires
+          // -------------------------------------------------
+          for (let i = newGraph.length - 1; i >= 0; i--) {
+
+            if (idsToDelete.has(newGraph[i].id)) {
+              newGraph.splice(i, 1);
+            }
+          }
+        }
+
+        setSelectedGate(null);
       }
-      let [newGraph2, new_clock_delays] = topologicalOrderAndReindex(newGraph)
 
-      // Evaluate the circuit
-      for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) evaluate(newGraph2);
+      // =========================================================
+      // REORDER + REINDEX
+      // =========================================================
+      let [newGraph2, new_clock_delays] =
+        topologicalOrderAndReindex(newGraph);
 
-      setGraph(newGraph2)
-      setClockDelays(new_clock_delays)
-      // Clear selected gate
+      // =========================================================
+      // RE-EVALUATE
+      // =========================================================
+      for (
+        let i = 0;
+        i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
+        i++
+      ) {
+        evaluate(newGraph2);
+      }
+
+      // =========================================================
+      // UPDATE STATE
+      // =========================================================
+      setGraph(newGraph2);
+      setClockDelays(new_clock_delays);
       setSelectedGate(null);
     }
 
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [selectedWire, selectedGate]);
 
-  useEffect(() => {
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+    };
+
+  }, [selectedGate, graph, clock_delays]);
+
+  useEffect(() => {  //for clocks
 
     if (pauseSim) return
     const intervalId = setInterval(() => {
@@ -267,23 +432,69 @@ function togglePauseSim() {
   }, [pauseSim]);
 
 
-  function setoutputpin(id) {
-    setoPin({ gateId: id });
+  function setoutputpin(id, pinX, pinY) {
+    setoPin({
+      gateId: id,
+      pinX: pinX,
+      pinY: pinY
+    });
     setMouse({
-      x: graph[id].x + +CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X,
-      y: graph[id].y + + CONSTANTS.INPUT_PIN_Y
-    })
+      x: pinX,
+      y: pinY
+    });
+    setWirePath([
+
+      { x: pinX, y: pinY }
+    ]);
+
   }
 
-  function setinputpin(id, index) {
-    let newipin = { gateId: id, gateIndex: index }
-    Connect(newipin, opin)
+  function setinputpin(id, index, endx, endy) {
+    if (opin === null) return
+    console.log(`setinputpin fired. currently, startx=${opin.pinX}, endx=${endx}`)
+    Add(
+      "WIRE",
+      {
+        path: [...wirePath, { x: endx, y: endy }],
+        inputId: opin.gateId
+      },
+      {
+        gateId: id,
+        gateIndex: index
+      }
+    );
+
+    setoPin(null)
+
+
   }
 
-  function selectWire(wire) {
-    setSelectedWire(wire)
-    setSelectedGate(null) //when selected wire, clear selected gate 
+  function selectWire(e, id) {
+    if (e.button === 0) {
+      setSelectedGate({ id: id });
+    }
+    else if (e.button === 1) {
+      //branching logic
+      const point = getSVGPoint(e, svgRef, view);
+
+      setoPin({
+        gateId: id,
+        pinX: point.x,
+        pinY: point.y
+      });
+      setMouse({
+        x: point.x,
+        y: point.y
+      });
+      setWirePath([{ x: point.x, y: point.y }]);
+
+      console.log("added point to live wire");
+
+
+    }
+
   }
+
 
   function drag(e) {
 
@@ -336,7 +547,23 @@ function togglePauseSim() {
     }
   }
 
-  function stopDrag() {
+  function stopDrag(e) {
+    if (e.button === 0 && opin) { // live wire + left click = add bend
+
+      let point = getSVGPoint(e, svgRef, view);
+
+      setWirePath(prev => [
+        ...prev,
+        { x: point.x, y: point.y }
+      ]);
+
+      console.log("added point to live wire");
+      setoPin(prev => ({
+        ...prev,
+        pinX: point.x,
+        pinY: point.y
+      }));
+    }
     setdraginfo(null);
     setPan(null);
   }
@@ -546,9 +773,22 @@ function togglePauseSim() {
     setShowAbout(false);
   }
 
+  CONSTANTS.toggleTheme(document, theme)
+
+
+
   return (
     <div className="homepage">
       <div className="utilites">
+        <img
+          src={logo}
+          alt="GateSim Logo"
+          width={55}
+          height={75}
+          className="logo"
+          style={{ marginRight: '8px' }}
+          onClick={showabout}
+        />
         <button onClick={showTutorial} >
           TUTORIAL
         </button>
@@ -563,13 +803,16 @@ function togglePauseSim() {
         <button onClick={() => undo()} style={{ fontSize: '20px' }}>↶</button>
         <button onClick={() => redo()} style={{ fontSize: '20px' }}>↷</button>
         <button onClick={togglePauseSim}>
-  {pauseSim ? '▶ START CLOCKS' : '⏸ PAUSE CLOCKS'}
-</button>
-        <button onClick={showabout} style={{
-
-        }}>
-          ABOUT
+          {pauseSim ? '▶ START CLOCKS' : '⏸ PAUSE CLOCKS'}
         </button>
+        <button onClick={() => {
+          setTheme(!theme)
+          CONSTANTS.toggleTheme(document, theme)
+        }}>TOGGLE THEME</button>
+        <button onClick={() => {
+          console.log(graph)
+          console.log(opin)
+        }}>print</button>
         <input
           ref={fileInputRef}
           type="file"
@@ -581,173 +824,178 @@ function togglePauseSim() {
       <div className="tools-and-canvas">
         <div className="toolsBar">
 
+          <ToolSection
+            name="Input"
+            list={inputGateRenderList}
+          />
 
-          <div className="inputSection">
-            {
-              inputGateRenderList.map(
-                (object) => {
-                  return (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>)
-                }
-              )
-            }
-          </div>
-          {/* <div><button onClick={() => { sortgraph(graph) }}>sort</button></div> */}
+          <ToolSection
+            name="Gates"
+            list={logicGateRenderList}
+          />
 
-          <div className="outputSection">
-            {
-              outputGateRenderList.map(
-                (object) => {
-                  return (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>)
-                }
-              )
-            }
-          </div>
-          <div className="gatesSection">
-            {
-              logicGateRenderList.map(
-                (object) => {
-                  return (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>)
-                }
-              )
-            }
-          </div>
-          {/* <div>
-            <button onClick={() => {
-              console.log(JSON.stringify(graph, null, 2));
-              console.log(JSON.stringify(clock_delays, null, 2));
-            }}>
-              print
-            </button>
-          </div> */}
+          <ToolSection
+            name="Output"
+            list={outputGateRenderList}
+          />
 
         </div>
         <div className="canvas-wrapper">
-        <div className="canvas">
-          <svg
-            width="100%"
-            height="100%"
-            ref={svgRef}
-            viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
-            style={{
-              backgroundColor: CONSTANTS.CANVAS_BACKGROUND,
-              border: '2px solid #4a5568',
-              boxSizing: 'border-box'
-            }}
-            onMouseDown={startPan}
-            onMouseMove={drag}
-            onMouseUp={stopDrag}
-            onWheel={zoom}
-            onContextMenu={cancelWire}
-          >
+          <div className="canvas">
+            <svg
+              width="100%"
+              height="100%"
+              ref={svgRef}
+              viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
+              style={{
+                backgroundColor: CONSTANTS.CANVAS_BACKGROUND,
+                border: '2px solid #4a5568',
+                boxSizing: 'border-box'
+              }}
+              onMouseDown={startPan}
+              onMouseMove={drag}
+              onMouseUp={stopDrag}
+              onWheel={zoom}
+              onContextMenu={cancelWire}
+            >
 
-            {graph.map(node =>
-              node.inputs.map((input, index) => {
-                if (input === -1) return
-                let start = getWireStart(graph, input)
-                let end = getWireEnd(node, index)
 
-                // console.log(`Wire key=${node.id} - ${index}`)
-                return (<Wire
-                  key={`${node.id}-${index}`}
-                  start={[
-                    start.x,
-                    start.y
-                  ]}
-                  end={[
-                    end.x,
-                    end.y
-                  ]}
-                  from={input}
-                  to={node.id}
-                  style={{ pointerEvents: "stroke" }}
-                  inputIndex={index}
-                  onClick={selectWire}
-                  isSelected={
-                    selectedWire?.from === input &&
-                    selectedWire?.to === node.id &&
-                    selectedWire?.inputIndex === index
-                  }
-                />)
-              })
-            )}
 
-            {opin && (() => {
-              if (graph[opin.gateId].type === "INPUT") {
+              {opin && (() => {
+
                 return (
                   <LiveWire
                     start={[
-                      graph[opin.gateId].x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X,
-                      graph[opin.gateId].y + CONSTANTS.TOGGLE_HEIGHT / 2
+                      opin.pinX,
+                      opin.pinY
                     ]}
                     end={[mouse.x, mouse.y]}
                     color={CONSTANTS.WIRE_COLOR}
                     strokeWidth={CONSTANTS.WIRE_STROKE_WIDTH}
                   />
+
                 );
-              }
-              else {
+              })()}
+
+              {opin && (() => {
+
                 return (
-                  <LiveWire
-                    start={[
-                      graph[opin.gateId].x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X,
-                      graph[opin.gateId].y + CONSTANTS.INPUT_PIN_Y
-                    ]}
-                    end={[mouse.x, mouse.y]}
-                    color={CONSTANTS.WIRE_COLOR}
-                    strokeWidth={CONSTANTS.WIRE_STROKE_WIDTH}
-                  />
+                  <RenderUncommitedWire path={wirePath}></RenderUncommitedWire>
+
                 );
-              }
-            })()}
+              })()}
 
-            {graph.map((node) => {
-              return (<Gate
-                key={node.id}
-                node={node}
-                toggle={toggle}
-                graph={graph}
-                didDrag={didDrag}
-                startDrag={startDrag}
-                setoutputpin={setoutputpin}
-                setinputpin={setinputpin}
-                setSelectedGate={setSelectedGate}
-                setSelectedWire={setSelectedWire}
-                isSelected={selectedGate?.id === node.id}
-              />)
-            })}
 
-          </svg>
-        </div>
+              {/* ─── LAYER 1: WIRES (rendered first, behind gates) ─── */}
+              {graph
+                .filter(node => node.type === "WIRE")
+                .map((node) => (
+                  <Gate
+                    key={node.id}
+                    node={node}
+                    toggle={toggle}
+                    graph={graph}
+                    didDrag={didDrag}
+                    startDrag={startDrag}
+                    setoutputpin={setoutputpin}
+                    setinputpin={setinputpin}
+                    setSelectedGate={setSelectedGate}
+                    setSelectedWire={setSelectedWire}
+                    isSelected={selectedGate?.id === node.id}
+                    path={node.path}
+                    selectWire={selectWire}
+                  />
+                ))}
+
+              {/* ─── LAYER 2: GATES (rendered second, on top of wires) ─── */}
+              {graph
+                .filter(node => node.type !== "WIRE")
+                .map((node) => (
+                  <Gate
+                    key={node.id}
+                    node={node}
+                    toggle={toggle}
+                    graph={graph}
+                    didDrag={didDrag}
+                    startDrag={startDrag}
+                    setoutputpin={setoutputpin}
+                    setinputpin={setinputpin}
+                    setSelectedGate={setSelectedGate}
+                    setSelectedWire={setSelectedWire}
+                    isSelected={selectedGate?.id === node.id}
+                  />
+                ))}
+
+            </svg>
+          </div>
         </div>
       </div>
       {showAbout && <AboutModal onClose={closeAbout} />}
+
+      {showClockWindow && (
+        <div className="clock-window-overlay">
+          <div className="clock-window">
+
+            <div className="clock-window-title">
+              Add Clock
+            </div>
+
+            <div className="clock-window-content">
+
+              <label>
+                Clock Delay
+              </label>
+
+              <div className="clock-input-row">
+                <input
+                  type="number"
+                  min={CONSTANTS.MIN_FRAME_TIME}
+                  value={clockDelayInput}
+                  autoFocus
+                  onChange={(e) =>
+                    setClockDelayInput(e.target.value)
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      confirmClock();
+                    }
+
+                    if (e.key === "Escape") {
+                      setShowClockWindow(false);
+                      setClockDelayInput("");
+                    }
+                  }}
+                />
+
+                <span>ms</span>
+              </div>
+
+              <div className="clock-minimum">
+                Minimum: {CONSTANTS.MIN_FRAME_TIME} ms
+              </div>
+
+            </div>
+
+            <div className="clock-window-buttons">
+
+              <button
+                onClick={() => {
+                  setShowClockWindow(false);
+                  setClockDelayInput("");
+                }}
+              >
+                Cancel
+              </button>
+
+              <button onClick={confirmClock}>
+                Add Clock
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   )

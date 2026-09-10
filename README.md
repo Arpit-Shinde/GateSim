@@ -50,3 +50,5 @@ Link to deployed website : [https://arpit-shinde.github.io/GateSim/](https://arp
 - Not based on propogation delay. So circuits like ring oscillator won't work
 - Doesn't handle race condition in level triggered flip flops. Instead use master slave flip flops
 - Currently unoptimised. May lag considerably for large amount of components in the scene
+
+If you find this project useful, please consider giving it a ⭐!

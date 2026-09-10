@@ -15,7 +15,7 @@ export const GATE_FILL_COLOR = "#ffffff"
 export const NAND_PIN_RADIUS = 3
 
 export const BULB_WIDTH = 30
-export const BULB_PIN_X = BULB_WIDTH/2
+export const BULB_PIN_X = BULB_WIDTH / 2
 export const BULB_PIN_Y = BULB_WIDTH
 export const BULB_PIN_LENGTH = 15
 export const BULB_ON_COLOR = "#63fd04"
@@ -28,7 +28,7 @@ export const TOGGLE_WIDTH = 60
 export const TOGGLE_HEIGHT = 40
 export const TOGGLE_CAPSULE_RADIUS = 10
 
-export const WIRE_COLOR = "#000000"
+export let WIRE_COLOR = "#838383"
 export const WIRE_STROKE_WIDTH = 3
 
 export const MAX_EVALUATION_ITERATIONS = 10;
@@ -40,9 +40,9 @@ export const MIN_FRAME_TIME = 50;
 
 export const GATE_TYPES = ["INPUT", "AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR", "BULB"]
 
-export const CANVAS_START = {x:150,y:10}
-export const CANVAS_BACKGROUND="#e5e5e5"
-export const GATE_CARD_BACKGROUND = "#c4c4c4"
+export const CANVAS_START = { x: 150, y: 10 }
+export let CANVAS_BACKGROUND = "#211f1f"
+export let GATE_CARD_BACKGROUND = "#110f0f"
 
 // constants/constants.js
 
@@ -57,3 +57,40 @@ export const JK_OUTPUT_PINS = {
   Q: { x: 60, y: 10 },
   Q_NOT: { x: 60, y: 30 }
 };
+
+export function toggleTheme(document, theme) {
+  if (theme) {
+    WIRE_COLOR = "#acacac" //dark mode
+    GATE_CARD_BACKGROUND = "#c9c9c9"
+    CANVAS_BACKGROUND = "#313131"
+    document.documentElement.style.setProperty(
+      "--utilities-background",
+      "#3c3c3c"
+    );
+    document.documentElement.style.setProperty(
+      "--homepage-background",
+      "#2b2b2b"
+    );
+    document.documentElement.style.setProperty(
+      "--gatecard-label-background",
+      "#c7c7c7"
+    );
+  }
+  else {
+    WIRE_COLOR = "#000000"
+    GATE_CARD_BACKGROUND = "#fbfbfb"
+    CANVAS_BACKGROUND = "#ababab"
+    document.documentElement.style.setProperty(
+      "--utilities-background",
+      "#e6e6e6"
+    );
+    document.documentElement.style.setProperty(
+      "--homepage-background",
+      "#cacaca"
+    );
+    document.documentElement.style.setProperty(
+      "--gatecard-label-background",
+      "#393939"
+    );
+  }
+}

@@ -50,18 +50,43 @@ export const xor_extra_curve_path = `
   Q ${CONSTANTS.GATE_WIDTH * 0.17} ${CONSTANTS.GATE_HEIGHT * 0.5}, ${CONSTANTS.GATE_WIDTH * -0.08} ${CONSTANTS.GATE_HEIGHT}
 `;
 
-export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputpin, setSelectedGate, setSelectedWire, isSelected }) {
+export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputpin, setSelectedGate, isSelected, selectWire = null }) {
 
   const gateClass = `actual-gate ${isSelected ? 'selected-gate' : ''}`;
 
-  if (node.type === "INPUT") {
+  if (node.type === "WIRE") {
+    const path = node.path
+      .map((point, i) =>
+        `${i === 0 ? "M" : "L"} ${point.x} ${point.y}`
+      )
+      .join(" ");
+
+    return (
+      <g className={gateClass}>
+        <path
+          d={path}
+          stroke={node.value ? CONSTANTS.BULB_ON_COLOR : CONSTANTS.WIRE_COLOR}
+          strokeWidth={CONSTANTS.WIRE_STROKE_WIDTH}
+          fill="none"
+          className={gateClass}
+          style={{ pointerEvents: "stroke" }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            selectWire(e, node.id)
+
+          }}
+        />
+      </g>
+    );
+  }
+
+  else if (node.type === "INPUT") {
     return (
       <g
         transform={`translate(${node.x}, ${node.y})`}
         className={gateClass}
         onClick={() => {
           setSelectedGate({ id: node.id })
-          setSelectedWire(null)
           return true
         }}
       >
@@ -109,7 +134,14 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => {
+            console.log(`outputpin set \n node id:${node.id} x=${node.x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X}, y=${node.y + CONSTANTS.TOGGLE_HEIGHT / 2}`)
+            setoutputpin(
+              node.id,
+              node.x + CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X,
+              node.y + CONSTANTS.TOGGLE_HEIGHT / 2
+            )
+          }}
           cx={CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.TOGGLE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS}
@@ -141,14 +173,24 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
 
         <circle
           className="pin"
-          onClick={() => { setinputpin(node.id, 0) }}
+
+          onMouseUp={(e) => {
+            e.stopPropagation(); //when input pin clicked, prevent stopdDrag call
+          }}
+          onClick={(e) => {
+            setinputpin(
+              node.id,
+              0,
+              node.x + CONSTANTS.BULB_PIN_X,
+              node.y + CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH
+            );
+          }}
           cx={CONSTANTS.BULB_PIN_X}
           cy={CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH}
           r={CONSTANTS.PIN_RADIUS}
@@ -195,13 +237,15 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onMouseUp={(e) => {
+            e.stopPropagation(); //when input pin clicked, prevent stopdDrag call
+          }}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -211,7 +255,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onMouseUp={(e) => {
+            e.stopPropagation(); //when input pin clicked, prevent stopdDrag call
+          }}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -221,7 +268,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -268,13 +315,12 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -284,7 +330,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -294,7 +340,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -341,7 +387,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
@@ -355,7 +400,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onMouseUp={(e) => {
+            e.stopPropagation(); //when input pin clicked, prevent stopdDrag call
+          }}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -365,7 +413,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onMouseUp={(e) => {
+            e.stopPropagation(); //when input pin clicked, prevent stopdDrag call
+          }}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -375,7 +426,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -422,7 +473,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
@@ -436,7 +486,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -446,7 +496,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -456,7 +506,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -503,7 +553,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
@@ -516,7 +565,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -526,7 +575,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -536,7 +585,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -583,7 +632,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
@@ -604,7 +652,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -614,7 +662,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -624,7 +672,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -639,7 +687,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "NOT") {
     return (
       <g transform={`translate(${node.x}, ${node.y})`} className={gateClass}>
-        {/* Input wire stub */}
         <line
           x1={10}
           y1={CONSTANTS.INPUT_PIN_Y}
@@ -649,7 +696,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
 
-        {/* Output wire stub - goes from bubble to pin */}
         <line
           x1={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS * 2}
           y1={CONSTANTS.OUTPUT_PIN_Y}
@@ -659,7 +705,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
 
-        {/* NOT triangle */}
         <path
           d={not_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -668,12 +713,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
 
-        {/* Inversion Bubble at output */}
         <circle
           cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
           cy={CONSTANTS.OUTPUT_PIN_Y}
@@ -683,10 +726,9 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
 
-        {/* Input pin */}
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -695,10 +737,9 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
 
-        {/* Output pin (after bubble) */}
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2 - 2, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2 - 2}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -724,7 +765,26 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
+            return true
+          }}
+        />
+        <path
+          d="
+    
+    M 20 40
+    L 20 18
+    L 35 18
+    L 35 40
+    L 50 40
+    L 50 18
+  
+  "
+          fill="none"
+          stroke="#a0aec0"
+          strokeWidth="3"
+          onMouseDown={(e) => startDrag(e, node.id)}
+          onClick={() => {
+            setSelectedGate({ id: node.id })
             return true
           }}
         />
@@ -738,7 +798,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -793,7 +853,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
@@ -807,7 +866,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onMouseUp={(e) => {
+            e.stopPropagation(); //when input pin clicked, prevent stopdDrag call
+          }}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -817,7 +879,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onMouseUp={(e) => {
+            e.stopPropagation(); //when input pin clicked, prevent stopdDrag call
+          }}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.GATE_HEIGHT / 2)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS}
@@ -827,7 +892,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 2)}
+          onMouseUp={(e) => {
+            e.stopPropagation(); //when input pin clicked, prevent stopdDrag call
+          }}
+          onClick={() => setinputpin(node.id, 2, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -837,7 +905,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -892,13 +960,12 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -908,7 +975,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.GATE_HEIGHT / 2)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS}
@@ -918,7 +985,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 2)}
+          onClick={() => setinputpin(node.id, 2, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -928,7 +995,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -983,13 +1050,12 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -999,7 +1065,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.GATE_HEIGHT / 2)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS}
@@ -1009,7 +1075,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 2)}
+          onClick={() => setinputpin(node.id, 2, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -1019,7 +1085,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -1074,7 +1140,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
@@ -1088,7 +1153,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -1098,7 +1163,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.GATE_HEIGHT / 2)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS}
@@ -1108,7 +1173,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 2)}
+          onClick={() => setinputpin(node.id, 2, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -1118,7 +1183,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -1173,7 +1238,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
@@ -1186,7 +1250,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -1196,7 +1260,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.GATE_HEIGHT / 2)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS}
@@ -1206,7 +1270,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 2)}
+          onClick={() => setinputpin(node.id, 2, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -1216,7 +1280,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -1271,7 +1335,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
-            setSelectedWire(null)
             return true
           }}
         />
@@ -1292,7 +1355,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -1302,7 +1365,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.GATE_HEIGHT / 2)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS}
@@ -1312,7 +1375,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 2)}
+          onClick={() => setinputpin(node.id, 2, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -1322,7 +1385,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <circle
           className="pin"
-          onClick={() => { setoutputpin(node.id) }}
+          onClick={() => setoutputpin(node.id, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.OUTPUT_PIN_Y)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
@@ -1333,7 +1396,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
       </g>
     )
   }
-  // components/gate.js
 
   else if (node.type === "JK") {
     return (
@@ -1364,9 +1426,9 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <line
           x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.JK_OUTPUT_PINS.Q.y}
+          y1={CONSTANTS.INPUT_PIN_Y_TOP}
           x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.JK_OUTPUT_PINS.Q.y}
+          y2={CONSTANTS.INPUT_PIN_Y_TOP}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
@@ -1390,11 +1452,9 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id });
-            setSelectedWire(null);
           }}
         />
 
-        {/* Label */}
         <text
           x={CONSTANTS.GATE_WIDTH / 2}
           y={CONSTANTS.GATE_HEIGHT / 2 + 4}
@@ -1405,12 +1465,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         >
           JK
         </text>
-        
 
-        {/* Input pins: J (top), CLK (middle), K (bottom) */}
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 0)}
+          onClick={() => setinputpin(node.id, 0, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -1422,7 +1480,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 1)}
+          onClick={() => setinputpin(node.id, 1, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.GATE_HEIGHT / 2)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS}
@@ -1434,7 +1492,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
         <circle
           className="pin"
-          onClick={() => setinputpin(node.id, 2)}
+          onClick={() => setinputpin(node.id, 2, node.x + CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -1444,10 +1502,9 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
         <text x={0} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">K</text>
 
-        {/* Output pins: Q (top), Q' (bottom) */}
         <circle
           className="pin"
-          onClick={() => setoutputpin(node.id, 0)}
+          onClick={() => setoutputpin(node.id, 0, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_TOP)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS}
@@ -1455,11 +1512,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-        <text x={CONSTANTS.GATE_WIDTH-10} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">Q</text>
+        <text x={CONSTANTS.GATE_WIDTH - 10} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">Q</text>
 
         <circle
           className="pin"
-          onClick={() => setoutputpin(node.id, 1)}
+          onClick={() => setoutputpin(node.id, 1, node.x + CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, node.y + CONSTANTS.INPUT_PIN_Y_BOTTOM)}
           cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
           cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS}
@@ -1467,7 +1524,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-        <text x={CONSTANTS.GATE_WIDTH-10} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">Q'</text>
+        <text x={CONSTANTS.GATE_WIDTH - 10} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">Q'</text>
       </g>
     );
   }

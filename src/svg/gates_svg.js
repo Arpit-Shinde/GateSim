@@ -603,17 +603,22 @@ export function RenderCLOCK() {
         
       />
       
-      {/* CLK text */}
-      <text
-        x={CONSTANTS.GATE_WIDTH / 2}
-        y={CONSTANTS.GATE_HEIGHT / 2 +7}
-        textAnchor="middle"
-        fontSize={20}
-        fill="#a0aec0"
-        fontWeight="bold"
-      >
-        CLK
-      </text>
+      <path
+          d="
+    
+    M 20 40
+    L 20 18
+    L 35 18
+    L 35 40
+    L 50 40
+    L 50 18
+  
+  "
+          fill="none"
+          stroke="#a0aec0"
+          strokeWidth="3"
+          
+        />
       
       {/* Output wire stub */}
       <line
