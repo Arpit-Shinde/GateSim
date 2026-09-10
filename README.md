@@ -17,13 +17,11 @@ Link to deployed website : [https://arpit-shinde.github.io/GateSim/](https://arp
 
 - Dynamic gate creation
 - Dynamic gate connections
-- Click to Connect
-- Drag-and-drop gate placement
-- wire deletion
-- gate deletion
+- Dynamic wiring 
+- Wire deletion
+- Gate deletion
 - Better SVG for gates
 - Simple UI
-- Sequential Circuits
 - Clocks
 - Flip-flops
 - Infinite canvas with pan and zoom
@@ -44,6 +42,7 @@ Link to deployed website : [https://arpit-shinde.github.io/GateSim/](https://arp
 
 - Add all kinds of Flip-Flops, Registers, Mux,etc
 - User defined component creation
+- A architecture explaination
 
 ## Limitations
 
