@@ -1979,10 +1979,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           y={CONSTANTS.GATE_HEIGHT / 2 + 4}
           textAnchor="middle"
           fontSize={11}
-          fill="#a0aec0"
+          fill="#626b78"
           fontWeight="bold"
+          pointerEvents="none"
         >
-          MUX 2:1
+          MUX2
         </text>
 
         {/* Input pins + labels */}
@@ -1990,19 +1991,19 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP); setinputpin(node.id, 0, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">D0</text>
+        <text x={5} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">D0</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 2); setinputpin(node.id, 1, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={CONSTANTS.GATE_HEIGHT / 2 + 4} fontSize={8} fill="#a0aec0">D1</text>
+        <text x={5} y={CONSTANTS.GATE_HEIGHT / 2 + 4} fontSize={8} fill="#a0aec0">D1</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM); setinputpin(node.id, 2, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">S</text>
+        <text x={5} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">S</text>
 
         {/* Output pin + label */}
         <circle className="pin"
@@ -2061,8 +2062,9 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           y={CONSTANTS.GATE_HEIGHT / 2 + 4}
           textAnchor="middle"
           fontSize={11}
-          fill="#a0aec0"
+          fill="#626b78"
           fontWeight="bold"
+          pointerEvents="none"
         >
           MUX 4:1
         </text>
@@ -2072,37 +2074,37 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, y0); setinputpin(node.id, 0, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={y0}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={y0 + 4} fontSize={8} fill="#a0aec0">D0</text>
+        <text x={5} y={y0 + 4} fontSize={8} fill="#a0aec0">D0</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, y1); setinputpin(node.id, 1, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={y1}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={y1 + 4} fontSize={8} fill="#a0aec0">D1</text>
+        <text x={5} y={y1 + 4} fontSize={8} fill="#a0aec0">D1</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, y2); setinputpin(node.id, 2, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={y2}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={y2 + 4} fontSize={8} fill="#a0aec0">D2</text>
+        <text x={5} y={y2 + 4} fontSize={8} fill="#a0aec0">D2</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, y3); setinputpin(node.id, 3, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={y3}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={y3 + 4} fontSize={8} fill="#a0aec0">D3</text>
+        <text x={5} y={y3 + 4} fontSize={8} fill="#a0aec0">D3</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, y4); setinputpin(node.id, 4, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={y4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={y4 + 4} fontSize={8} fill="#a0aec0">S0</text>
+        <text x={5} y={y4 + 4} fontSize={8} fill="#a0aec0">S0</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, y5); setinputpin(node.id, 5, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={y5}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={y5 + 4} fontSize={8} fill="#a0aec0">S1</text>
+        <text x={5} y={y5 + 4} fontSize={8} fill="#a0aec0">S1</text>
 
         {/* Output pin + label */}
         <circle className="pin"
@@ -2154,20 +2156,20 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
         {/* Label */}
         <text x={CONSTANTS.GATE_WIDTH / 2} y={CONSTANTS.GATE_HEIGHT / 2 + 4}
-          textAnchor="middle" fontSize={11} fill="#a0aec0" fontWeight="bold">HA</text>
+          textAnchor="middle" fontSize={11} fill="#626b78" fontWeight="bold" pointerEvents="none">HA</text>
 
         {/* Input pins + labels */}
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP); setinputpin(node.id, 0, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">A</text>
+        <text x={5} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">A</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM); setinputpin(node.id, 1, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">B</text>
+        <text x={5} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">B</text>
 
         {/* Output pins + labels */}
         <circle className="pin"
@@ -2226,26 +2228,26 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
         {/* Label */}
         <text x={CONSTANTS.GATE_WIDTH / 2} y={CONSTANTS.GATE_HEIGHT / 2 + 4}
-          textAnchor="middle" fontSize={11} fill="#a0aec0" fontWeight="bold">FA</text>
+          textAnchor="middle" fontSize={11} fill="#626b78" fontWeight="bold" pointerEvents="none">FA</text>
 
         {/* Input pins + labels */}
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP); setinputpin(node.id, 0, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_TOP}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">A</text>
+        <text x={5} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">A</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 2); setinputpin(node.id, 1, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 2}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={CONSTANTS.GATE_HEIGHT / 2 + 4} fontSize={8} fill="#a0aec0">B</text>
+        <text x={5} y={CONSTANTS.GATE_HEIGHT / 2 + 4} fontSize={8} fill="#a0aec0">B</text>
 
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
           onClick={() => { const p = outPos(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM); setinputpin(node.id, 2, p.x, p.y); }}
           cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <text x={0} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">Cin</text>
+        <text x={5} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">Cin</text>
 
         {/* Output pins + labels */}
         <circle className="pin"
@@ -2327,8 +2329,9 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           y={CONSTANTS.GATE_HEIGHT / 2 + 4}
           textAnchor="middle"
           fontSize={14}
-          fill="#a0aec0"
+          fill="#626b78"
           fontWeight="bold"
+          pointerEvents="none"
         >
           JK
         </text>
@@ -2344,7 +2347,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-        <text x={0} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">J</text>
+        <text pointerEvents="none" x={5} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">J</text>
 
         <circle
           className="pin"
@@ -2357,7 +2360,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-        <text x={0} y={CONSTANTS.GATE_HEIGHT / 2 + 4} fontSize={8} fill="#a0aec0">CLK</text>
+        <text pointerEvents="none" x={5} y={CONSTANTS.GATE_HEIGHT / 2 + 4} fontSize={8} fill="#a0aec0">CLK</text>
 
         <circle
           className="pin"
@@ -2370,7 +2373,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-        <text x={0} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">K</text>
+        <text pointerEvents="none" x={5} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">K</text>
 
         <circle
           className="pin"
@@ -2382,7 +2385,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-        <text x={CONSTANTS.GATE_WIDTH - 10} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">Q</text>
+        <text pointerEvents="none" x={CONSTANTS.GATE_WIDTH - 15} y={CONSTANTS.INPUT_PIN_Y_TOP + 4} fontSize={8} fill="#a0aec0">Q</text>
 
         <circle
           className="pin"
@@ -2394,7 +2397,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
-        <text x={CONSTANTS.GATE_WIDTH - 10} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">Q'</text>
+        <text pointerEvents="none" x={CONSTANTS.GATE_WIDTH - 15} y={CONSTANTS.INPUT_PIN_Y_BOTTOM + 4} fontSize={8} fill="#a0aec0">Q'</text>
       </g>
     );
   }

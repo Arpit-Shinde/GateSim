@@ -1,11 +1,9 @@
 export function showTutorial() {
   const overlay = document.createElement('div');
+
   overlay.style.cssText = `
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
@@ -14,110 +12,267 @@ export function showTutorial() {
   `;
 
   const modal = document.createElement('div');
+
   modal.style.cssText = `
     background: #1a1a1a;
-    color: #cccccc;
-    border-radius: 8px;
-    padding: 30px 35px;
-    max-width: 480px;
+    color: #cbd5e0;
     width: 90%;
-    max-height: 80vh;
+    min-width: 500px;
+    max-width: 650px;
+    max-height: 82vh;
     overflow-y: auto;
-    border: 1px solid #333333;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 13px;
-    line-height: 1.6;
+    padding: 36px 40px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    box-sizing: border-box;
   `;
 
   modal.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #2a2a2a; padding-bottom: 10px;">
-      <span style="color: #aaaaaa; font-size: 18px; font-weight: 600; letter-spacing: 0.5px;">TUTORIAL</span>
-      <button id="closeTutorialBtn" style="
+    <!-- Header -->
+    <div style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    ">
+      <h1 style="
+        font-size: 32px;
+        margin: 0;
+        color: #d4d4d4;
+        font-weight: 400;
+      ">
+        Tutorial
+      </h1>
+
+      <button id="closeTutorial" style="
         background: none;
-        color: #666666;
         border: none;
-        font-size: 18px;
+        color: #777;
+        font-size: 24px;
         cursor: pointer;
-        padding: 0 4px;
       ">✕</button>
     </div>
 
-    <div>
-      <div style="margin-bottom: 12px;">
-        <span style="color: #999999; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Controls</span>
-        <div style="margin-top: 4px; color: #bbbbbb;">
-          
-          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a1a1a;">
-            <span>Connect wires</span>
-            <span style="color: #888888;">Output pin → Input pin (order matters)</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a1a1a;">
-            <span>Toggle input</span>
-            <span style="color: #888888;">Click slider</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a1a1a;">
-            <span>Delete</span>
-            <span style="color: #888888;">Click Gate/Wire  + Delete key</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a1a1a;">
-            <span>Cancel live wire</span>
-            <span style="color: #888888;">Right click </span>
-          </div>
-        </div>
-      </div>
 
-      <div style="margin-bottom: 12px;">
-        <span style="color: #999999; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Drag & Pan</span>
-        <div style="margin-top: 4px; color: #bbbbbb;">
-          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a1a1a;">
-            <span>Drag gate</span>
-            <span style="color: #888888;">Left-click + drag</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a1a1a;">
-            <span>Pan canvas</span>
-            <span style="color: #888888;">Middle-click + drag</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-            <span>Zoom</span>
-            <span style="color: #888888;">Scroll wheel</span>
-          </div>
-        </div>
-      </div>
+    <div style="
+      display: flex;
+      flex-direction: column;
+    ">
 
-      
+      <!-- Add -->
+      <section>
+        <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 16px 0 8px 0;
+        ">
+          Add
+        </h4>
 
-      
+        <p style="
+          margin: 0 0 12px 0;
+          color: #cbd5e0;
+        ">
+          Navigate through the toolbar and left-click a component.
+          It will be placed at the center of the canvas.
+        </p>
+      </section>
+
+
+      <!-- Move -->
+      <section>
+        <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 20px 0 8px 0;
+        ">
+          Move, Pan & Zoom
+        </h4>
+
+        <p style="margin: 0;">
+          <b>Move gate:</b> Left-click + drag
+          <br>
+          <b>Pan canvas:</b> Middle-click + drag
+          <br>
+          <b>Zoom:</b> Scroll wheel
+        </p>
+      </section>
+
+
+      <!-- Wiring -->
+      <section>
+        <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 20px 0 8px 0;
+        ">
+          Wiring
+        </h4>
+
+        <p style="margin: 0;">
+          <b>Start wire:</b> Click an output pin
+          <br>
+          <b>Connect:</b> Click an input pin
+          <br>
+          <b>Commit wire:</b> Left-click
+          <br>
+          <b>Cancel wire:</b> Right-click
+          <br>
+          <b>Branch wire:</b> Left-click an existing wire
+        </p>
+      </section>
+
+
+      <!-- Selection -->
+      <section>
+        <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 20px 0 8px 0;
+        ">
+          Selection
+        </h4>
+
+        <p style="margin: 0;">
+          <b>Component:</b> Left-click
+          <br>
+          <b>Wire:</b> Middle-click
+        </p>
+      </section>
+
+
+      <!-- Inputs & Clocks -->
+      <section>
+        <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 20px 0 8px 0;
+        ">
+          Inputs & Clocks
+        </h4>
+
+        <p style="margin: 0;">
+          <b>Toggle input:</b> Click the slider circle
+          <br>
+          <b>Clock:</b> Add CLOCK and enter the delay in milliseconds.
+          Press Enter or OK.
+        </p>
+      </section>
+
+
+      <!-- Edit -->
+      <section>
+        <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 20px 0 8px 0;
+        ">
+          Edit
+        </h4>
+
+        <p style="margin: 0;">
+          <b>Delete:</b> Select → Delete key
+          <br>
+          <b>Rotate:</b> Select → ROTATE
+        </p>
+      </section>
+
+
+      <!-- Important -->
+      <section style="
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #3a3a3a;
+      ">
+        <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 0 0 8px 0;
+        ">
+          Important Points
+        </h4>
+
+        <ol style="
+          margin: 0;
+          padding-left: 22px;
+          color: #cbd5e0;
+        ">
+          <li>Unconnected inputs default to <b>false</b>.</li>
+          <li>Pause clocks when switching to other tasks.</li>
+          <li>Deleting a wire also deletes its branches and removes internal connections.</li>
+          <li>Deleting a gate removes all wires connected to it and removes internal connections.</li>
+          <li>Moving a gate does not move its wires; internal connections remain unchanged.</li>
+        </ol>
+      </section>
+
+
+      <!-- Good Luck -->
+      <section style="
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid #3a3a3a;
+        text-align: center;
+      ">
+        <p style="
+          margin: 0;
+          color: #a9a9a9;
+          font-size: 17px;
+          font-weight: 500;
+        ">
+          Good luck!
+        </p>
+      </section>
+
     </div>
 
-    <button id="closeTutorialBtn2" style="
+
+    <!-- Bottom Button -->
+    <button id="closeTutorial2" style="
       width: 100%;
-      margin-top: 16px;
-      background: #333333;
-      color: #cccccc;
-      border: none;
-      border-radius: 4px;
+      margin-top: 24px;
       padding: 10px;
+      background: #333;
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 13px;
-      transition: background 0.2s;
-    ">Got It</button>
+      font-size: 14px;
+    ">
+      Got it
+    </button>
   `;
 
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
   const close = () => {
-    document.body.removeChild(overlay);
+    overlay.remove();
+    document.removeEventListener('keydown', handleKey);
   };
 
-  modal.querySelector('#closeTutorialBtn').addEventListener('click', close);
-  modal.querySelector('#closeTutorialBtn2').addEventListener('click', close);
+  modal.querySelector('#closeTutorial').addEventListener('click', close);
+  modal.querySelector('#closeTutorial2').addEventListener('click', close);
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { close(); }
-  }, { once: true });
-
-  overlay.addEventListener('click', (e) => {
+  overlay.addEventListener('click', e => {
     if (e.target === overlay) close();
   });
+
+  const handleKey = e => {
+    if (e.key === 'Escape') {
+      close();
+    }
+  };
+
+  document.addEventListener('keydown', handleKey);
 }
