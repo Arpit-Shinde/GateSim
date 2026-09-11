@@ -8,55 +8,55 @@ export function RenderINPUT() {
       style={{ cursor: "pointer" }}
     >
       <line
-      x1={CONSTANTS.TOGGLE_WIDTH}
-      y1={CONSTANTS.TOGGLE_HEIGHT/2}
-      x2={CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X}
-      y2={CONSTANTS.TOGGLE_HEIGHT/2}
-      stroke={CONSTANTS.GATE_STROKE_COLOR}
-      strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-    />
-      <rect 
-      width={CONSTANTS.TOGGLE_WIDTH}
-      height={CONSTANTS.TOGGLE_HEIGHT}
-      fill={CONSTANTS.GATE_FILL_COLOR}
-      stroke={CONSTANTS.GATE_STROKE_COLOR}
-      strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        x1={CONSTANTS.TOGGLE_WIDTH}
+        y1={CONSTANTS.TOGGLE_HEIGHT / 2}
+        x2={CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.TOGGLE_HEIGHT / 2}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+      <rect
+        width={CONSTANTS.TOGGLE_WIDTH}
+        height={CONSTANTS.TOGGLE_HEIGHT}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       >
       </rect>
 
-      <rect 
-      x={CONSTANTS.TOGGLE_WIDTH/4}
-      y={CONSTANTS.TOGGLE_HEIGHT/4}
-      width={CONSTANTS.TOGGLE_WIDTH/2}
-      height={CONSTANTS.TOGGLE_HEIGHT/2}
-      fill={CONSTANTS.GATE_FILL_COLOR}
-      stroke={CONSTANTS.GATE_STROKE_COLOR}
-      strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-      rx={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
-      ry={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
+      <rect
+        x={CONSTANTS.TOGGLE_WIDTH / 4}
+        y={CONSTANTS.TOGGLE_HEIGHT / 4}
+        width={CONSTANTS.TOGGLE_WIDTH / 2}
+        height={CONSTANTS.TOGGLE_HEIGHT / 2}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        rx={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
+        ry={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
       >
       </rect>
 
-      <circle 
-      cx={CONSTANTS.TOGGLE_WIDTH/4 + CONSTANTS.TOGGLE_CAPSULE_RADIUS } 
-      cy={CONSTANTS.TOGGLE_HEIGHT/2} 
-      r={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
-      fill={CONSTANTS.GATE_FILL_COLOR}
-      stroke={CONSTANTS.GATE_STROKE_COLOR}
-      strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-      
+      <circle
+        cx={CONSTANTS.TOGGLE_WIDTH / 4 + CONSTANTS.TOGGLE_CAPSULE_RADIUS}
+        cy={CONSTANTS.TOGGLE_HEIGHT / 2}
+        r={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+
       />
 
       <circle
-      className="render-gate-pin"
-      
-      cx={CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X}
-      cy={CONSTANTS.TOGGLE_HEIGHT/2}
-      r={CONSTANTS.PIN_RADIUS}
-      fill={CONSTANTS.GATE_FILL_COLOR}
-      stroke={CONSTANTS.GATE_STROKE_COLOR}
-      strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-    />
+        className="render-gate-pin"
+
+        cx={CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        cy={CONSTANTS.TOGGLE_HEIGHT / 2}
+        r={CONSTANTS.PIN_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
 
     </g>
   )
@@ -367,7 +367,7 @@ export function RenderNOR() {
       />
     </g>
   );
-} 
+}
 
 export function RenderXOR() {
   return (
@@ -531,7 +531,7 @@ export function RenderNOT() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output wire stub - from bubble to pin */}
       <line
         x1={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS * 2}
@@ -541,7 +541,7 @@ export function RenderNOT() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* NOT triangle */}
       <path
         d={GATE.not_path}
@@ -549,7 +549,7 @@ export function RenderNOT() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Inversion Bubble at output */}
       <circle
         className="render-gate-pin"
@@ -560,7 +560,7 @@ export function RenderNOT() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Input pin */}
       <circle
         className="render-gate-pin"
@@ -571,7 +571,7 @@ export function RenderNOT() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output pin (after bubble) */}
       <circle
         className="render-gate-pin"
@@ -600,11 +600,11 @@ export function RenderCLOCK() {
         fill={CONSTANTS.GATE_FILL_COLOR}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        
+
       />
-      
+
       <path
-          d="
+        d="
     
     M 20 40
     L 20 18
@@ -614,12 +614,12 @@ export function RenderCLOCK() {
     L 50 18
   
   "
-          fill="none"
-          stroke="#a0aec0"
-          strokeWidth="3"
-          
-        />
-      
+        fill="none"
+        stroke="#a0aec0"
+        strokeWidth="3"
+
+      />
+
       {/* Output wire stub */}
       <line
         x1={CONSTANTS.GATE_WIDTH}
@@ -629,7 +629,7 @@ export function RenderCLOCK() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output pin */}
       <circle
         className="render-gate-pin"
@@ -674,7 +674,7 @@ export function RenderNAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output wire stub */}
       <line
         x1={CONSTANTS.GATE_WIDTH}
@@ -684,7 +684,7 @@ export function RenderNAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* NAND3 gate shape - AND shape with 3 inputs */}
       <path
         d={GATE.and_path}
@@ -692,7 +692,7 @@ export function RenderNAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* NAND bubble (inverter circle at output) */}
       <circle
         className="render-gate-pin"
@@ -703,7 +703,7 @@ export function RenderNAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Input pins - TOP, MIDDLE, BOTTOM */}
       <circle
         className="render-gate-pin"
@@ -732,7 +732,7 @@ export function RenderNAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output pin */}
       <circle
         className="render-gate-pin"
@@ -775,7 +775,7 @@ export function RenderAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output wire stub */}
       <line
         x1={CONSTANTS.GATE_WIDTH}
@@ -785,7 +785,7 @@ export function RenderAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* AND3 gate shape */}
       <path
         d={GATE.and_path}
@@ -793,7 +793,7 @@ export function RenderAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Input pins - TOP, MIDDLE, BOTTOM */}
       <circle
         className="render-gate-pin"
@@ -822,7 +822,7 @@ export function RenderAND3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output pin */}
       <circle
         className="render-gate-pin"
@@ -864,7 +864,7 @@ export function RenderOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output wire stub */}
       <line
         x1={CONSTANTS.GATE_WIDTH}
@@ -874,7 +874,7 @@ export function RenderOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* OR3 gate shape */}
       <path
         d={GATE.or_path}
@@ -882,7 +882,7 @@ export function RenderOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Input pins - TOP, MIDDLE, BOTTOM */}
       <circle
         className="render-gate-pin"
@@ -911,7 +911,7 @@ export function RenderOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output pin */}
       <circle
         className="render-gate-pin"
@@ -954,7 +954,7 @@ export function RenderNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output wire stub */}
       <line
         x1={CONSTANTS.GATE_WIDTH}
@@ -964,7 +964,7 @@ export function RenderNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* NOR3 gate shape - OR shape with 3 inputs */}
       <path
         d={GATE.or_path}
@@ -972,7 +972,7 @@ export function RenderNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Inversion Bubble */}
       <circle
         cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
@@ -982,7 +982,7 @@ export function RenderNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Input pins - TOP, MIDDLE, BOTTOM */}
       <circle
         className="render-gate-pin"
@@ -1011,7 +1011,7 @@ export function RenderNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output pin */}
       <circle
         className="render-gate-pin"
@@ -1054,7 +1054,7 @@ export function RenderXOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output wire stub */}
       <line
         x1={CONSTANTS.GATE_WIDTH}
@@ -1064,7 +1064,7 @@ export function RenderXOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* XOR3 gate shape - OR shape with 3 inputs */}
       <path
         d={GATE.or_path}
@@ -1072,7 +1072,7 @@ export function RenderXOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Extra XOR Curve */}
       <path
         d={GATE.xor_extra_curve_path}
@@ -1081,7 +1081,7 @@ export function RenderXOR3() {
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         pointerEvents="none"
       />
-      
+
       {/* Input pins - TOP, MIDDLE, BOTTOM */}
       <circle
         className="render-gate-pin"
@@ -1110,7 +1110,7 @@ export function RenderXOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output pin */}
       <circle
         className="render-gate-pin"
@@ -1153,7 +1153,7 @@ export function RenderXNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output wire stub */}
       <line
         x1={CONSTANTS.GATE_WIDTH}
@@ -1163,7 +1163,7 @@ export function RenderXNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* XNOR3 gate shape - OR shape with 3 inputs */}
       <path
         d={GATE.or_path}
@@ -1171,7 +1171,7 @@ export function RenderXNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Extra XOR Curve */}
       <path
         d={GATE.xor_extra_curve_path}
@@ -1180,7 +1180,7 @@ export function RenderXNOR3() {
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         pointerEvents="none"
       />
-      
+
       {/* Inversion Bubble */}
       <circle
         cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
@@ -1190,7 +1190,7 @@ export function RenderXNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Input pins - TOP, MIDDLE, BOTTOM */}
       <circle
         className="render-gate-pin"
@@ -1219,7 +1219,7 @@ export function RenderXNOR3() {
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      
+
       {/* Output pin */}
       <circle
         className="render-gate-pin"
@@ -1234,12 +1234,457 @@ export function RenderXNOR3() {
   );
 }
 
-// svg/gates_svg.js
+export function RenderAND4() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stubs */}
+      <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output wire stub */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Gate shape */}
+      <path
+        d={GATE.and_path}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Input pins */}
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={0} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output pin */}
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderNAND4() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stubs */}
+      <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output wire stub */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Gate shape */}
+      <path
+        d={GATE.and_path}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Inversion Bubble */}
+      <circle
+        cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
+        cy={CONSTANTS.OUTPUT_PIN_Y}
+        r={CONSTANTS.NAND_PIN_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Input pins */}
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={0} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output pin */}
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderOR4() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stubs */}
+      <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output wire stub */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Gate shape */}
+      <path
+        d={GATE.or_path}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Input pins */}
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={0} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output pin */}
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderNOR4() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stubs */}
+      <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output wire stub */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Gate shape */}
+      <path
+        d={GATE.or_path}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Inversion Bubble */}
+      <circle
+        cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
+        cy={CONSTANTS.OUTPUT_PIN_Y}
+        r={CONSTANTS.NAND_PIN_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Input pins */}
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={0} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output pin */}
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderXOR4() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stubs */}
+      <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output wire stub */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Gate shape */}
+      <path
+        d={GATE.or_path}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Extra XOR Curve */}
+      <path
+        d={GATE.xor_extra_curve_path}
+        fill="none"
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        pointerEvents="none"
+      />
+
+      {/* Input pins */}
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={0} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output pin */}
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderXNOR4() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stubs */}
+      <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output wire stub */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Gate shape */}
+      <path
+        d={GATE.or_path}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Extra XOR Curve */}
+      <path
+        d={GATE.xor_extra_curve_path}
+        fill="none"
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        pointerEvents="none"
+      />
+
+      {/* Inversion Bubble */}
+      <circle
+        cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
+        cy={CONSTANTS.OUTPUT_PIN_Y}
+        r={CONSTANTS.NAND_PIN_RADIUS}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Input pins */}
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={0} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output pin */}
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderMUX2() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stubs */}
+      <line x1={10} y1={CONSTANTS.INPUT_PIN_Y_TOP} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_TOP} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 2} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 2} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.INPUT_PIN_Y_BOTTOM} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_BOTTOM} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output wire stub */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Body */}
+      <rect
+        x={0} y={0}
+        width={CONSTANTS.GATE_WIDTH}
+        height={CONSTANTS.GATE_HEIGHT}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        rx={3}
+      />
+
+      {/* Label */}
+      <text
+        x={CONSTANTS.GATE_WIDTH / 2}
+        y={CONSTANTS.GATE_HEIGHT / 2 + 4}
+        textAnchor="middle"
+        fontSize={11}
+        fill="#a0aec0"
+        fontWeight="bold"
+      >
+        MUX
+      </text>
+
+      {/* Input pins */}
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_TOP} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 2} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_BOTTOM} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output pin */}
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderMUX4() {
+  const y0 = 0;
+  const y1 = CONSTANTS.GATE_HEIGHT / 5;
+  const y2 = 2 * CONSTANTS.GATE_HEIGHT / 5;
+  const y3 = 3 * CONSTANTS.GATE_HEIGHT / 5;
+  const y4 = 4 * CONSTANTS.GATE_HEIGHT / 5;
+  const y5 = CONSTANTS.GATE_HEIGHT;
+
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      {/* Input wire stubs */}
+      <line x1={10} y1={y0} x2={CONSTANTS.INPUT_PIN_X} y2={y0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={y1} x2={CONSTANTS.INPUT_PIN_X} y2={y1} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={y2} x2={CONSTANTS.INPUT_PIN_X} y2={y2} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={y3} x2={CONSTANTS.INPUT_PIN_X} y2={y3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={y4} x2={CONSTANTS.INPUT_PIN_X} y2={y4} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={y5} x2={CONSTANTS.INPUT_PIN_X} y2={y5} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output wire stub */}
+      <line
+        x1={CONSTANTS.GATE_WIDTH}
+        y1={CONSTANTS.OUTPUT_PIN_Y}
+        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+        y2={CONSTANTS.OUTPUT_PIN_Y}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Body */}
+      <rect
+        x={0} y={0}
+        width={CONSTANTS.GATE_WIDTH}
+        height={CONSTANTS.GATE_HEIGHT}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        rx={3}
+      />
+
+      {/* Label */}
+      <text
+        x={CONSTANTS.GATE_WIDTH / 2}
+        y={CONSTANTS.GATE_HEIGHT / 2 + 4}
+        textAnchor="middle"
+        fontSize={11}
+        fill="#a0aec0"
+        fontWeight="bold"
+      >
+        MUX 4:1
+      </text>
+
+      {/* Input pins */}
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={y0} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={y1} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={y2} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={y3} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={y4} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={y5} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      {/* Output pin */}
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderHALF_ADDER() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      <line x1={10} y1={CONSTANTS.INPUT_PIN_Y_TOP} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_TOP} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.INPUT_PIN_Y_BOTTOM} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_BOTTOM} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={CONSTANTS.GATE_WIDTH} y1={CONSTANTS.INPUT_PIN_Y_TOP} x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_TOP} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={CONSTANTS.GATE_WIDTH} y1={CONSTANTS.INPUT_PIN_Y_BOTTOM} x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_BOTTOM} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      <rect x={0} y={0} width={CONSTANTS.GATE_WIDTH} height={CONSTANTS.GATE_HEIGHT}
+        fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} rx={3} />
+
+      <text x={CONSTANTS.GATE_WIDTH / 2} y={CONSTANTS.GATE_HEIGHT / 2 + 4}
+        textAnchor="middle" fontSize={11} fill="#a0aec0" fontWeight="bold">HA</text>
+
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_TOP} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_BOTTOM} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_TOP} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_BOTTOM} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
+
+export function RenderFULL_ADDER() {
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+      <line x1={10} y1={CONSTANTS.INPUT_PIN_Y_TOP} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_TOP} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 2} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 2} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={10} y1={CONSTANTS.INPUT_PIN_Y_BOTTOM} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_BOTTOM} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={CONSTANTS.GATE_WIDTH} y1={CONSTANTS.INPUT_PIN_Y_TOP} x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_TOP} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <line x1={CONSTANTS.GATE_WIDTH} y1={CONSTANTS.INPUT_PIN_Y_BOTTOM} x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.INPUT_PIN_Y_BOTTOM} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      <rect x={0} y={0} width={CONSTANTS.GATE_WIDTH} height={CONSTANTS.GATE_HEIGHT}
+        fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} rx={3} />
+
+      <text x={CONSTANTS.GATE_WIDTH / 2} y={CONSTANTS.GATE_HEIGHT / 2 + 4}
+        textAnchor="middle" fontSize={11} fill="#a0aec0" fontWeight="bold">FA</text>
+
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_TOP} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 2} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_BOTTOM} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_TOP} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+      <circle className="render-gate-pin" cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.INPUT_PIN_Y_BOTTOM} r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
+    </g>
+  );
+}
 
 export function RenderJK() {
   const w = 50;
   const h = 40;
-  
+
   return (
     <g transform="scale(0.65) translate(25, 5)">
       {/* JK Flip-Flop Box */}
@@ -1253,7 +1698,7 @@ export function RenderJK() {
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         rx={3}
       />
-      
+
       {/* Label */}
       <text
         x={w / 2}
@@ -1265,7 +1710,7 @@ export function RenderJK() {
       >
         JK
       </text>
-      
+
       {/* Input pins with labels */}
       {/* J (top) */}
       <circle
@@ -1278,7 +1723,7 @@ export function RenderJK() {
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
       <text x={-12} y={13} fontSize={8} fill="#a0aec0" textAnchor="end">J</text>
-      
+
       {/* CLK (middle) */}
       <circle
         className="render-gate-pin"
@@ -1290,7 +1735,7 @@ export function RenderJK() {
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
       <text x={-12} y={23} fontSize={8} fill="#a0aec0" textAnchor="end">CLK</text>
-      
+
       {/* K (bottom) */}
       <circle
         className="render-gate-pin"
@@ -1302,7 +1747,7 @@ export function RenderJK() {
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
       <text x={-12} y={33} fontSize={8} fill="#a0aec0" textAnchor="end">K</text>
-      
+
       {/* Output pins with labels */}
       {/* Q (top) */}
       <circle
@@ -1315,7 +1760,7 @@ export function RenderJK() {
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
       <text x={w + 8} y={13} fontSize={8} fill="#a0aec0">Q</text>
-      
+
       {/* Q' (bottom) */}
       <circle
         className="render-gate-pin"

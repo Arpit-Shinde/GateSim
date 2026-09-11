@@ -20,9 +20,9 @@ export function useCircuit(
   // ─── TOGGLE ───
   function toggle(id) {
     let newGraph = structuredClone(graph);
-    addToUndoStack(graph, clock_delays);
+    //do not push into undo stack here, its unneccessary
 
-    newGraph[id].value = !newGraph[id].value;
+    newGraph[id].value = [!newGraph[id].value[0]];
 
     for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
       evaluate(newGraph);
@@ -37,9 +37,9 @@ export function useCircuit(
 
     // CLOCK needs user input first
     if (gate === "CLOCK" && clockDelay === null) {
-        setClockDelayInput("");
-        setShowClockWindow(true);
-        return;
+      setClockDelayInput("");
+      setShowClockWindow(true);
+      return;
     }
 
     addToUndoStack(graph, clock_delays);
@@ -48,67 +48,77 @@ export function useCircuit(
 
     if (gate === "CLOCK") {
 
-        let delay = Number(clockDelay);
+      let delay = Number(clockDelay);
 
-        newGate = {
-            type: gate,
-            id: graph.length,
-            value: false,
-            inputs: [],
-            x: view.x + view.width / 2,
-            y: view.y + view.height / 2,
-            delay: delay
-        };
+      newGate = {
+        type: gate,
+        id: graph.length,
+        value: [false],
+        inputs: [],
+        x: view.x + view.width / 2,
+        y: view.y + view.height / 2,
+        z: Math.max(0, ...graph.map(node => node.z ?? 0)) + 1,
+        rotation:0,
+        delay: delay
+      };
 
-        let newdelay = {
-            id: graph.length,
-            delay: delay,
-            next_delay: performance.now() + delay
-        };
+      let newdelay = {
+        id: graph.length,
+        delay: delay,
+        next_delay: performance.now() + delay
+      };
 
-        setClockDelays((prev) => [...prev, newdelay]);
+      setClockDelays((prev) => [...prev, newdelay]);
     }
 
     else if (gate === "WIRE") {
 
-        newGate = {
-            type: gate,
-            id: graph.length,
-            value: false,
-            path: wireData.path,
-            inputs: [wireData.inputId]
-        };
+      newGate = {
+        type: gate,
+        id: graph.length,
+        value: [false],
+        path: wireData.path,
+        inputs: [{ id: wireData.inputId, index: wireData.outputIndex }]
+      };
+      console.log("else if of wire entered")
 
     }
 
     else {
 
-        newGate = {
-            type: gate,
-            id: graph.length,
-            value: false,
-            inputs: [],
-            x: view.x + view.width / 2,
-            y: view.y + view.height / 2
-        };
+      newGate = {
+        type: gate,
+        id: graph.length,
+        value: [false],
+        inputs: [],
+        x: view.x + view.width / 2,
+        y: view.y + view.height / 2,
+        z: Math.max(0, ...graph.map(node => node.z ?? 0)) + 1,
+        rotation:0,
+      };
     }
 
     // CONNECT HERE, BEFORE setGraph()
     let oldId = newGate.id;
 
     if (inputpin) {
-        graph[inputpin.gateId].inputs[inputpin.gateIndex] = newGate.id;
+      graph[inputpin.gateId].inputs[inputpin.gateIndex] = {
+        id: newGate.id,
+        index: 0 //this component gets connected to wire. and wire always has only one output value , so length of value array=1. index=0 thus.
+        
+      };
+      console.log("if inputpin entered")
     }
 
     let [newGraph, new_clock_delays, idMap] =
-        topologicalOrderAndReindex([...graph, newGate]);
+      topologicalOrderAndReindex([...graph, newGate]);
 
     for (
-        let i = 0;
-        i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
-        i++
+      let i = 0;
+      i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
+      i++
     ) {
-        evaluate(newGraph);
+      evaluate(newGraph);
     }
 
     let newId = idMap.get(oldId);
@@ -119,24 +129,8 @@ export function useCircuit(
     console.log(`in Add(), newId = ${newId}`);
 
     return newId;
-}
-
-  // ─── CONNECT ───
-  function Connect(inputpin, outputId) {
-    if (!inputpin || outputId === undefined) return;
-
-    let newgraph = structuredClone(graph);
-    addToUndoStack(graph, clock_delays);
-    console.log(`inputpin id: ${inputpin.gateId} outputpin id:${outputId}`)
-
-    newgraph[inputpin.gateId].inputs[inputpin.gateIndex] = outputId;
-
-    // ✅ Clear selections
-    setoPin(null);
-    setSelectedGate(null);
-    setSelectedWire(null);
-
   }
+
 
   // ─── CLEAR GRAPH ───
   function clearGraph() {
@@ -155,7 +149,6 @@ export function useCircuit(
   return {
     toggle,
     Add,
-    Connect,
     clearGraph
   };
 }

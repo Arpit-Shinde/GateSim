@@ -41,21 +41,6 @@ code {
   r: 8px;
 }
 
-.gate-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;  /* Space between SVG and text */
-  padding: 10px;
-  cursor: pointer;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-  width: fit-content;  /* Makes card shrink to fit content */
-  min-width: 80px;  
-}
-
-
 /* Gate Card Container */
 .gate-card {
   display: flex;
@@ -92,8 +77,8 @@ code {
 /* SVG inside gate preview */
 .gate-preview svg {
   display: block;
-  width: 100px;
-  height: 65px;
+  width: 60px;
+  height: 35px;
 }
 
 /* Gate Label */
@@ -112,44 +97,6 @@ code {
 
 
 
-/* Selected gate card */
-.gate-card.selected {
-  border-color: #007bff;
-  background-color: #e7f3ff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
-}
-
-.gate-card.selected .gate-label {
-  color: #007bff;
-}
-
-/* Disabled gate card */
-.gate-card.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-
-
-/* Color variants based on gate type */
-.gate-card.type-input .gate-preview {
-  background-color: #e3f2fd;
-}
-
-.gate-card.type-logic .gate-preview {
-  background-color: #f3e5f5;
-}
-
-.gate-card.type-output .gate-preview {
-  background-color: #e8f5e9;
-}
-
-
-.gate-card:hover .gate-tooltip {
-  display: block;
-}
-
 .homepage {
     display: flex;
     flex-direction: column;
@@ -159,18 +106,6 @@ code {
     background: var(--homepage-background)
 }
 
-/* Utilities bar - top horizontal */
-.utilites {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    padding: 8px 16px;
-    background: var(--utilities-background);
-    border-bottom: 2px solid #4a5568;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-    min-height: 50px;
-}
 
 /* Container for tools + canvas (side by side) */
 .tools-and-canvas {
@@ -196,15 +131,18 @@ code {
     align-items: center;
 }
 .toolsBar {
-    min-width: 180px;
+  
+    min-width: 220px;
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-
-
-
     flex-shrink: 0;
 
+}
+
+.toolGateCards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
 }
 
 
@@ -227,6 +165,41 @@ code {
     background: #718096;
 }
 
+.gateCategories {
+    display: flex;
+    flex-direction: column;
+}
+
+.gateCategory {
+    width: 100%;
+}
+
+.categoryButton {
+    padding: 8px 12px;
+    background: #181616;
+    color: white;
+    border: none;
+    border-bottom: 1px solid #3a3838;
+    cursor: pointer;
+    font-size: 12px;
+    list-style: none;
+}
+
+.categoryButton::-webkit-details-marker {
+    display: none;
+}
+
+.categoryButton:hover {
+    background: #211f1f;
+}
+
+.toolGateCards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    padding: 5px;
+}
+
 .actual-gate.selected-gate {
   filter: drop-shadow(0 2px 8px rgb(249, 249, 249));
   
@@ -238,7 +211,32 @@ code {
 
 .utilities{
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  
+}
+
+.utilities-button {
+    padding: 8px 14px;
+    background: #ffffff;
+    color: rgb(0, 0, 0);
+    border: 1px solid #3a3838;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+
+    height: 36px;              /* fixed height — stops buttons from stretching */
+    flex-shrink: 0;            /* stops flex from squashing them */
+    white-space: nowrap;       /* stops labels like "DOWNLOAD CIRCUIT" from wrapping */
+    display: inline-flex;      /* reliable vertical centering */
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-sizing: border-box;    /* keeps padding inside the 36px */
+}
+
+.utilities-button:hover {
+    background: #cacaca;
 }
 
 /* About Modal */

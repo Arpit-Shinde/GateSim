@@ -2,15 +2,20 @@ import { useState, useEffect, useRef } from "react";
 import { evaluate } from "./utils/evaluate"
 import { topologicalOrderAndReindex } from "./utils/topologicalSort"
 import { Gate } from "./components/gate"
-import { Wire, LiveWire } from "./components/wire"
+import { LiveWire } from "./components/wire"
 import { showTutorial } from "./components/tutorial_modal";
 import * as CONSTANTS from "./constants/constants";
-import { getWireEnd, getWireStart } from "./utils/wireHelpers";
 import { GateCard } from "./components/gatecard";
 import { getSVGPoint } from "./utils/svgHelpers";
 import { useCircuit } from "./hooks/useCircuit";
 import { AboutModal } from "./components/about_modal";
-import { inputGateRenderList, logicGateRenderList, outputGateRenderList } from "./constants/gates";
+import {
+  inputGateRenderList, twoInputGateRenderList,
+  threeInputGateRenderList, fourInputGateRenderList,
+  sequentialGateRenderList,
+  MuxGateRenderList, AdderGateRenderList,
+  outputGateRenderList
+} from "./constants/gates";
 import logo from './gatesim-logo2.png';
 import { RenderUncommitedWire } from "./components/wire";
 
@@ -40,8 +45,9 @@ function App() {
   let [showClockWindow, setShowClockWindow] = useState(false);
   let [clockDelayInput, setClockDelayInput] = useState("");
   let [pausedClocks, setPausedClocks] = useState([]); //to store remaining time for clock tick after pause
+  let pausedClocksRef = useRef([]);
   let [wirePath, setWirePath] = useState([]); //to store bending points of wire which is being drawn 
-  let { toggle, Add, Connect, clearGraph } = useCircuit(
+  let { toggle, Add, clearGraph } = useCircuit(
     graph,
     setGraph,
     clock_delays,
@@ -55,43 +61,6 @@ function App() {
     setClockDelayInput
   );
 
-  let [openTool, setOpenTool] = useState(null);
-
-  function ToolSection({ name, list }) {
-    const isOpen = openTool === name;
-
-    return (
-      <div className="toolSection">
-
-        <button
-          className="toolButton"
-          onClick={() =>
-            setOpenTool(isOpen ? null : name)
-          }
-        >
-          <span>{name}</span>
-          <span>{isOpen ? "▲" : "▼"}</span>
-        </button>
-
-        {isOpen && (
-          <div className="toolGateCards">
-            {list.map((object) => (
-              <div
-                key={object.type}
-                onClick={() => Add(object.type)}
-              >
-                <GateCard
-                  renderFxn={object.render}
-                  gateType={object.type}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-      </div>
-    );
-  }
 
   useEffect(() => {
     graphRef.current = graph;
@@ -101,6 +70,34 @@ function App() {
     clockDelaysRef.current = clock_delays;
   }, [clock_delays]);
 
+  useEffect(() => { //disable ctrl mousewheel zoom
+    function preventBrowserZoom(e) {
+      if (e.ctrlKey || e.metaKey) {
+        if (
+          e.key === "+" ||
+          e.key === "-" ||
+          e.key === "=" ||
+          e.key === "0"
+        ) {
+          e.preventDefault();
+        }
+      }
+    }
+
+    function preventWheelZoom(e) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+      }
+    }
+
+    window.addEventListener("keydown", preventBrowserZoom);
+    window.addEventListener("wheel", preventWheelZoom, { passive: false });
+
+    return () => {
+      window.removeEventListener("keydown", preventBrowserZoom);
+      window.removeEventListener("wheel", preventWheelZoom);
+    };
+  }, []);
 
   function startDrag(e, id) {
     if (e.button === 1) return;
@@ -117,36 +114,41 @@ function App() {
   }
   function togglePauseSim() {
     const newPauseState = !pauseSim;
+    const now = performance.now();
 
-    if (newPauseState === true) {
-      // ✅ PAUSING: Store remaining time for each clock
-      const now = performance.now();
-      const remainingTimes = clock_delays.map(clock => ({
+    if (newPauseState) {
+      // PAUSING
+      const remainingTimes = clockDelaysRef.current.map(clock => ({
         id: clock.id,
         remaining: Math.max(0, clock.next_delay - now),
         delay: clock.delay
       }));
+
+      pausedClocksRef.current = remainingTimes;
       setPausedClocks(remainingTimes);
 
     } else {
-      // ✅ RESUMING: Restore clock delays with remaining time
-      const now = performance.now();
-      setClockDelays(prev =>
-        prev.map(clock => {
-          const paused = pausedClocks.find(p => p.id === clock.id);
-          if (paused) {
-            // Resume with remaining time
-            return {
-              ...clock,
-              next_delay: now + paused.remaining
-            };
-          }
+      // RESUMING
+      const newClockDelays = clockDelaysRef.current.map(clock => {
+        const paused = pausedClocksRef.current.find(
+          p => p.id === clock.id
+        );
+
+        if (paused) {
           return {
             ...clock,
-            next_delay: now + clock.delay
+            next_delay: now + paused.remaining
           };
-        })
-      );
+        }
+
+        return {
+          ...clock,
+          next_delay: now + clock.delay
+        };
+      });
+
+      clockDelaysRef.current = newClockDelays;
+      setClockDelays(newClockDelays);
     }
 
     setPauseSim(newPauseState);
@@ -199,166 +201,169 @@ function App() {
   useEffect(() => {
     function handleKey(e) {
       if (e.key !== "Delete") return;
+      if (selectedGate === null) return;
 
       addToUndoStack(graph, clock_delays);
 
       const newGraph = structuredClone(graph);
 
-      if (selectedGate !== null) {
+      const idToDelete = selectedGate.id;
 
-        const idToDelete = selectedGate.id;
+      const deleteIndex = newGraph.findIndex(
+        node => node.id === idToDelete
+      );
 
-        const deleteIndex = newGraph.findIndex(
-          node => node.id === idToDelete
-        );
-
-        if (deleteIndex === -1) {
-          setSelectedGate(null);
-          return;
-        }
-
-        const nodeToDelete = newGraph[deleteIndex];
-
-        // =====================================================
-        // DELETE WIRE
-        // =====================================================
-        if (nodeToDelete.type === "WIRE") {
-
-          const idsToDelete = new Set([idToDelete]);
-
-          let changed = true;
-
-          // Find all downstream child wires recursively
-          while (changed) {
-            changed = false;
-
-            for (const node of newGraph) {
-
-              if (node.type !== "WIRE") continue;
-
-              // Child wire gets its signal from
-              // a wire that is already being deleted
-              if (
-                node.inputs &&
-                node.inputs.length > 0 &&
-                idsToDelete.has(node.inputs[0])
-              ) {
-                if (!idsToDelete.has(node.id)) {
-                  idsToDelete.add(node.id);
-                  changed = true;
-                }
-              }
-            }
-          }
-
-          // Disconnect everything referencing
-          // any wire that is being deleted
-          for (const node of newGraph) {
-
-            if (!node.inputs) continue;
-
-            node.inputs = node.inputs.map(input =>
-              idsToDelete.has(input) ? -1 : input
-            );
-          }
-
-          // Delete all collected wires
-          for (let i = newGraph.length - 1; i >= 0; i--) {
-
-            if (idsToDelete.has(newGraph[i].id)) {
-              newGraph.splice(i, 1);
-            }
-          }
-        }
-
-        // =====================================================
-        // DELETE GATE / COMPONENT
-        // =====================================================
-        else {
-
-          const idsToDelete = new Set([idToDelete]);
-
-          let changed = true;
-
-          // -------------------------------------------------
-          // Collect connected wires
-          // -------------------------------------------------
-          while (changed) {
-
-            changed = false;
-
-            for (const node of newGraph) {
-
-              if (node.type !== "WIRE") continue;
-
-              // -----------------------------------------
-              // Child wire
-              // -----------------------------------------
-              if (
-                node.inputs &&
-                node.inputs.length > 0 &&
-                idsToDelete.has(node.inputs[0])
-              ) {
-                if (!idsToDelete.has(node.id)) {
-
-                  idsToDelete.add(node.id);
-                  changed = true;
-                }
-              }
-
-              // -----------------------------------------
-              // Parent wire
-              //
-              // Gate contains the wire ID in its inputs
-              // -----------------------------------------
-              if (
-                nodeToDelete.inputs &&
-                nodeToDelete.inputs.includes(node.id)
-              ) {
-                if (!idsToDelete.has(node.id)) {
-
-                  idsToDelete.add(node.id);
-                  changed = true;
-                }
-              }
-            }
-          }
-
-          // -------------------------------------------------
-          // Disconnect references to deleted nodes
-          // -------------------------------------------------
-          for (const node of newGraph) {
-
-            if (!node.inputs) continue;
-
-            node.inputs = node.inputs.map(input =>
-              idsToDelete.has(input) ? -1 : input
-            );
-          }
-
-          // -------------------------------------------------
-          // Delete gate + all collected wires
-          // -------------------------------------------------
-          for (let i = newGraph.length - 1; i >= 0; i--) {
-
-            if (idsToDelete.has(newGraph[i].id)) {
-              newGraph.splice(i, 1);
-            }
-          }
-        }
-
+      if (deleteIndex === -1) {
         setSelectedGate(null);
+        return;
       }
 
-      // =========================================================
+      const nodeToDelete = newGraph[deleteIndex];
+
+      // =====================================================
+      // DELETE WIRE
+      // =====================================================
+      if (nodeToDelete.type === "WIRE") {
+
+        const idsToDelete = new Set([idToDelete]);
+
+        let changed = true;
+
+        // Find all downstream child wires recursively
+        while (changed) {
+          changed = false;
+
+          for (const node of newGraph) {
+
+            if (node.type !== "WIRE") continue;
+            if (!node.inputs || node.inputs.length === 0) continue;
+
+            const input = node.inputs[0];
+
+            if (
+              input &&
+              input.index !== -1 &&
+              idsToDelete.has(input.id)
+            ) {
+              if (!idsToDelete.has(node.id)) {
+                idsToDelete.add(node.id);
+                changed = true;
+              }
+            }
+          }
+        }
+
+        // Disconnect references to deleted wires
+        for (const node of newGraph) {
+
+          if (!node.inputs) continue;
+
+          node.inputs = node.inputs.map(input =>
+            input &&
+              input.index !== -1 &&
+              idsToDelete.has(input.id)
+              ? { id: -1, index: -1 }
+              : input
+          );
+        }
+
+        // Delete all collected wires
+        for (let i = newGraph.length - 1; i >= 0; i--) {
+          if (idsToDelete.has(newGraph[i].id)) {
+            newGraph.splice(i, 1);
+          }
+        }
+      }
+
+      // =====================================================
+      // DELETE GATE / COMPONENT
+      // =====================================================
+      else {
+
+        const idsToDelete = new Set([idToDelete]);
+
+        let changed = true;
+
+        // Collect connected wires
+        while (changed) {
+
+          changed = false;
+
+          for (const node of newGraph) {
+
+            if (node.type !== "WIRE") continue;
+
+            // -----------------------------------------
+            // Child wire: this wire's source is a to-be-deleted node
+            // -----------------------------------------
+            if (node.inputs && node.inputs.length > 0) {
+              const input = node.inputs[0];
+
+              if (
+                input &&
+                input.index !== -1 &&
+                idsToDelete.has(input.id)
+              ) {
+                if (!idsToDelete.has(node.id)) {
+                  idsToDelete.add(node.id);
+                  changed = true;
+                }
+              }
+            }
+
+            // -----------------------------------------
+            // Parent wire: the to-be-deleted node takes input from this wire
+            // -----------------------------------------
+            if (
+              nodeToDelete.inputs &&
+              nodeToDelete.inputs.some(
+                input =>
+                  input &&
+                  input.index !== -1 &&
+                  input.id === node.id
+              )
+            ) {
+              if (!idsToDelete.has(node.id)) {
+                idsToDelete.add(node.id);
+                changed = true;
+              }
+            }
+          }
+        }
+
+        // Disconnect references to deleted nodes/wires
+        for (const node of newGraph) {
+
+          if (!node.inputs) continue;
+
+          node.inputs = node.inputs.map(input =>
+            input &&
+              input.index !== -1 &&
+              idsToDelete.has(input.id)
+              ? { id: -1, index: -1 }
+              : input
+          );
+        }
+
+        // Delete gate + all collected wires
+        for (let i = newGraph.length - 1; i >= 0; i--) {
+          if (idsToDelete.has(newGraph[i].id)) {
+            newGraph.splice(i, 1);
+          }
+        }
+      }
+
+      // =====================================================
       // REORDER + REINDEX
-      // =========================================================
-      let [newGraph2, new_clock_delays] =
+      // =====================================================
+
+      const [newGraph2, new_clock_delays] =
         topologicalOrderAndReindex(newGraph);
 
-      // =========================================================
+      // =====================================================
       // RE-EVALUATE
-      // =========================================================
+      // =====================================================
+
       for (
         let i = 0;
         i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
@@ -367,9 +372,10 @@ function App() {
         evaluate(newGraph2);
       }
 
-      // =========================================================
+      // =====================================================
       // UPDATE STATE
-      // =========================================================
+      // =====================================================
+
       setGraph(newGraph2);
       setClockDelays(new_clock_delays);
       setSelectedGate(null);
@@ -383,24 +389,37 @@ function App() {
 
   }, [selectedGate, graph, clock_delays]);
 
-  useEffect(() => {  //for clocks
+  useEffect(() => {
 
-    if (pauseSim) return
+    if (pauseSim) return;
+
     const intervalId = setInterval(() => {
-      let now = performance.now()
+
+      const now = performance.now();
 
       const graph = graphRef.current;
       const clocks = clockDelaysRef.current;
 
-      let changed = false;
       const newGraph = structuredClone(graph);
+      let changed = false;
 
       const newClockDelays = clocks.map(clock => {
+
         if (now >= clock.next_delay) {
-          newGraph[clock.id].value =
-            !newGraph[clock.id].value;
+
+          const clockNode = newGraph.find(
+            node => node.id === clock.id
+          );
+
+          if (!clockNode) {
+            return clock;
+          }
+
+          clockNode.value[0] = !clockNode.value[0];
 
           changed = true;
+
+          console.log("tick");
 
           return {
             ...clock,
@@ -411,30 +430,33 @@ function App() {
         return clock;
       });
 
-      if (changed) {
-        for (
-          let i = 0;
-          i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
-          i++
-        ) {
-          evaluate(newGraph);
-        }
+      if (!changed) return;
 
-        graphRef.current = newGraph;
-        clockDelaysRef.current = newClockDelays;
-
-        setGraph(newGraph);
-        setClockDelays(newClockDelays);
+      for (
+        let i = 0;
+        i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
+        i++
+      ) {
+        evaluate(newGraph);
       }
+
+      graphRef.current = newGraph;
+      clockDelaysRef.current = newClockDelays;
+
+      setGraph(newGraph);
+      setClockDelays(newClockDelays);
+
     }, CONSTANTS.MIN_FRAME_TIME);
 
     return () => clearInterval(intervalId);
+
   }, [pauseSim]);
 
 
-  function setoutputpin(id, pinX, pinY) {
+  function setoutputpin(id, index, pinX, pinY) {
     setoPin({
       gateId: id,
+      outputIndex: index,
       pinX: pinX,
       pinY: pinY
     });
@@ -451,16 +473,18 @@ function App() {
 
   function setinputpin(id, index, endx, endy) {
     if (opin === null) return
-    console.log(`setinputpin fired. currently, startx=${opin.pinX}, endx=${endx}`)
+    console.log(`setinputpin fired. currently, id=${id}, index=${index}`)
     Add(
       "WIRE",
       {
         path: [...wirePath, { x: endx, y: endy }],
-        inputId: opin.gateId
+        inputId: opin.gateId,
+        outputIndex: opin.outputIndex
       },
       {
         gateId: id,
         gateIndex: index
+
       }
     );
 
@@ -470,15 +494,16 @@ function App() {
   }
 
   function selectWire(e, id) {
-    if (e.button === 0) {
+    if (e.button === 1) {
       setSelectedGate({ id: id });
     }
-    else if (e.button === 1) {
+    else if (e.button === 0) {
       //branching logic
       const point = getSVGPoint(e, svgRef, view);
 
       setoPin({
         gateId: id,
+        outputIndex: 0,
         pinX: point.x,
         pinY: point.y
       });
@@ -542,7 +567,20 @@ function App() {
   function cancelWire(e) {
     if (e.button === 2 && opin) {
       e.preventDefault();
-      setoPin(null);
+      if (wirePath.length >= 2) {
+        Add(
+          "WIRE",
+          {
+            path: wirePath,
+            inputId: opin.gateId,
+            outputIndex: opin.outputIndex
+          }
+        );
+      }
+
+
+      setoPin(null)
+
       setMouse(null);
     }
   }
@@ -775,11 +813,46 @@ function App() {
 
   CONSTANTS.toggleTheme(document, theme)
 
+  function RotateGate() {
+    if (!selectedGate) return;
+
+    const newGraph = structuredClone(graph);
+
+    const node = newGraph.find(
+      node => node.id === selectedGate.id
+    );
+
+    if (!node || node.type === "WIRE") return;
+
+    const oldRotation = node.rotation ?? 0;
+    const newRotation = (oldRotation + 90) % 360;
+
+    const oldWidth = CONSTANTS.GATE_WIDTH;
+    const oldHeight = CONSTANTS.GATE_HEIGHT;
+
+    const newWidth =
+      newRotation % 180 === 0 ? oldWidth : oldHeight;
+
+    const newHeight =
+      newRotation % 180 === 0 ? oldHeight : oldWidth;
+
+    // Keep the center in the same place
+    const centerX = node.x + oldWidth / 2;
+    const centerY = node.y + oldHeight / 2;
+
+    node.rotation = newRotation;
+
+    node.x = centerX - newWidth / 2;
+    node.y = centerY - newHeight / 2;
+
+    setGraph(newGraph);
+  }
+
 
 
   return (
     <div className="homepage">
-      <div className="utilites">
+      <div className="utilities">
         <img
           src={logo}
           alt="GateSim Logo"
@@ -789,30 +862,31 @@ function App() {
           style={{ marginRight: '8px' }}
           onClick={showabout}
         />
-        <button onClick={showTutorial} >
+        <button className="utilities-button" onClick={showTutorial} >
           TUTORIAL
         </button>
-        <button onClick={downloadCircuit}>
+        <button className="utilities-button" onClick={downloadCircuit}>
           DOWNLOAD CIRCUIT
         </button>
-        <button onClick={() => fileInputRef.current.click()}>
+        <button className="utilities-button" onClick={() => fileInputRef.current.click()}>
           LOAD CIRCUIT
         </button>
-        <button onClick={() => { resetView() }}>RESET VIEW</button>
-        <button onClick={() => { clearGraph() }}>CLEAR CIRCUIT</button>
-        <button onClick={() => undo()} style={{ fontSize: '20px' }}>↶</button>
-        <button onClick={() => redo()} style={{ fontSize: '20px' }}>↷</button>
-        <button onClick={togglePauseSim}>
+        <button className="utilities-button" onClick={() => { resetView() }}>RESET VIEW</button>
+        <button className="utilities-button" onClick={() => { clearGraph() }}>CLEAR CIRCUIT</button>
+        <button className="utilities-button" onClick={() => undo()} style={{ fontSize: '20px' }}>↶</button>
+        <button className="utilities-button" onClick={() => redo()} style={{ fontSize: '20px' }}>↷</button>
+        <button className="utilities-button" onClick={togglePauseSim}>
           {pauseSim ? '▶ START CLOCKS' : '⏸ PAUSE CLOCKS'}
         </button>
-        <button onClick={() => {
+        <button className="utilities-button" onClick={() => {
           setTheme(!theme)
           CONSTANTS.toggleTheme(document, theme)
         }}>TOGGLE THEME</button>
-        <button onClick={() => {
+        <button className="utilities-button" onClick={() => {
           console.log(graph)
           console.log(opin)
         }}>print</button>
+        <button className="utilities-button" onClick={() => { RotateGate() }}>ROTATE</button>
         <input
           ref={fileInputRef}
           type="file"
@@ -824,20 +898,206 @@ function App() {
       <div className="tools-and-canvas">
         <div className="toolsBar">
 
-          <ToolSection
-            name="Input"
-            list={inputGateRenderList}
-          />
+          <details className="toolSection">
+            <summary className="toolButton">
+              <span>Input</span>
+              <span>▼</span>
+            </summary>
 
-          <ToolSection
-            name="Gates"
-            list={logicGateRenderList}
-          />
+            <div className="toolGateCards">
+              {inputGateRenderList.map((object) => (
+                <div
+                  key={object.type}
+                  onClick={() => Add(object.type)}
+                >
+                  <GateCard
+                    renderFxn={object.render}
+                    gateType={object.type}
+                  />
+                </div>
+              ))}
+            </div>
+          </details>
 
-          <ToolSection
-            name="Output"
-            list={outputGateRenderList}
-          />
+
+          <details className="toolSection">
+            <summary className="toolButton">
+              <span>Gates</span>
+              <span>▼</span>
+            </summary>
+
+            <div className="gateCategories">
+
+              <details className="gateCategory">
+                <summary className="categoryButton">
+                  2-INPUT
+                </summary>
+
+                <div className="toolGateCards">
+                  {twoInputGateRenderList.map((object) => (
+                    <div
+                      key={object.type}
+                      onClick={() => Add(object.type)}
+                    >
+                      <GateCard
+                        renderFxn={object.render}
+                        gateType={object.type}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+
+
+              <details className="gateCategory">
+                <summary className="categoryButton">
+                  3-INPUT
+                </summary>
+
+                <div className="toolGateCards">
+                  {threeInputGateRenderList.map((object) => (
+                    <div
+                      key={object.type}
+                      onClick={() => Add(object.type)}
+                    >
+                      <GateCard
+                        renderFxn={object.render}
+                        gateType={object.type}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+
+
+
+
+              <details className="gateCategory">
+                <summary className="categoryButton">
+                  4-INPUT
+                </summary>
+
+                <div className="toolGateCards">
+                  {fourInputGateRenderList.map((object) => (
+                    <div
+                      key={object.type}
+                      onClick={() => Add(object.type)}
+                    >
+                      <GateCard
+                        renderFxn={object.render}
+                        gateType={object.type}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+
+            </div>
+          </details>
+
+          <details className="toolSection">
+            <summary className="toolButton">
+              <span>Sequential</span>
+              <span>▼</span>
+            </summary>
+
+            <div className="gateCategories">
+
+              <details className="gateCategory">
+                <summary className="categoryButton">
+                  FLIP-FLOPS
+                </summary>
+
+                <div className="toolGateCards">
+                  {sequentialGateRenderList.map((object) => (
+                    <div
+                      key={object.type}
+                      onClick={() => Add(object.type)}
+                    >
+                      <GateCard
+                        renderFxn={object.render}
+                        gateType={object.type}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+
+            </div>
+          </details>
+
+          <details className="toolSection">
+            <summary className="toolButton">
+              <span>Combinational</span>
+              <span>▼</span>
+            </summary>
+
+            <div className="gateCategories">
+
+              <details className="gateCategory">
+                <summary className="categoryButton">
+                  MuX
+                </summary>
+
+                <div className="toolGateCards">
+                  {MuxGateRenderList.map((object) => (
+                    <div
+                      key={object.type}
+                      onClick={() => Add(object.type)}
+                    >
+                      <GateCard
+                        renderFxn={object.render}
+                        gateType={object.type}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+              <details className="gateCategory">
+                <summary className="categoryButton">
+                  Adder
+                </summary>
+
+                <div className="toolGateCards">
+                  {AdderGateRenderList.map((object) => (
+                    <div
+                      key={object.type}
+                      onClick={() => Add(object.type)}
+                    >
+                      <GateCard
+                        renderFxn={object.render}
+                        gateType={object.type}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+
+            </div>
+          </details>
+
+
+          <details className="toolSection">
+            <summary className="toolButton">
+              <span>Output</span>
+              <span>▼</span>
+            </summary>
+
+            <div className="toolGateCards">
+              {outputGateRenderList.map((object) => (
+                <div
+                  key={object.type}
+                  onClick={() => Add(object.type)}
+                >
+                  <GateCard
+                    renderFxn={object.render}
+                    gateType={object.type}
+                  />
+                </div>
+              ))}
+            </div>
+          </details>
+
 
         </div>
         <div className="canvas-wrapper">
@@ -908,8 +1168,9 @@ function App() {
                 ))}
 
               {/* ─── LAYER 2: GATES (rendered second, on top of wires) ─── */}
-              {graph
+              {[...graph]
                 .filter(node => node.type !== "WIRE")
+                .sort((a, b) => a.z - b.z)
                 .map((node) => (
                   <Gate
                     key={node.id}
