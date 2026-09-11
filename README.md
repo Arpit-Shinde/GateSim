@@ -16,28 +16,19 @@ A logic gate simulator built with React.
 
 ## Features
 
+- Better SVG for gates
+- Simple UI
 - Dynamic gate creation
 - Dynamic gate connections
 - Dynamic wiring 
-- Wire deletion
-- Gate deletion
-- Better SVG for gates
-- Simple UI
+- Wire & Gate deletion
+- Basic Gates (2,3,4 inputs)
 - Clocks
-- Flip-flops
+- Sequential : JK Flip-Flop
+- Combinational : Mux, Adders
 - Infinite canvas with pan and zoom
 - Save/Load circuits
-- Mini utilites like reset view, clear circuit, undo,redo,etc
-- Supports:
-  - AND
-  - OR
-  - NOT
-  - XOR
-  - NAND
-  - NOR
-  - XNOR
-  (upto three inputs)
-  - Master Slave JK Flip-flop
+- Mini utilites like reset view, clear circuit, undo,redo,rotate gates
 
 ## Planned to do
 
