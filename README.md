@@ -12,7 +12,7 @@
 A logic gate simulator built with React.
 
 
-[**Try out GateSim**](https://gatesim.github.io/_/)
+[**Try out GateSim**](https://arpit-shinde.github.io/GateSim/)
 
 ## Features
 
@@ -41,9 +41,5 @@ A logic gate simulator built with React.
 - Not based on propogation delay. So circuits like ring oscillator won't work
 - Doesn't handle race condition in level triggered flip flops. Instead use master slave flip flops
 - Currently unoptimised. May lag considerably for large amount of components in the scene
-
-## Note
-
-- The live website is hosted under a separate GitHub account belonging to the author.
 
 If you find this project useful, please consider giving it a ⭐!
