@@ -18,6 +18,8 @@ import {
 } from "./constants/gates";
 import logo from './gatesim-logo2.png';
 import { RenderUncommitedWire } from "./components/wire";
+import { RenderCUSTOM } from "./svg/gates_svg";
+import { LearnSidebar } from "./components/learnSideBar";
 
 
 function App() {
@@ -47,6 +49,23 @@ function App() {
   let [pausedClocks, setPausedClocks] = useState([]); //to store remaining time for clock tick after pause
   let pausedClocksRef = useRef([]);
   let [wirePath, setWirePath] = useState([]); //to store bending points of wire which is being drawn 
+  let [tempGraph, setTempGraph] = useState([])
+  let [creatingComponent, setCreatingComponent] = useState(false)
+  let [showComponentDialog, setShowComponentDialog] = useState(false);
+  let [componentGraph, setComponentGraph] = useState([]);
+  let [componentInputs, setComponentInputs] = useState([]);
+  let [componentOutputs, setComponentOutputs] = useState([]);
+  let [componentName, setComponentName] = useState("");
+  let [customComponents, setCustomComponents] = useState([]);
+  let [specifyingInputs, setSpecifyingInputs] = useState(false);
+  let [pinPhase, setPinPhase] = useState("input"); // "input" | "output"
+  let [pinIndex, setPinIndex] = useState(0);
+  let [inputOrder, setInputOrder] = useState([]);
+  let [showComponentIO, setShowComponentIO] = useState(false);
+  let componentIdMapRef = useRef(new Map());
+  let [showLearnSidebar, setShowLearnSidebar] = useState(false);
+
+
   let { toggle, Add, clearGraph } = useCircuit(
     graph,
     setGraph,
@@ -848,6 +867,305 @@ function App() {
     setGraph(newGraph);
   }
 
+  function createComponent() {
+    setTempGraph([]);
+    setComponentGraph([]);
+    setComponentInputs([]);
+    setComponentOutputs([]);
+    setComponentName("");
+    setInputOrder([]);
+    setCreatingComponent(!creatingComponent)
+  }
+
+  function PushToTempGraph() {
+
+    if (creatingComponent && selectedGate) {
+
+      const alreadyAdded = tempGraph.some(
+        node => node.id === selectedGate.id
+      );
+
+      if (alreadyAdded) {
+        console.log("already added");
+        return;
+      }
+
+      setTempGraph(prev => [
+        ...prev,
+        graph[selectedGate.id]
+      ]);
+
+    } else {
+      console.log("didnt select a gate. not adding to temp graph");
+    }
+  }
+  function abstractGraph(tempGraph) {
+
+    const abstractedGraph = structuredClone(tempGraph);
+
+    for (let node of abstractedGraph) {
+
+      if (
+        node.type === "INPUT" ||
+        node.type === "CLOCK" ||
+        node.type === "WIRE"
+      ) {
+        continue;
+      }
+
+      for (let i = 0; i < node.inputs.length; i++) {
+
+        let input = node.inputs[i];
+
+        if (input === null || input.id === -1) {
+          continue;
+        }
+
+        let connection = graph.find(
+          n => n.id === input.id
+        );
+
+        if (!connection) {
+          console.log("Connection not found:", input.id);
+          continue;
+        }
+
+        let connection_index = input.index;
+
+        while (connection.type === "WIRE") {
+
+          const wireInput = connection.inputs[0];
+
+          if (
+            wireInput === null ||
+            wireInput.id === -1
+          ) {
+            console.log(
+              "Wire has no source:",
+              connection.id
+            );
+            break;
+          }
+
+          connection_index = wireInput.index;
+
+          connection = graph.find(
+            n => n.id === wireInput.id
+          );
+
+          if (!connection) {
+            console.log(
+              "Wire source not found:",
+              wireInput.id
+            );
+            break;
+          }
+        }
+
+        node.inputs[i] = {
+          id: connection.id,
+          index: connection_index
+        };
+      }
+    }
+
+    const [reindexedGraph, , idMap] = topologicalOrderAndReindex(
+      abstractedGraph.filter(node => node.type !== "WIRE")
+    );
+
+    return [reindexedGraph, idMap];
+  }
+
+
+  function findExtInputs(graph) {
+
+    let inputs = [];
+
+    for (let node of graph) {
+
+      if (!node.inputs) continue;
+
+      for (let i = 0; i < node.inputs.length; i++) {
+
+        let input = node.inputs[i];
+
+        if (!input) continue;
+
+        let source = graph.find(n => n.id === input.id);
+
+        if (source && source.type === "INPUT") {
+
+          inputs.push({
+            id: node.id,
+            index: i,
+            sourceId: source.id
+          });
+
+        }
+      }
+    }
+
+    return inputs;
+  }
+
+  function findExtOutputs(graph) {
+
+    let outputs = [];
+
+    for (let node of graph) {
+
+      if (node.type === "BULB") {
+        outputs.push({
+          id: node.inputs[0].id,
+          index: node.inputs[0].index,
+          bulbId: node.id
+        })
+      }
+    }
+
+    return outputs;
+  }
+
+
+  function FinaliseComponentCreation() {
+
+    setCreatingComponent(false);
+
+    const [abstractedGraph, idMap] = abstractGraph(tempGraph);
+    componentIdMapRef.current = idMap;
+
+    const inputs = findExtInputs(abstractedGraph);
+    const outputs = findExtOutputs(abstractedGraph);
+
+    console.table(inputs);
+    console.log(outputs);
+
+    const componentGraph = abstractedGraph.filter(
+      node =>
+        node.type !== "INPUT" &&
+        node.type !== "BULB"
+    );
+
+    setComponentGraph(componentGraph);
+    setComponentInputs(inputs);
+    setComponentOutputs(outputs);
+
+    // Unique external toggles
+    const uniqueInputSources = [
+      ...new Set(
+        inputs.map(entry => entry.sourceId)
+      )
+    ];
+
+    setInputOrder(uniqueInputSources);
+
+    setPinIndex(0);
+
+    if (uniqueInputSources.length > 0) {
+      setPinPhase("input");
+    }
+    else if (outputs.length > 0) {
+      setPinPhase("output");
+    }
+    else {
+      setPinPhase("input");
+    }
+
+    setSpecifyingInputs(true);
+  }
+
+  function saveComponent(component) {
+  if (!component) return;
+
+  // Only serialize the component — not the whole customComponents array
+  const payload = {
+    kind: "gatesim-component",
+    version: 1,
+    component
+  };
+
+  const safeName =
+    (component.name || "component").replace(/[^a-z0-9_\-]+/gi, "_");
+
+  const blob = new Blob(
+    [JSON.stringify(payload, null, 2)],
+    { type: "application/json" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${safeName}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const componentFileInputRef = useRef(null);
+
+function loadComponent(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const data = JSON.parse(event.target.result);
+
+      // ── Strict validation ──
+      if (!data || typeof data !== "object") {
+        throw new Error("File is not a JSON object.");
+      }
+
+      if (data.kind !== "gatesim-component") {
+        throw new Error(
+          "File is not a single component. Expected kind: 'gatesim-component'."
+        );
+      }
+
+      const c = data.component;
+
+      if (!c || typeof c !== "object") {
+        throw new Error("Missing 'component' field.");
+      }
+
+      if (
+        c.type !== "CUSTOM" ||
+        typeof c.name !== "string" ||
+        !Array.isArray(c.inputs) ||
+        !Array.isArray(c.outputs) ||
+        !Array.isArray(c.ref_graph)
+      ) {
+        throw new Error("Component is malformed or missing required fields.");
+      }
+
+      // Dedupe by name if a component with that name already exists
+      let finalName = c.name;
+      let n = 1;
+      const existingNames = new Set(customComponents.map(x => x.name));
+      while (existingNames.has(finalName)) {
+        finalName = `${c.name} (${n++})`;
+      }
+
+      const incoming = { ...c, name: finalName };
+
+      setCustomComponents(prev => [...prev, incoming]);
+
+      console.log("✅ Component loaded:", incoming.name);
+
+    } catch (err) {
+      console.error("Component load error:", err);
+      alert(
+        "Invalid component file.\n\n" +
+        "This file must contain exactly one GateSim component. " +
+        "Circuit files or other JSON files are not accepted.\n\n" +
+        `Reason: ${err.message}`
+      );
+    }
+  };
+
+  reader.readAsText(file);
+  e.target.value = "";
+}
 
 
   return (
@@ -882,11 +1200,48 @@ function App() {
           setTheme(!theme)
           CONSTANTS.toggleTheme(document, theme)
         }}>TOGGLE THEME</button>
-        <button className="utilities-button" onClick={() => {
-          console.log(graph)
-          console.log(opin)
-        }}>print</button>
+        <button
+          className="utilities-button"
+          onClick={() => {
+            console.table(graph);
+
+          }}
+        >
+          print
+        </button>
         <button className="utilities-button" onClick={() => { RotateGate() }}>ROTATE</button>
+        <button className="utilities-button" onClick={() => createComponent()}>CREATE</button>
+        {creatingComponent && (() => {
+          return (
+            <button className="utilities-button" onClick={() => { PushToTempGraph() }}>ADD</button>
+          );
+        })()}
+        {creatingComponent && (() => {
+          return (
+            <button className="utilities-button" onClick={() => { FinaliseComponentCreation() }}>DONE</button>
+          );
+        })()}
+        <button
+  className="utilities-button"
+  onClick={() => setShowComponentIO(true)}
+>
+  COMPONENTS
+</button>
+<button
+  className="utilities-button"
+  onClick={() => setShowLearnSidebar(v => !v)}
+>
+  {showLearnSidebar ? "HIDE GUIDE" : "LEARN"}
+</button>
+
+<input
+  ref={componentFileInputRef}
+  type="file"
+  accept=".json"
+  style={{ display: "none" }}
+  onChange={loadComponent}
+/>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -1097,6 +1452,26 @@ function App() {
               ))}
             </div>
           </details>
+          <details className="toolSection">
+  <summary className="toolButton">
+    <span>Custom</span>
+    <span>▼</span>
+  </summary>
+
+  <div className="toolGateCards">
+    {customComponents.map((component, index) => (
+      <div
+        key={`${component.name}-${index}`}
+        onClick={() => Add("CUSTOM", null, null, null, component)}
+      >
+        <GateCard
+          renderFxn={() => <RenderCUSTOM node={component} />}
+          gateType={component.name}
+        />
+      </div>
+    ))}
+  </div>
+</details>
 
 
         </div>
@@ -1257,6 +1632,330 @@ function App() {
           </div>
         </div>
       )}
+      {showComponentDialog && (
+        <div className="component-dialog-overlay">
+
+          <div className="component-dialog">
+
+            <h2>Create Component</h2>
+
+            <input
+              className="component-name-input"
+              placeholder="Component name"
+              value={componentName}
+              onChange={(e) => setComponentName(e.target.value)}
+            />
+
+            <div className="component-graph-preview">
+              {/* render componentGraph here */}
+            </div>
+
+            <div>
+              <h3>Input Pins</h3>
+
+              <div className="component-pin-list">
+                {componentInputs.map((input, index) => (
+                  <div className="component-pin" key={index}>
+                    Input {index} → Node {input.nodeId}, pin {input.index}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+
+
+            <div className="component-dialog-buttons">
+
+              <button
+                onClick={() => {
+                  setShowComponentDialog(false);
+                }}
+              >
+                CANCEL
+              </button>
+
+              <button
+                onClick={() => {
+
+                  if (!componentName.trim()) {
+                    alert("Please enter a component name.");
+                    return;
+                  }
+
+                  if (componentOutputs.length === 0) {
+                    alert("Please select at least one output pin.");
+                    return;
+                  }
+
+                  const customComponent = {
+                    type: "CUSTOM",
+                    name: componentName.trim(),
+
+                    inputs: structuredClone(componentInputs),
+                    outputs: structuredClone(componentOutputs),
+
+                    ref_graph: structuredClone(componentGraph)
+                  };
+
+                  console.log("Created component:", customComponent);
+
+                  setCustomComponents(prev => [
+                    ...prev,
+                    customComponent
+                  ]);
+
+                  // Reset
+                  setComponentGraph([]);
+                  setComponentInputs([]);
+                  setComponentOutputs([]);
+                  setComponentName("");
+
+                  setShowComponentDialog(false);
+
+                }}
+              >
+                CREATE
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+      {specifyingInputs && (
+        <div className="right-sidebar">
+          <div className="right-sidebar-content">
+
+            <input
+              className="component-name-input"
+              placeholder="Component name"
+              value={componentName}
+              onChange={(e) => setComponentName(e.target.value)}
+            />
+
+            {pinPhase === "input" ? (
+              <>
+                <p>Specify input {pinIndex}</p>
+                <p className="pin-counter">
+                  {pinIndex + 1} / {inputOrder.length}
+                </p>
+              </>
+            ) : (
+              <>
+                <p>Specify output {pinIndex}</p>
+                <p className="pin-counter">
+                  {pinIndex + 1} / {componentOutputs.length}
+                </p>
+              </>
+            )}
+
+          </div>
+
+          <div className="right-sidebar-footer">
+            <button
+              className="utilities-button"
+              onClick={() => {
+
+                if (pinPhase === "input") {
+
+                  const newOrder = [...inputOrder];
+                  const mappedId = componentIdMapRef.current.get(selectedGate?.id);
+                  const idx = newOrder.indexOf(mappedId);
+
+                  if (idx === -1) {
+                    alert("Please select a valid input toggle.");
+                    return;
+                  }
+
+                  // Move that toggle to the current pin position.
+                  const [moved] = newOrder.splice(idx, 1);
+
+                  newOrder.splice(pinIndex, 0, moved);
+
+                  // Save the new ordering.
+                  setInputOrder(newOrder);
+
+
+                  // Still have more component inputs to specify.
+                  if (pinIndex + 1 < newOrder.length) {
+
+                    setPinIndex(pinIndex + 1);
+                    return;
+                  }
+
+
+                  // Input specification finished.
+                  if (componentOutputs.length > 0) {
+
+                    setPinPhase("output");
+                    setPinIndex(0);
+                    return;
+                  }
+
+
+                  // No outputs → create component.
+                  if (!componentName.trim()) {
+
+                    alert("Please enter a component name.");
+                    return;
+                  }
+
+
+                  // Expand the component-level ordering
+                  // back into all internal mappings.
+                  const orderedInputs = newOrder.flatMap(
+                    sourceId =>
+                      componentInputs.filter(
+                        entry => entry.sourceId === sourceId
+                      )
+                  );
+
+
+                  const customComponent = {
+
+                    type: "CUSTOM",
+
+                    name: componentName.trim(),
+
+                    inputs: structuredClone(orderedInputs),
+
+                    outputs: structuredClone(componentOutputs),
+
+                    ref_graph: structuredClone(componentGraph)
+
+                  };
+
+
+                  setCustomComponents(prev => [
+                    ...prev,
+                    customComponent
+                  ]);
+
+
+                  // Reset component creation state.
+                  setComponentGraph([]);
+                  setComponentInputs([]);
+                  setComponentOutputs([]);
+                  setInputOrder([]);
+                  setComponentName("");
+                  setSpecifyingInputs(false);
+                } else {
+
+                  const mappedId = componentIdMapRef.current.get(selectedGate?.id);
+
+  setComponentOutputs(prev => {
+    const idx = prev.findIndex(
+      (entry, i) => i >= pinIndex && entry.bulbId === mappedId
+    );
+    if (idx === -1) return prev;
+
+    const copy = [...prev];
+    const [moved] = copy.splice(idx, 1);
+    copy.splice(pinIndex, 0, moved);
+    return copy;
+  });
+
+                  if (pinIndex + 1 < componentOutputs.length) {
+
+                    setPinIndex(pinIndex + 1);
+
+                  } else {
+
+                    if (!componentName.trim()) {
+                      alert("Please enter a component name.");
+                      return;
+                    }
+
+                    const orderedInputs = inputOrder.flatMap(sourceId =>
+                      componentInputs.filter(
+                        entry => entry.sourceId === sourceId
+                      )
+                    );
+
+                    const customComponent = {
+                      type: "CUSTOM",
+                      name: componentName.trim(),
+                      inputs: structuredClone(orderedInputs),
+                      outputs: structuredClone(componentOutputs),
+                      ref_graph: structuredClone(componentGraph)
+                    };
+
+                    setCustomComponents(prev => [...prev, customComponent]);
+
+                    setComponentGraph([]);
+                    setComponentInputs([]);
+                    setComponentOutputs([]);
+                    setInputOrder([]);
+                    setComponentName("");
+                    setSpecifyingInputs(false);
+                  }
+                }
+              }}
+            >
+              DONE
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showComponentIO && (
+  <div className="component-dialog-overlay">
+    <div className="component-dialog">
+
+      <h2>Custom Components</h2>
+
+      {customComponents.length === 0 ? (
+        <p className="component-empty">
+          No custom components yet.
+        </p>
+      ) : (
+        <div className="component-io-list">
+          {customComponents.map((component, index) => (
+            <div
+              className="component-io-item"
+              key={`${component.name}-${index}`}
+            >
+              <span className="component-io-name">
+                {component.name}
+              </span>
+
+              <button
+                className="utilities-button"
+                onClick={() => saveComponent(component)}
+              >
+                SAVE
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="component-dialog-buttons">
+
+        <button
+          className="utilities-button"
+          onClick={() => componentFileInputRef.current.click()}
+        >
+          LOAD COMPONENT
+        </button>
+
+        <button
+          className="utilities-button"
+          onClick={() => setShowComponentIO(false)}
+        >
+          CLOSE
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
+
+{showLearnSidebar && (
+  <LearnSidebar onClose={() => setShowLearnSidebar(false)} />
+)}
 
     </div>
   )

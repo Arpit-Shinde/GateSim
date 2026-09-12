@@ -1775,3 +1775,110 @@ export function RenderJK() {
     </g>
   );
 }
+
+export function RenderCUSTOM({ node }) {
+  const inputCount = node?.inputs?.length ?? 2;
+  const outputCount = node?.value?.length ?? 2;
+
+  const height = Math.max(
+    CONSTANTS.GATE_HEIGHT,
+    Math.max(inputCount, outputCount) * 20
+  );
+
+  return (
+    <g transform={`scale(${0.7}) translate(20,0)`}>
+
+      {/* Input wire stubs */}
+      {Array.from({ length: inputCount }).map((_, i) => {
+        const y = height / 2 + (i - (inputCount - 1) / 2) * 20;
+        return (
+          <line
+            key={`in-stub-${i}`}
+            x1={10}
+            y1={y}
+            x2={CONSTANTS.INPUT_PIN_X}
+            y2={y}
+            stroke={CONSTANTS.GATE_STROKE_COLOR}
+            strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+          />
+        );
+      })}
+
+      {/* Output wire stubs */}
+      {Array.from({ length: outputCount }).map((_, i) => {
+        const y = height / 2 + (i - (outputCount - 1) / 2) * 20;
+        return (
+          <line
+            key={`out-stub-${i}`}
+            x1={CONSTANTS.GATE_WIDTH}
+            y1={y}
+            x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+            y2={y}
+            stroke={CONSTANTS.GATE_STROKE_COLOR}
+            strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+          />
+        );
+      })}
+
+      {/* Body */}
+      <rect
+        x={0}
+        y={0}
+        width={CONSTANTS.GATE_WIDTH}
+        height={height}
+        fill={CONSTANTS.GATE_FILL_COLOR}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        rx={3}
+      />
+
+      {/* Label */}
+      <text
+        x={CONSTANTS.GATE_WIDTH / 2}
+        y={height / 2}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={11}
+        fill="#a0aec0"
+        fontWeight="bold"
+      >
+        {node?.name ?? "CUSTOM"}
+      </text>
+
+      {/* Input pins */}
+      {Array.from({ length: inputCount }).map((_, i) => {
+        const y = height / 2 + (i - (inputCount - 1) / 2) * 20;
+        return (
+          <circle
+            key={`in-pin-${i}`}
+            className="render-gate-pin"
+            cx={CONSTANTS.INPUT_PIN_X}
+            cy={y}
+            r={CONSTANTS.PIN_RADIUS}
+            fill={CONSTANTS.GATE_FILL_COLOR}
+            stroke={CONSTANTS.GATE_STROKE_COLOR}
+            strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+          />
+        );
+      })}
+
+      {/* Output pins */}
+      {Array.from({ length: outputCount }).map((_, i) => {
+        const y = height / 2 + (i - (outputCount - 1) / 2) * 20;
+        return (
+          <circle
+            key={`out-pin-${i}`}
+            className="render-gate-pin"
+            cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+            cy={y}
+            r={CONSTANTS.PIN_RADIUS}
+            fill={CONSTANTS.GATE_FILL_COLOR}
+            stroke={CONSTANTS.GATE_STROKE_COLOR}
+            strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+          />
+        );
+      })}
+
+    </g>
+  );
+}

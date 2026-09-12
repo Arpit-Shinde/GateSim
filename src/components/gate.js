@@ -2402,5 +2402,141 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
     );
   }
 
+  else if (node.type === "CUSTOM") {
+
+    const inputCount = node.inputs?.length ?? 0;
+    const outputCount = node.value?.length ?? 0;
+
+    const height = Math.max(
+      CONSTANTS.GATE_HEIGHT,
+      Math.max(inputCount, outputCount) * 20
+    );
+
+    return (
+      <g
+        transform={`translate(${node.x}, ${node.y}) rotate(${rot})`}
+        className={gateClass}
+      >
+
+        {/* Component body */}
+        <rect
+          x={0}
+          y={0}
+          width={CONSTANTS.GATE_WIDTH}
+          height={height}
+          fill={CONSTANTS.GATE_FILL_COLOR}
+          stroke={CONSTANTS.GATE_STROKE_COLOR}
+          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+          onMouseDown={(e) => startDrag(e, node.id)}
+          onClick={() => {
+            setSelectedGate({ id: node.id });
+            return true;
+          }}
+        />
+
+        {/* Component name */}
+        <text
+          x={CONSTANTS.GATE_WIDTH / 2}
+          y={height / 2}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill={CONSTANTS.GATE_STROKE_COLOR}
+          fontSize="12"
+          pointerEvents="none"
+        >
+          {node.name}
+        </text>
+
+        {/* Input pins */}
+        {node.inputs?.map((_, i) => {
+
+          const y = height / 2 +
+            (i - (inputCount - 1) / 2) * 20;
+
+          return (
+            <g key={`input-${i}`}>
+              <line
+                x1={0}
+                y1={y}
+                x2={CONSTANTS.INPUT_PIN_X}
+                y2={y}
+                stroke={CONSTANTS.GATE_STROKE_COLOR}
+                strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+              />
+
+              <circle
+                className="pin"
+                onMouseUp={(e) => {
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  setinputpin(
+                    node.id,
+                    i,
+                    outPos(0, y).x,
+                    outPos(0, y).y
+                  );
+                }}
+                cx={0}
+                cy={y}
+                r={CONSTANTS.PIN_RADIUS}
+                fill={CONSTANTS.GATE_FILL_COLOR}
+                stroke={CONSTANTS.GATE_STROKE_COLOR}
+                strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+              />
+            </g>
+          );
+        })}
+
+        {/* Output pins */}
+        {node.value?.map((_, i) => {
+
+          const y = height / 2 +
+            (i - (outputCount - 1) / 2) * 20;
+
+          return (
+            <g key={`output-${i}`}>
+              <line
+                x1={CONSTANTS.GATE_WIDTH}
+                y1={y}
+                x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+                y2={y}
+                stroke={CONSTANTS.GATE_STROKE_COLOR}
+                strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+              />
+
+              <circle
+                className="pin"
+                onMouseUp={(e) => {
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  const p = outPos(
+                    CONSTANTS.GATE_WIDTH,
+                    y
+                  );
+
+                  setoutputpin(
+                    node.id,
+                    i,
+                    p.x,
+                    p.y
+                  );
+                }}
+                cx={CONSTANTS.GATE_WIDTH}
+                cy={y}
+                r={CONSTANTS.PIN_RADIUS}
+                fill={CONSTANTS.GATE_FILL_COLOR}
+                stroke={CONSTANTS.GATE_STROKE_COLOR}
+                strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+              />
+            </g>
+          );
+        })}
+
+      </g>
+    );
+  }
+
   return null;
 }
