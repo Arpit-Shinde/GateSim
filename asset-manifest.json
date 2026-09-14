@@ -1,10 +1,10 @@
 {
   "files": {
     "main.css": "/GateSim/static/css/main.8f34191b.css",
-    "main.js": "/GateSim/static/js/main.1ab53894.js",
-    "static/js/530.010d9bce.chunk.js": "/GateSim/static/js/530.010d9bce.chunk.js",
-    "static/js/394.e23c6da7.chunk.js": "/GateSim/static/js/394.e23c6da7.chunk.js",
-    "static/js/453.2d2ddec2.chunk.js": "/GateSim/static/js/453.2d2ddec2.chunk.js",
+    "main.js": "/GateSim/static/js/main.4ef64014.js",
+    "static/js/530.4279e4a7.chunk.js": "/GateSim/static/js/530.4279e4a7.chunk.js",
+    "static/js/394.a3b3df45.chunk.js": "/GateSim/static/js/394.a3b3df45.chunk.js",
+    "static/js/453.6a56dd48.chunk.js": "/GateSim/static/js/453.6a56dd48.chunk.js",
     "static/media/gatesim-logo2.png": "/GateSim/static/media/gatesim-logo2.9487583f8ed15fec8a63.png",
     "static/media/KaTeX_AMS-Regular.ttf": "/GateSim/static/media/KaTeX_AMS-Regular.853be92419a6c3766b9a.ttf",
     "static/media/KaTeX_Main-Regular.ttf": "/GateSim/static/media/KaTeX_Main-Regular.9eba1d77abcf2aa6e94e.ttf",
@@ -68,13 +68,13 @@
     "static/media/KaTeX_Size3-Regular.woff2": "/GateSim/static/media/KaTeX_Size3-Regular.e1951519f6f0596f7356.woff2",
     "index.html": "/GateSim/index.html",
     "main.8f34191b.css.map": "/GateSim/static/css/main.8f34191b.css.map",
-    "main.1ab53894.js.map": "/GateSim/static/js/main.1ab53894.js.map",
-    "530.010d9bce.chunk.js.map": "/GateSim/static/js/530.010d9bce.chunk.js.map",
-    "394.e23c6da7.chunk.js.map": "/GateSim/static/js/394.e23c6da7.chunk.js.map",
-    "453.2d2ddec2.chunk.js.map": "/GateSim/static/js/453.2d2ddec2.chunk.js.map"
+    "main.4ef64014.js.map": "/GateSim/static/js/main.4ef64014.js.map",
+    "530.4279e4a7.chunk.js.map": "/GateSim/static/js/530.4279e4a7.chunk.js.map",
+    "394.a3b3df45.chunk.js.map": "/GateSim/static/js/394.a3b3df45.chunk.js.map",
+    "453.6a56dd48.chunk.js.map": "/GateSim/static/js/453.6a56dd48.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.8f34191b.css",
-    "static/js/main.1ab53894.js"
+    "static/js/main.4ef64014.js"
   ]
 }
