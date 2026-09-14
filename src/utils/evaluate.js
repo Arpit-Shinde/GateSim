@@ -5,14 +5,14 @@ export function evaluate(graph) {
   for (const node of graph) {
 
     // These nodes get their values externally.
-    if (node.type === "INPUT" || node.type === "CLOCK") {
+    if (node.type === "INPUT" || node.type === "CLOCK" || node.type === "EXT_SIGNAL") {
       continue;
     }
 
     // Custom component
     if (node.type === "CUSTOM") {
-        evaluateCustom(node, graph)
-      
+      evaluateCustom(node, graph)
+
       continue;
     }
 
@@ -223,105 +223,66 @@ export function evaluate(graph) {
 // CUSTOM COMPONENT
 // ============================================================
 
+// evaluate.js
+
 function evaluateCustom(customNode, outerGraph) {
 
-  // ==========================================================
-  // 1. MAP EXTERNAL INPUTS
-  // ==========================================================
-
   const sourceToInputIndex = new Map();
-
   for (const extInput of customNode.ext_inputs) {
-
     if (!sourceToInputIndex.has(extInput.sourceId)) {
-      sourceToInputIndex.set(
-        extInput.sourceId,
-        sourceToInputIndex.size
-      );
+      sourceToInputIndex.set(extInput.sourceId, sourceToInputIndex.size);
     }
   }
-
-
-  // ==========================================================
-  // 2. INJECT EXTERNAL INPUT VALUES INTO REF_GRAPH
-  // ==========================================================
 
   for (const extInput of customNode.ext_inputs) {
 
-    const internalNode = customNode.ref_graph.find(
-      node => node.id === extInput.id
-    );
+    const internalNode = customNode.ref_graph.find(node => node.id === extInput.id);
+    if (!internalNode) continue;
 
-    if (!internalNode) {
-      continue;
+    const customInputIndex = sourceToInputIndex.get(extInput.sourceId);
+    if (customInputIndex === undefined) continue;
+
+    const externalConnection = customNode.inputs[customInputIndex];
+    if (!externalConnection) continue;
+
+    const externalSource = outerGraph.find(node => node.id === externalConnection.id);
+    if (!externalSource) continue;
+
+    const signal = externalSource.value?.[externalConnection.index] ?? false;
+
+    if (internalNode.type === "CUSTOM") {
+      // A nested CUSTOM resolves its .inputs[i] via its own
+      // outerGraph.find(...) lookup — it doesn't understand the
+      // "__CUSTOM_INPUT__" placeholder. Give it a real node to find instead.
+      const carrierId = `__ext_${extInput.id}_${extInput.index}__`;
+
+      let carrier = customNode.ref_graph.find(n => n.id === carrierId);
+
+      if (!carrier) {
+        carrier = { type: "EXT_SIGNAL", id: carrierId, value: [signal], inputs: [] };
+        customNode.ref_graph.push(carrier);
+      } else {
+        carrier.value = [signal];
+      }
+
+      internalNode.inputs[extInput.index] = { id: carrierId, index: 0 };
+
+    } else {
+      internalNode.inputs[extInput.index] = {
+        id: "__CUSTOM_INPUT__",
+        index: 0,
+        value: signal
+      };
     }
-
-
-    // Which CUSTOM input slot corresponds to this source?
-    const customInputIndex =
-      sourceToInputIndex.get(extInput.sourceId);
-
-    if (customInputIndex === undefined) {
-      continue;
-    }
-
-
-    // Connection of the CUSTOM instance
-    const externalConnection =
-      customNode.inputs[customInputIndex];
-
-    if (!externalConnection) {
-      continue;
-    }
-
-
-    // Find source in the outer graph
-    const externalSource =
-      outerGraph.find(
-        node => node.id === externalConnection.id
-      );
-
-    if (!externalSource) {
-      continue;
-    }
-
-
-    // Get actual signal
-    const signal =
-      externalSource.value?.[externalConnection.index] ?? false;
-
-
-    // Feed signal into the appropriate internal pin
-    internalNode.inputs[extInput.index] = {
-      id: "__CUSTOM_INPUT__",
-      index: 0,
-      value: signal
-    };
   }
 
-
-  // ==========================================================
-  // 3. EVALUATE INTERNAL CIRCUIT
-  // ==========================================================
-
-  for (let i=0;i<CONSTANTS.MAX_EVALUATION_ITERATIONS;i++) evaluate(customNode.ref_graph);
-
-
-  // ==========================================================
-  // 4. MAP INTERNAL OUTPUTS → CUSTOM VALUE[]
-  // ==========================================================
+  for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+    evaluate(customNode.ref_graph);
+  }
 
   customNode.value = customNode.ext_outputs.map(output => {
-
-    const internalNode =
-      customNode.ref_graph.find(
-        node => node.id === output.id
-      );
-
-    if (!internalNode) {
-      return false;
-    }
-
+    const internalNode = customNode.ref_graph.find(node => node.id === output.id);
+    if (!internalNode) return false;
     return internalNode.value?.[output.index] ?? false;
   });
 }

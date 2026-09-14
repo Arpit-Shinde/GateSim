@@ -93,9 +93,8 @@ export function AboutModal({ onClose }) {
               margin: '20px 0 8px 0'
             }}
           >
-            Philosophy
+            Get Started
           </h4>
-
           <p
             style={{
               fontSize: '16px',
@@ -104,11 +103,20 @@ export function AboutModal({ onClose }) {
               margin: '0'
             }}
           >
-            Built by a student, for students.
-            <br />
-            Learn by building. Experiment freely. Understand what is happening
-            underneath.
+            Navigate to "Tutorial" to learn how to use Simulator
           </p>
+          <p
+            style={{
+              fontSize: '16px',
+              lineHeight: '1.8',
+              color: '#cbd5e0',
+              margin: '0'
+            }}
+          >
+            Navigate to "Self-Learn" to learn DLD (Digital Logic Design) concepts.
+            The content is provided from geeksforgeeks.org in this section.
+          </p>
+
 
           <h4
             style={{
@@ -144,7 +152,7 @@ export function AboutModal({ onClose }) {
               paddingTop: '16px'
             }}
           >
-            Created and maintained by Arpit Shinde
+            
             <br />
 
             <a
@@ -158,6 +166,18 @@ export function AboutModal({ onClose }) {
               }}
             >
               GitHub ➚
+            </a>
+            <a
+              href="mailto:125cs0030@iiitk.ac.in?subject=GateSim%20Feedback"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: '#00eff3',
+                textDecoration: 'none',
+                fontSize: '15px'
+              }}
+            >
+                Leave us a Feedback ➚
             </a>
           </p>
 

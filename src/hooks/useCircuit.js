@@ -135,7 +135,7 @@ export function useCircuit(
         name: customComponent.name,
 
         inputs: Array(n).fill(null),
-        ext_inputs:structuredClone(customComponent.inputs),
+        ext_inputs: structuredClone(customComponent.inputs),
 
         value: customComponent.outputs.map(() => false),
 
@@ -154,6 +154,20 @@ export function useCircuit(
       };
 
       console.table(newGate)
+    }
+    else if (gate === "TEXT") {
+      newGate = {
+        type: "TEXT",
+        id: graph.length,
+        text: "Label",
+        x: view.x + view.width / 2,
+        y: view.y + view.height / 2,
+        z: Math.max(0, ...graph.map(node => node.z ?? 0)) + 1,
+        rotation: 0,
+        // TEXT has no inputs/outputs
+        inputs: [],
+        value: [],
+      };
     }
 
     else {
@@ -243,7 +257,7 @@ export function useCircuit(
       return;
     }
 
-    if (window.confirm("Are you sure you want to clear the circuit? This cannot be undone.")) {
+    if (window.confirm("Are you sure you want to clear the circuit?")) {
       addToUndoStack(graph, clock_delays);
       setGraph([]);
       setClockDelays([]);

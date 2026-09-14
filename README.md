@@ -113,9 +113,6 @@ A circuit can be selected and converted into a custom component by defining its 
 
 This allows larger circuits to be constructed hierarchically from smaller building blocks.
 
-### Limitation
-Nested components, that is, using user defined components to build components is not supported as of now. May show unexpected behaviour. Will be fixed soon.
-
 ## Circuit Saving
 
 Circuits can be saved and loaded so that designs can be continued later or shared between users.
@@ -127,4 +124,5 @@ Planned development includes:
 * Expanded learning material
 * More combinational and sequential components
 * Further usability improvements based on student feedback
+* Adding architecture explaination in README
 

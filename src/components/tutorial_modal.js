@@ -78,7 +78,7 @@ export function showTutorial() {
           margin: 0 0 12px 0;
           color: #cbd5e0;
         ">
-          Navigate through the toolbar and left-click a component.
+          Navigate through the toolbar on left and left-click a component.
           It will be placed at the center of the canvas.
         </p>
       </section>
@@ -183,7 +183,180 @@ export function showTutorial() {
         <p style="margin: 0;">
           <b>Delete:</b> Select → Delete key
           <br>
-          <b>Rotate:</b> Select → ROTATE
+          <b>Rotate:</b> Select → TOOLS → ROTATE
+          <br>
+          <b>Undo:</b> EDIT → UNDO
+          <br>
+          <b>Redo:</b> EDIT → REDO 
+          <br>
+          <b>Clear entire circuit:</b> EDIT → CLEAR CIRCUIT
+          <br>
+          <b>Beautify:</b> EDIT → BEAUTIFY
+          <br>
+          <b>Pause Clocks:</b> SIMULATION → PAUSE CLOCKS
+          <br>
+          <b>Start Clocks:</b> SIMULATION → START CLOCKS
+          <br>
+          <b>Add labels:</b> Left-click LABEL (from toolsbar) → Double left-click on "label" on canvas → Change the text
+        </p>
+      </section>
+      <section>
+  <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 20px 0 8px 0;
+        ">
+    Self-Learn
+  </h4>
+
+    <p style="margin: 0;">
+          Choose SELF-LEARN and a sidebar will appear. It is stretchable. 
+          The content is provided from geeksforgeeks.org, and the diagrams are made in GateSim itself.
+          
+
+      <section>
+  <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 20px 0 8px 0;
+        ">
+    Component Creation
+  </h4>
+
+  <h5
+    style={{
+      color: "#bbb",
+      fontSize: "19px",
+      fontWeight: 500,
+      margin: "22px 0 10px 0",
+    }}
+  >
+    Rules
+  </h5>
+
+  <div
+    style={{
+      background: "#303030",
+      border: "1px solid #444",
+      borderRadius: "8px",
+      padding: "16px 18px",
+      marginBottom: "18px",
+      lineHeight: "1.7",
+    }}
+  >
+    <p style={{ margin: "0 0 10px 0" }}>
+      Build your circuit as usual.
+    </p>
+
+    <p style={{ margin: "0 0 10px 0" }}>
+      Connect input toggles wherever your custom component should receive
+      inputs. Each toggle connected to the circuit becomes an input pin of
+      the custom component.
+    </p>
+
+    <p style={{ margin: 0 }}>
+      Connect bulbs wherever your custom component should produce an output.
+      Each connected bulb becomes an output pin.
+    </p>
+  </div>
+
+  <h5
+    style={{
+      color: "#bbb",
+      fontSize: "19px",
+      fontWeight: 500,
+      margin: "22px 0 10px 0",
+    }}
+  >
+    Creating the Component
+  </h5>
+
+  <ol
+    style={{
+      margin: 0,
+      paddingLeft: "24px",
+      lineHeight: "1.75",
+    }}
+  >
+    <li>
+      Build the circuit you want to turn into a reusable component.
+    </li>
+
+    <li>
+      Click <strong>"CREATE COMPONENT"</strong>.
+    </li>
+
+    <li>
+      Click <strong>"SELECT MODE"</strong>. This allows you to draw a
+      selection area over the canvas.
+    </li>
+
+    <li>
+      Left-click and drag from one corner of the circuit to another. A
+      translucent blue rectangle will appear.
+    </li>
+
+    <li>
+      Any gates, bulbs, or toggles that lie completely inside the selection
+      area will be included in the component.
+    </li>
+
+    <li>
+      Click <strong>"DONE"</strong> to confirm the selection.
+    </li>
+
+    <li>
+      A sidebar will appear where you can define the component's input pins,
+      output pins, and component name.
+    </li>
+
+    <li>
+      To assign an input pin, left-click the toggle you want to use as that
+      input. The selected toggle will glow to indicate that it has been
+      assigned.
+    </li>
+
+    <li>
+      Optionally enter a name for the input pin, then click
+      <strong>"DONE"</strong>.
+    </li>
+
+    <li>
+      Repeat the same process for the output pins by selecting the
+      corresponding bulbs.
+    </li>
+
+    <li>
+      Give the component a name. Keep pin names short and descriptive.
+    </li>
+
+    <li>
+      Once created, the component will appear in the
+      <strong>"CUSTOM"</strong> section of the left toolbar and can be
+      reused like any other component.
+    </li>
+  </ol>
+</section>
+<section>
+        <h4 style="
+          color: #aaa;
+          font-size: 22px;
+          font-weight: 500;
+          margin: 20px 0 8px 0;
+        ">
+          Download & Save
+        </h4>
+
+        <p style="margin: 0;">
+          <b>Download a circuit:</b> FILE → DOWNLOAD CIRCUIT
+          <br>
+          <b>Load a circuit:</b> FILE → LOAD CIRCUIT
+          <br>
+          <b>Load a Component:</b> FILE → COMPONENTS → LOAD COMPONENT.
+          <br>
+          <b>Save a Component:</b> FILE → COMPONENTS → Your created/loaded components will appear. Click SAVE next to them.
         </p>
       </section>
 
@@ -213,7 +386,9 @@ export function showTutorial() {
           <li>Deleting a wire also deletes its branches and removes internal connections.</li>
           <li>Deleting a gate removes all wires connected to it and removes internal connections.</li>
           <li>Moving a gate does not move its wires; internal connections remain unchanged.</li>
-        </ol>
+          <li>Don't leave dangling input pin or unconnected pins while creating components</li>
+          <li>Beautify will just straighten wires. It won't move gates on the canvas</li>     
+          </ol>
       </section>
 
 
