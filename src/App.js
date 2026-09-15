@@ -67,8 +67,9 @@ function App() {
   let [selectMode, setSelectMode] = useState(false);
   let [selectionRect, setSelectionRect] = useState(null); // {x0,y0,x1,y1} while dragging, else null
   let [pinName, setPinName] = useState("");
-  const [editingText, setEditingText] = useState(null);
-// editingText = { id: number, draft: string } | null
+  let [editingText, setEditingText] = useState(null);
+  let [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  let [downloadFileName, setDownloadFileName] = useState("circuit");
   
   let { toggle, Add, clearGraph } = useCircuit(
     graph,
@@ -824,101 +825,108 @@ function cancelTextEdit() {
     setUndoStack(newUndoStack);
   }
 
-  function downloadCircuit() {
-    const data = {
-      graph: graph,
-      clock_delays: clock_delays.map(c => ({
-        id: c.id,
-        delay: c.delay
-      }))
-    };
+  function openDownloadDialog() {
+  setDownloadFileName("circuit");
+  setShowDownloadDialog(true);
+}
 
-    // ✅ Ask user for file name
-    const fileName = window.prompt("Enter file name:", "circuit.json");
-
-    // If user clicks Cancel or leaves empty, use default
-    if (fileName === null) return;
-
-    const finalName = fileName.trim() || "circuit.json";
-
-    // Ensure .json extension
-    const fullName = finalName.endsWith(".json") ? finalName : finalName + ".json";
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fullName;
-    a.click();
-    URL.revokeObjectURL(url);
+function commitDownload() {
+  const trimmed = downloadFileName.trim();
+  if (!trimmed) {
+    alert("Please enter a file name.");
+    return;
   }
 
-  const fileInputRef = useRef(null);
+  const safeName = trimmed.replace(/[^a-z0-9_\-]+/gi, "_");
+  const fullName = safeName.endsWith(".json") ? safeName : `${safeName}.json`;
 
-  function loadCircuit(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  const data = {
+    graph: graph,
+    clock_delays: clock_delays.map(c => ({
+      id: c.id,
+      delay: c.delay
+    }))
+  };
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target.result);
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json"
+  });
 
-        let loadedGraph;
-        let loadedDelays = [];
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fullName;
+  a.click();
+  URL.revokeObjectURL(url);
 
-        // ✅ Handle both old and new formats
-        if (Array.isArray(data)) {
-          // Old format: just the graph array
-          loadedGraph = data;
-        } else if (data.graph && Array.isArray(data.graph)) {
-          // New format: { graph, clock_delays }
-          loadedGraph = data.graph;
-          loadedDelays = data.clock_delays || [];
-        } else {
-          throw new Error("Invalid circuit file format");
-        }
+  setShowDownloadDialog(false);
+}
 
-        // ✅ Reindex the loaded graph
-        let [newGraph, newClockDelays] = topologicalOrderAndReindex(loadedGraph);
+function cancelDownload() {
+  setShowDownloadDialog(false);
+}
 
-        // ✅ Rebuild clock delays with fresh next_delay
-        const now = performance.now();
-        const restoredDelays = newClockDelays.map(clock => {
-          // Find the clock's new ID after reindexing
-          const newId = newGraph.find(g => g.id === clock.id)?.id;
-          return {
-            id: newId !== undefined ? newId : clock.id,
-            delay: clock.delay,
-            next_delay: now + clock.delay // ✅ Fresh!
-          };
-        });
+const fileInputRef = useRef(null);
 
+function loadCircuit(e) {
+  const file = e.target.files[0];
+  if (!file) return;
 
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const data = JSON.parse(event.target.result);
 
-        // ✅ Evaluate the circuit
-        for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-          evaluate(newGraph);
-        }
+      let loadedGraph;
+      let loadedDelays = [];
 
-        // ✅ Clear undo/redo on load
-        setUndoStack([]);
-        setRedoStack([]);
-
-        setGraph(newGraph);
-        setClockDelays(restoredDelays);
-
-        console.log("✅ Circuit loaded successfully!");
-
-      } catch (error) {
-        console.error("Load error:", error);
-        alert("Invalid circuit file. Please check the file format.");
+      // Handle both old and new formats
+      if (Array.isArray(data)) {
+        loadedGraph = data;
+      } else if (data.graph && Array.isArray(data.graph)) {
+        loadedGraph = data.graph;
+        loadedDelays = data.clock_delays || [];
+      } else {
+        throw new Error("Invalid circuit file format");
       }
-    };
 
-    reader.readAsText(file);
-    e.target.value = "";
-  }
+      // Reindex the loaded graph
+      let [newGraph, newClockDelays] = topologicalOrderAndReindex(loadedGraph);
+
+      // Rebuild clock delays with fresh next_delay
+      const now = performance.now();
+      const restoredDelays = newClockDelays.map(clock => {
+        const newId = newGraph.find(g => g.id === clock.id)?.id;
+        return {
+          id: newId !== undefined ? newId : clock.id,
+          delay: clock.delay,
+          next_delay: now + clock.delay
+        };
+      });
+
+      // Evaluate the circuit
+      for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+        evaluate(newGraph);
+      }
+
+      // Clear undo/redo on load
+      setUndoStack([]);
+      setRedoStack([]);
+
+      setGraph(newGraph);
+      setClockDelays(restoredDelays);
+
+      console.log("✅ Circuit loaded successfully!");
+
+    } catch (error) {
+      console.error("Load error:", error);
+      alert("Invalid circuit file. Please check the file format.");
+    }
+  };
+
+  reader.readAsText(file);
+  e.target.value = "";
+}
 
   function resetView() {
     setView({ x: 0, y: 0, width: 1500, height: 1200 })
@@ -1530,7 +1538,7 @@ function cancelTextEdit() {
         <details className="utilities-menu">
           <summary className="utilities-button">FILE</summary>
           <div className="utilities-menu-content">
-            <button onClick={downloadCircuit}>DOWNLOAD CIRCUIT</button>
+            <button onClick={openDownloadDialog}>DOWNLOAD CIRCUIT</button>
             <button onClick={() => fileInputRef.current.click()}>LOAD CIRCUIT</button>
             <button onClick={() => setShowComponentIO(true)}>COMPONENTS</button>
           </div>
@@ -1990,6 +1998,41 @@ function cancelTextEdit() {
         </div>
       </div>
       {showAbout && <AboutModal onClose={closeAbout} />}
+      {showDownloadDialog && (
+  <div className="text-edit-overlay" onClick={cancelDownload}>
+    <div
+      className="text-edit-dialog"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="text-edit-title">Download Circuit</div>
+
+      <input
+        className="text-edit-input"
+        autoFocus
+        placeholder="circuit"
+        value={downloadFileName}
+        onChange={(e) => setDownloadFileName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commitDownload();
+          if (e.key === "Escape") cancelDownload();
+        }}
+      />
+
+      <div className="text-edit-hint">
+        Saved as <code>{downloadFileName.trim().replace(/[^a-z0-9_\-]+/gi, "_") || "circuit"}.json</code>
+      </div>
+
+      <div className="text-edit-buttons">
+        <button className="utilities-button" onClick={cancelDownload}>
+          CANCEL
+        </button>
+        <button className="utilities-button primary" onClick={commitDownload}>
+          SAVE
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {showClockWindow && (
         <div className="clock-window-overlay">

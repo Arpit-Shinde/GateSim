@@ -1,6 +1,6 @@
 {
-  "name": "my-first-react-app",
-  "version": "0.1.0",
+  "name": "GateSim",
+  "version": "1.0.0",
   "private": true,
   "homepage": "https://Arpit-Shinde.github.io/GateSim",
   "dependencies": {

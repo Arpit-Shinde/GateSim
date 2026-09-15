@@ -1630,3 +1630,18 @@ code {
     justify-content: flex-end;
     gap: 8px;
 }
+
+.text-edit-hint {
+    font-size: 12px;
+    color: #718096;
+    margin-top: -4px;
+}
+
+.text-edit-hint code {
+    background: #2d3748;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #68d391;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 11px;
+}
