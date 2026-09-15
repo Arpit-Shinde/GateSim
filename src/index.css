@@ -1645,3 +1645,8 @@ code {
     font-family: 'Menlo', 'Consolas', monospace;
     font-size: 11px;
 }
+
+svg text {
+    user-select: none;
+    -webkit-user-select: none;
+}

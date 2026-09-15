@@ -168,7 +168,7 @@ export function AboutModal({ onClose }) {
               GitHub ➚
             </a>
             <a
-              href="mailto:125cs0030@iiitk.ac.in?subject=GateSim%20Feedback"
+              href="https://docs.google.com/forms/d/e/1FAIpQLSeki7mPh_tv1oenImwhSvYWuHlPr_6i24ZE1eOEmbw342DmNw/viewform"
               target="_blank"
               rel="noopener noreferrer"
               style={{
