@@ -33,7 +33,7 @@ export const TOGGLE_CAPSULE_RADIUS = 10
 export let WIRE_COLOR = "#838383"
 export const WIRE_STROKE_WIDTH = 3
 
-export const MAX_EVALUATION_ITERATIONS = 30;
+export const MAX_EVALUATION_ITERATIONS = 5;
 export const MIN_FRAME_TIME = 50;
 
 
@@ -99,3 +99,10 @@ export function toggleTheme(document, theme) {
     );
   }
 }
+
+export const TIMING_MAX_SAMPLES = 4000;   // cap history length; oldest samples evicted
+export const TIMING_ROW_HEIGHT = 36;      // px per signal row
+export const TIMING_PX_PER_MS = 0.4;      // horizontal scale of the waveform
+export const TIMING_AXIS_HEIGHT = 24;     // px reserved for the time axis row
+export const TIMING_LOW_COLOR = "#8a8a8a";
+export const TIMING_GRID_COLOR = "#3a3a3a";

@@ -21,6 +21,8 @@ import { RenderUncommitedWire } from "./components/wire";
 import { RenderCUSTOM } from "./svg/gates_svg";
 import { LearnSidebar } from "./components/learnSideBar";
 import { isNodeFullyContained } from "./utils/selectionBox";
+import { TimingDiagram, defaultSignalLabel } from "./components/timingDiagram";
+import "./components/timingDiagram.css";
 
 function App() {
 
@@ -70,7 +72,14 @@ function App() {
   let [editingText, setEditingText] = useState(null);
   let [showDownloadDialog, setShowDownloadDialog] = useState(false);
   let [downloadFileName, setDownloadFileName] = useState("circuit");
-  
+  let [timingSignals, setTimingSignals] = useState([]); // [{id, gateId, outputIndex, label, disconnected}]
+  let [timingHistory, setTimingHistory] = useState([]); // [{t, values: {[signalId]: bool|null}}]
+  let [isCapturing, setIsCapturing] = useState(false);
+  let [showTimingDiagram, setShowTimingDiagram] = useState(false);
+  let timingHistoryRef = useRef([]);
+  let timingCaptureStartRef = useRef(null);
+  let timingSignalsRef = useRef([]);
+
   let { toggle, Add, clearGraph } = useCircuit(
     graph,
     setGraph,
@@ -82,7 +91,8 @@ function App() {
     setSelectedGate,
     setSelectedWire,
     setShowClockWindow,
-    setClockDelayInput
+    setClockDelayInput,
+    remapTimingSignals
   );
 
   const branchDots = useMemo(() => {
@@ -161,26 +171,26 @@ function App() {
   }, []);
 
   function openTextEditor(id, currentText) {
-  setEditingText({ id, draft: currentText ?? "" });
-}
-
-function commitTextEdit() {
-  if (!editingText) return;
-
-  const trimmed = editingText.draft.trim();
-  if (trimmed === "") {
-    // treat empty as cancel
-    setEditingText(null);
-    return;
+    setEditingText({ id, draft: currentText ?? "" });
   }
 
-  updateTextLabel(editingText.id, trimmed);
-  setEditingText(null);
-}
+  function commitTextEdit() {
+    if (!editingText) return;
 
-function cancelTextEdit() {
-  setEditingText(null);
-}
+    const trimmed = editingText.draft.trim();
+    if (trimmed === "") {
+      // treat empty as cancel
+      setEditingText(null);
+      return;
+    }
+
+    updateTextLabel(editingText.id, trimmed);
+    setEditingText(null);
+  }
+
+  function cancelTextEdit() {
+    setEditingText(null);
+  }
 
   function updateTextLabel(id, newText) {
     addToUndoStack(graph, clock_delays);
@@ -454,8 +464,10 @@ function cancelTextEdit() {
       // REORDER + REINDEX
       // =====================================================
 
-      const [newGraph2, new_clock_delays] =
+      const [newGraph2, new_clock_delays, idMap2] =
         topologicalOrderAndReindex(newGraph);
+
+      remapTimingSignals(idMap2);
 
       // =====================================================
       // RE-EVALUATE
@@ -548,6 +560,53 @@ function cancelTextEdit() {
     return () => clearInterval(intervalId);
 
   }, [pauseSim]);
+
+
+  // Mirror timingSignals into a ref so the capture interval below always
+  // reads the latest signal list without needing to restart on every add/
+  // remove/rename — same pattern as graphRef/clockDelaysRef above.
+  useEffect(() => {
+    timingSignalsRef.current = timingSignals;
+  }, [timingSignals]);
+
+  useEffect(() => {
+    if (!isCapturing) return;
+
+    if (timingCaptureStartRef.current === null) {
+      timingCaptureStartRef.current = performance.now();
+    }
+
+    const captureIntervalId = setInterval(() => {
+      const now = performance.now();
+      const t = now - timingCaptureStartRef.current;
+      const currentGraph = graphRef.current;
+
+      const values = {};
+      for (const sig of timingSignalsRef.current) {
+        if (sig.disconnected || sig.gateId === null) {
+          values[sig.id] = null;
+          continue;
+        }
+        const node = currentGraph.find(n => n.id === sig.gateId);
+        values[sig.id] = node?.value?.[sig.outputIndex] ?? null;
+      }
+
+      let updated = [...timingHistoryRef.current, { t, values }];
+
+      if (updated.length > CONSTANTS.TIMING_MAX_SAMPLES) {
+        updated = updated.slice(updated.length - CONSTANTS.TIMING_MAX_SAMPLES);
+      }
+
+      timingHistoryRef.current = updated;
+      setTimingHistory(updated);
+
+    }, CONSTANTS.MIN_FRAME_TIME);
+
+    return () => clearInterval(captureIntervalId);
+
+  }, [isCapturing]);
+
+  
 
 
   function setoutputpin(id, index, pinX, pinY) {
@@ -826,107 +885,112 @@ function cancelTextEdit() {
   }
 
   function openDownloadDialog() {
-  setDownloadFileName("circuit");
-  setShowDownloadDialog(true);
-}
-
-function commitDownload() {
-  const trimmed = downloadFileName.trim();
-  if (!trimmed) {
-    alert("Please enter a file name.");
-    return;
+    setDownloadFileName("circuit");
+    setShowDownloadDialog(true);
   }
 
-  const safeName = trimmed.replace(/[^a-z0-9_\-]+/gi, "_");
-  const fullName = safeName.endsWith(".json") ? safeName : `${safeName}.json`;
-
-  const data = {
-    graph: graph,
-    clock_delays: clock_delays.map(c => ({
-      id: c.id,
-      delay: c.delay
-    }))
-  };
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: "application/json"
-  });
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fullName;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  setShowDownloadDialog(false);
-}
-
-function cancelDownload() {
-  setShowDownloadDialog(false);
-}
-
-const fileInputRef = useRef(null);
-
-function loadCircuit(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    try {
-      const data = JSON.parse(event.target.result);
-
-      let loadedGraph;
-      let loadedDelays = [];
-
-      // Handle both old and new formats
-      if (Array.isArray(data)) {
-        loadedGraph = data;
-      } else if (data.graph && Array.isArray(data.graph)) {
-        loadedGraph = data.graph;
-        loadedDelays = data.clock_delays || [];
-      } else {
-        throw new Error("Invalid circuit file format");
-      }
-
-      // Reindex the loaded graph
-      let [newGraph, newClockDelays] = topologicalOrderAndReindex(loadedGraph);
-
-      // Rebuild clock delays with fresh next_delay
-      const now = performance.now();
-      const restoredDelays = newClockDelays.map(clock => {
-        const newId = newGraph.find(g => g.id === clock.id)?.id;
-        return {
-          id: newId !== undefined ? newId : clock.id,
-          delay: clock.delay,
-          next_delay: now + clock.delay
-        };
-      });
-
-      // Evaluate the circuit
-      for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-        evaluate(newGraph);
-      }
-
-      // Clear undo/redo on load
-      setUndoStack([]);
-      setRedoStack([]);
-
-      setGraph(newGraph);
-      setClockDelays(restoredDelays);
-
-      console.log("✅ Circuit loaded successfully!");
-
-    } catch (error) {
-      console.error("Load error:", error);
-      alert("Invalid circuit file. Please check the file format.");
+  function commitDownload() {
+    const trimmed = downloadFileName.trim();
+    if (!trimmed) {
+      alert("Please enter a file name.");
+      return;
     }
-  };
 
-  reader.readAsText(file);
-  e.target.value = "";
-}
+    const safeName = trimmed.replace(/[^a-z0-9_\-]+/gi, "_");
+    const fullName = safeName.endsWith(".json") ? safeName : `${safeName}.json`;
+
+    const data = {
+      graph: graph,
+      clock_delays: clock_delays.map(c => ({
+        id: c.id,
+        delay: c.delay
+      }))
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fullName;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    setShowDownloadDialog(false);
+  }
+
+  function cancelDownload() {
+    setShowDownloadDialog(false);
+  }
+
+  const fileInputRef = useRef(null);
+
+  function loadCircuit(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+
+        let loadedGraph;
+        let loadedDelays = [];
+
+        // Handle both old and new formats
+        if (Array.isArray(data)) {
+          loadedGraph = data;
+        } else if (data.graph && Array.isArray(data.graph)) {
+          loadedGraph = data.graph;
+          loadedDelays = data.clock_delays || [];
+        } else {
+          throw new Error("Invalid circuit file format");
+        }
+
+        // Reindex the loaded graph
+        // A freshly loaded circuit has no relationship to any previously
+        // tracked timing signals — start the capture panel clean rather
+        // than trying to remap ids across two unrelated graphs.
+        resetTimingCapture();
+
+        // Reindex the loaded graph
+        let [newGraph, newClockDelays] = topologicalOrderAndReindex(loadedGraph);
+        // Rebuild clock delays with fresh next_delay
+        const now = performance.now();
+        const restoredDelays = newClockDelays.map(clock => {
+          const newId = newGraph.find(g => g.id === clock.id)?.id;
+          return {
+            id: newId !== undefined ? newId : clock.id,
+            delay: clock.delay,
+            next_delay: now + clock.delay
+          };
+        });
+
+        // Evaluate the circuit
+        for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+          evaluate(newGraph);
+        }
+
+        // Clear undo/redo on load
+        setUndoStack([]);
+        setRedoStack([]);
+
+        setGraph(newGraph);
+        setClockDelays(restoredDelays);
+
+        console.log("✅ Circuit loaded successfully!");
+
+      } catch (error) {
+        console.error("Load error:", error);
+        alert("Invalid circuit file. Please check the file format.");
+      }
+    };
+
+    reader.readAsText(file);
+    e.target.value = "";
+  }
 
   function resetView() {
     setView({ x: 0, y: 0, width: 1500, height: 1200 })
@@ -1335,6 +1399,110 @@ function loadCircuit(e) {
     setSelectionRect(null);
   }
 
+  // ── Timing diagram: id-remap / reset ──
+
+  function remapTimingSignals(idMap) {
+    setTimingSignals(prev =>
+      prev.map(sig => {
+        if (sig.gateId === null) return sig; // already disconnected, leave as-is
+        const newId = idMap.get(sig.gateId);
+        if (newId === undefined) {
+          // The node this signal was watching no longer exists.
+          // Keep the row (so already-captured history stays visible)
+          // but stop it from being sampled going forward.
+          return { ...sig, gateId: null, disconnected: true };
+        }
+        return { ...sig, gateId: newId };
+      })
+    );
+  }
+
+  function resetTimingCapture() {
+    timingHistoryRef.current = [];
+    timingCaptureStartRef.current = null;
+    setTimingSignals([]);
+    setTimingHistory([]);
+    setIsCapturing(false);
+  }
+
+  // ── Timing diagram: signal management ──
+
+  function addSelectedSignalToTiming() {
+    if (!selectedGate) {
+      alert("Select a gate, wire, input, or clock on the canvas first, then click ADD SIGNAL.");
+      return;
+    }
+
+    const node = graph.find(n => n.id === selectedGate.id);
+    if (!node) return;
+
+    if (node.type === "TEXT") {
+      alert("Labels don't carry a signal value.");
+      return;
+    }
+
+    const outputCount = node.value?.length ?? 1;
+
+    setTimingSignals(prev => {
+      const next = [...prev];
+
+      for (let i = 0; i < outputCount; i++) {
+        const alreadyTracked = next.some(
+          s => s.gateId === node.id && s.outputIndex === i
+        );
+        if (alreadyTracked) continue;
+
+        next.push({
+          id: `sig-${node.id}-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          gateId: node.id,
+          outputIndex: i,
+          label: defaultSignalLabel(node, i),
+          disconnected: false
+        });
+      }
+
+      return next;
+    });
+  }
+
+  function removeTimingSignal(signalId) {
+    setTimingSignals(prev => prev.filter(s => s.id !== signalId));
+  }
+
+  function clearTimingSignals() {
+    setTimingSignals([]);
+  }
+
+  function renameTimingSignal(signalId, newLabel) {
+    setTimingSignals(prev =>
+      prev.map(s => (s.id === signalId ? { ...s, label: newLabel } : s))
+    );
+  }
+
+  // ── Timing diagram: capture control ──
+
+  function startTimingCapture() {
+    if (timingSignals.length === 0) {
+      alert("Add at least one signal before starting capture.");
+      return;
+    }
+    if (timingCaptureStartRef.current === null) {
+      timingCaptureStartRef.current = performance.now();
+    }
+    setIsCapturing(true);
+  }
+
+  function pauseTimingCapture() {
+    setIsCapturing(false);
+  }
+
+  function clearTimingCapture() {
+    timingHistoryRef.current = [];
+    timingCaptureStartRef.current = null;
+    setTimingHistory([]);
+    setIsCapturing(false);
+  }
+
   function beautify(graph) {
     const newGraph = structuredClone(graph);
 
@@ -1520,6 +1688,59 @@ function loadCircuit(e) {
   }
   const tempGraphIds = new Set(tempGraph.map(n => n.id));
 
+  function printgraph(graph, title = "GRAPH") {
+    console.log(`\n========== ${title} ==========`);
+
+    function printValue(value, indent = "") {
+      if (value === null) {
+        console.log(indent + "null");
+        return;
+      }
+
+      if (value === undefined) {
+        console.log(indent + "undefined");
+        return;
+      }
+
+      if (typeof value !== "object") {
+        console.log(indent + String(value));
+        return;
+      }
+
+      if (Array.isArray(value)) {
+        console.log(indent + `[Array: ${value.length}]`);
+
+        value.forEach((item, i) => {
+          console.log(`${indent}  [${i}]`);
+          printValue(item, indent + "    ");
+        });
+
+        return;
+      }
+
+      const keys = Object.keys(value);
+
+      console.log(indent + `{`);
+
+      keys.forEach(key => {
+        const val = value[key];
+
+        if (val !== null && typeof val === "object") {
+          console.log(`${indent}  ${key}:`);
+          printValue(val, indent + "    ");
+        } else {
+          console.log(`${indent}  ${key}: ${String(val)}`);
+        }
+      });
+
+      console.log(indent + `}`);
+    }
+
+    printValue(graph);
+
+    console.log(`========== END ${title} ==========\n`);
+  }
+
 
   return (
     <div className="homepage">
@@ -1617,8 +1838,11 @@ function loadCircuit(e) {
         <button className="utilities-button" onClick={() => setShowLearnSidebar(v => !v)}>
           {showLearnSidebar ? "HIDE GUIDE" : "SELF-LEARN"}
         </button>
+        <button className="utilities-button" onClick={() => setShowTimingDiagram(v => !v)}>
+          {showTimingDiagram ? "HIDE TIMING" : "TIMING DIAGRAM"}
+        </button>
 
-        {/* <button onClick={() => { console.table(graph) }}>print</button> */}
+        {/* <button onClick={() => { printgraph(graph) }}>print</button> */}
 
         {/* Hidden file inputs */}
         <input
@@ -1844,7 +2068,7 @@ function loadCircuit(e) {
             style={{ cursor: "pointer" }}
           >
             <span>LABEL</span>
-            
+
           </div>
           <details className="toolSection">
             <summary className="toolButton">
@@ -1999,40 +2223,40 @@ function loadCircuit(e) {
       </div>
       {showAbout && <AboutModal onClose={closeAbout} />}
       {showDownloadDialog && (
-  <div className="text-edit-overlay" onClick={cancelDownload}>
-    <div
-      className="text-edit-dialog"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="text-edit-title">Download Circuit</div>
+        <div className="text-edit-overlay" onClick={cancelDownload}>
+          <div
+            className="text-edit-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-edit-title">Download Circuit</div>
 
-      <input
-        className="text-edit-input"
-        autoFocus
-        placeholder="circuit"
-        value={downloadFileName}
-        onChange={(e) => setDownloadFileName(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commitDownload();
-          if (e.key === "Escape") cancelDownload();
-        }}
-      />
+            <input
+              className="text-edit-input"
+              autoFocus
+              placeholder="circuit"
+              value={downloadFileName}
+              onChange={(e) => setDownloadFileName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitDownload();
+                if (e.key === "Escape") cancelDownload();
+              }}
+            />
 
-      <div className="text-edit-hint">
-        Saved as <code>{downloadFileName.trim().replace(/[^a-z0-9_\-]+/gi, "_") || "circuit"}.json</code>
-      </div>
+            <div className="text-edit-hint">
+              Saved as <code>{downloadFileName.trim().replace(/[^a-z0-9_\-]+/gi, "_") || "circuit"}.json</code>
+            </div>
 
-      <div className="text-edit-buttons">
-        <button className="utilities-button" onClick={cancelDownload}>
-          CANCEL
-        </button>
-        <button className="utilities-button primary" onClick={commitDownload}>
-          SAVE
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="text-edit-buttons">
+              <button className="utilities-button" onClick={cancelDownload}>
+                CANCEL
+              </button>
+              <button className="utilities-button primary" onClick={commitDownload}>
+                SAVE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showClockWindow && (
         <div className="clock-window-overlay">
@@ -2542,43 +2766,59 @@ function loadCircuit(e) {
       )}
 
       {editingText && (
-  <div className="text-edit-overlay" onClick={cancelTextEdit}>
-    <div
-      className="text-edit-dialog"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="text-edit-title">Edit Label</div>
+        <div className="text-edit-overlay" onClick={cancelTextEdit}>
+          <div
+            className="text-edit-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-edit-title">Edit Label</div>
 
-      <input
-        className="text-edit-input"
-        autoFocus
-        value={editingText.draft}
-        onChange={(e) =>
-          setEditingText(prev => ({ ...prev, draft: e.target.value }))
-        }
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commitTextEdit();
-          if (e.key === "Escape") cancelTextEdit();
-        }}
-      />
+            <input
+              className="text-edit-input"
+              autoFocus
+              value={editingText.draft}
+              onChange={(e) =>
+                setEditingText(prev => ({ ...prev, draft: e.target.value }))
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitTextEdit();
+                if (e.key === "Escape") cancelTextEdit();
+              }}
+            />
 
-      <div className="text-edit-buttons">
-        <button
-          className="utilities-button"
-          onClick={cancelTextEdit}
-        >
-          CANCEL
-        </button>
-        <button
-          className="utilities-button primary"
-          onClick={commitTextEdit}
-        >
-          OK
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="text-edit-buttons">
+              <button
+                className="utilities-button"
+                onClick={cancelTextEdit}
+              >
+                CANCEL
+              </button>
+              <button
+                className="utilities-button primary"
+                onClick={commitTextEdit}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+            {showTimingDiagram && (
+        <TimingDiagram
+          signals={timingSignals}
+          history={timingHistory}
+          isCapturing={isCapturing}
+          onStart={startTimingCapture}
+          onPause={pauseTimingCapture}
+          onClear={clearTimingCapture}
+          onAddSelectedSignal={addSelectedSignalToTiming}
+          onRemoveSignal={removeTimingSignal}
+          onClearSignals={clearTimingSignals}
+          onRenameSignal={renameTimingSignal}
+          onClose={() => setShowTimingDiagram(false)}
+        />
+      )}
 
 
 

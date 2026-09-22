@@ -14,7 +14,8 @@ export function useCircuit(
   setSelectedGate,
   setSelectedWire,
   setShowClockWindow,
-  setClockDelayInput
+  setClockDelayInput,
+  onReindex
 ) {
 
   function getInputCount(gate) {
@@ -240,6 +241,7 @@ export function useCircuit(
     }
 
     let newId = idMap.get(oldId);
+    if (onReindex) onReindex(idMap);
 
     setGraph(newGraph);
     setClockDelays(new_clock_delays);

@@ -7,10 +7,10 @@ export function topologicalOrderAndReindex(graph) {
                 ? null
                 : { ...input }
         )
-    }));
+    })); //creates a copy of graph, ... operator copies the top level prop, but if a prop is array, it copies reference instead of creating a copy. so we explicitly overwrite the inputs to create a new copy and not reference. else changing inputs in this "remaining" will make changes in graph as well, which we dont want
 
-    const newGraph = [];
-    const idMap = new Map();
+    const newGraph = []; //to store the newly ordered and re-indexed graph
+    const idMap = new Map(); //to store relation between old ids and new ids. (its like a array of elements of kind oldId->newId)
 
     // 1. Add source nodes
     for (let i = remaining.length - 1; i >= 0; i--) {
@@ -31,7 +31,7 @@ export function topologicalOrderAndReindex(graph) {
         }
     }
 
-    // 2. Topological ordering
+    // 2. Topological ordering. we loop through the remaining, and check if node's parent is present in new Graph. if yes, remove from remaining and push to new Graph.
     let progress = true;
 
     while (remaining.length > 0 && progress) {
