@@ -6,6 +6,9 @@ import * as CONSTANTS from "../constants/constants";
 function countPrimitiveNodes(graph) {
   let count = 0;
   for (const node of graph) {
+    if (node.type === "TEXT") {
+      continue; 
+    }
     // If it's a custom component, recursively count what's inside it
     if (node.type === "CUSTOM" && Array.isArray(node.ref_graph)) {
       count += countPrimitiveNodes(node.ref_graph);
