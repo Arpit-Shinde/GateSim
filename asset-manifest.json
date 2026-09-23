@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/GateSim/static/css/main.2848a798.css",
-    "main.js": "/GateSim/static/js/main.957123ec.js",
+    "main.js": "/GateSim/static/js/main.33d99a65.js",
     "static/js/530.4279e4a7.chunk.js": "/GateSim/static/js/530.4279e4a7.chunk.js",
     "static/js/394.a3b3df45.chunk.js": "/GateSim/static/js/394.a3b3df45.chunk.js",
     "static/js/453.6a56dd48.chunk.js": "/GateSim/static/js/453.6a56dd48.chunk.js",
@@ -68,13 +68,13 @@
     "static/media/KaTeX_Size3-Regular.woff2": "/GateSim/static/media/KaTeX_Size3-Regular.e1951519f6f0596f7356.woff2",
     "index.html": "/GateSim/index.html",
     "main.2848a798.css.map": "/GateSim/static/css/main.2848a798.css.map",
-    "main.957123ec.js.map": "/GateSim/static/js/main.957123ec.js.map",
+    "main.33d99a65.js.map": "/GateSim/static/js/main.33d99a65.js.map",
     "530.4279e4a7.chunk.js.map": "/GateSim/static/js/530.4279e4a7.chunk.js.map",
     "394.a3b3df45.chunk.js.map": "/GateSim/static/js/394.a3b3df45.chunk.js.map",
     "453.6a56dd48.chunk.js.map": "/GateSim/static/js/453.6a56dd48.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.2848a798.css",
-    "static/js/main.957123ec.js"
+    "static/js/main.33d99a65.js"
   ]
 }
