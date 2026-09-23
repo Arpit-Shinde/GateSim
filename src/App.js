@@ -76,11 +76,13 @@ function App() {
   let [timingHistory, setTimingHistory] = useState([]); // [{t, values: {[signalId]: bool|null}}]
   let [isCapturing, setIsCapturing] = useState(false);
   let [showTimingDiagram, setShowTimingDiagram] = useState(false);
+  const [benchmarkResult, setBenchmarkResult] = useState(null);
+const [isBenchmarking, setIsBenchmarking] = useState(false);
   let timingHistoryRef = useRef([]);
   let timingCaptureStartRef = useRef(null);
   let timingSignalsRef = useRef([]);
 
-  let { toggle, Add, clearGraph } = useCircuit(
+  let { toggle, Add, clearGraph,runBenchmark } = useCircuit(
     graph,
     setGraph,
     clock_delays,
@@ -173,6 +175,26 @@ function App() {
   function openTextEditor(id, currentText) {
     setEditingText({ id, draft: currentText ?? "" });
   }
+  function handleBenchmark() {
+  if (!graph || graph.length === 0) {
+    alert("Circuit is empty.");
+    return;
+  }
+
+  setIsBenchmarking(true);
+
+  // Allow the UI to update before starting the benchmark.
+  setTimeout(() => {
+    const result = runBenchmark({
+      warmupRuns: 10,
+      benchmarkRuns: 500,
+      evaluateIterations: CONSTANTS.MAX_EVALUATION_ITERATIONS
+    });
+
+    setBenchmarkResult(result);
+    setIsBenchmarking(false);
+  }, 50);
+}
 
   function commitTextEdit() {
     if (!editingText) return;
@@ -1841,6 +1863,12 @@ function App() {
         <button className="utilities-button" onClick={() => setShowTimingDiagram(v => !v)}>
           {showTimingDiagram ? "HIDE TIMING" : "TIMING DIAGRAM"}
         </button>
+        <button
+  onClick={handleBenchmark}
+  disabled={isBenchmarking}
+>
+  {isBenchmarking ? "Benchmarking..." : "Benchmark Circuit"}
+</button>
 
         {/* <button onClick={() => { printgraph(graph) }}>print</button> */}
 
@@ -2819,6 +2847,56 @@ function App() {
           onClose={() => setShowTimingDiagram(false)}
         />
       )}
+
+      {benchmarkResult && benchmarkResult.success && (
+  <div className="benchmark-results">
+    <h3>Benchmark Results</h3>
+
+    <p>
+      Nodes: {benchmarkResult.nodeCount}
+    </p>
+
+    <p>
+      Benchmark Runs: {benchmarkResult.benchmarkRuns}
+    </p>
+
+    <p>
+      Evaluation Iterations: {benchmarkResult.evaluateIterations}
+    </p>
+
+    <p>
+      Average Evaluation Time:{" "}
+      {benchmarkResult.averageEvaluationTime.toFixed(4)} ms
+    </p>
+
+    <p>
+      Minimum Evaluation Time:{" "}
+      {benchmarkResult.minimumEvaluationTime.toFixed(4)} ms
+    </p>
+
+    <p>
+      Maximum Evaluation Time:{" "}
+      {benchmarkResult.maximumEvaluationTime.toFixed(4)} ms
+    </p>
+
+    <p>
+      Average Topological Sort Time:{" "}
+      {benchmarkResult.averageSortingTime.toFixed(4)} ms
+    </p>
+
+    <p>
+      Evaluations per Second:{" "}
+      {Number.isFinite(benchmarkResult.evaluationsPerSecond)
+        ? benchmarkResult.evaluationsPerSecond.toFixed(2)
+        : "∞"}
+    </p>
+
+    <p>
+      Total Benchmark Time:{" "}
+      {benchmarkResult.totalBenchmarkTime.toFixed(2)} ms
+    </p>
+  </div>
+)}
 
 
 

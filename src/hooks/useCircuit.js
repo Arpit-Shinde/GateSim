@@ -2,6 +2,7 @@
 import { evaluate } from "../utils/evaluate";
 import { topologicalOrderAndReindex } from "../utils/topologicalSort";
 import * as CONSTANTS from "../constants/constants";
+import { benchmarkCircuit } from "../utils/benchmark";
 
 export function useCircuit(
   graph,
@@ -265,10 +266,15 @@ export function useCircuit(
       setClockDelays([]);
     }
   }
+    // ─── BENCHMARK ───
+  function runBenchmark(options = {}) {
+    return benchmarkCircuit(graph, options);
+  }
 
-  return {
+    return {
     toggle,
     Add,
-    clearGraph
+    clearGraph,
+    runBenchmark
   };
 }
