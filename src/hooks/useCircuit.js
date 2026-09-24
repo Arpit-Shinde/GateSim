@@ -66,8 +66,12 @@ export function useCircuit(
     newGraph[id].value = [!newGraph[id].value[0]];
 
     for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-      evaluate(newGraph);
+    const changed = evaluate(newGraph);
+
+    if (!changed) {
+        break;
     }
+}
 
     setGraph(newGraph);
   }
@@ -233,13 +237,13 @@ export function useCircuit(
     let [newGraph, new_clock_delays, idMap] =
       topologicalOrderAndReindex([...graph, newGate]);
 
-    for (
-      let i = 0;
-      i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
-      i++
-    ) {
-      evaluate(newGraph);
+    for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+    const changed = evaluate(newGraph);
+
+    if (!changed) {
+        break;
     }
+}
 
     let newId = idMap.get(oldId);
     if (onReindex) onReindex(idMap);

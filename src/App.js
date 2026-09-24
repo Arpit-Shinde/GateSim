@@ -495,13 +495,13 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
       // RE-EVALUATE
       // =====================================================
 
-      for (
-        let i = 0;
-        i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
-        i++
-      ) {
-        evaluate(newGraph2);
-      }
+      for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+    const changed = evaluate(newGraph);
+
+    if (!changed) {
+        break;
+    }
+}
 
       // =====================================================
       // UPDATE STATE
@@ -563,13 +563,13 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
 
       if (!changed) return;
 
-      for (
-        let i = 0;
-        i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
-        i++
-      ) {
-        evaluate(newGraph);
-      }
+      for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+    const changed = evaluate(newGraph);
+
+    if (!changed) {
+        break;
+    }
+}
 
       graphRef.current = newGraph;
       clockDelaysRef.current = newClockDelays;
@@ -992,8 +992,12 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
 
         // Evaluate the circuit
         for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-          evaluate(newGraph);
-        }
+    const changed = evaluate(newGraph);
+
+    if (!changed) {
+        break;
+    }
+}
 
         // Clear undo/redo on load
         setUndoStack([]);
