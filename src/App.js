@@ -77,12 +77,17 @@ function App() {
   let [isCapturing, setIsCapturing] = useState(false);
   let [showTimingDiagram, setShowTimingDiagram] = useState(false);
   const [benchmarkResult, setBenchmarkResult] = useState(null);
-const [isBenchmarking, setIsBenchmarking] = useState(false);
+  const [isBenchmarking, setIsBenchmarking] = useState(false);
   let timingHistoryRef = useRef([]);
   let timingCaptureStartRef = useRef(null);
   let timingSignalsRef = useRef([]);
 
-  let { toggle, Add, clearGraph,runBenchmark } = useCircuit(
+  let [copySelectMode, setCopySelectMode] = useState(false);
+  let [copiedGraph, setCopiedGraph] = useState([]);
+  let [copiedClockDelays, setCopiedClockDelays] = useState([]);
+  let canvasMouseRef = useRef({ x: 0, y: 0 });
+
+  let { toggle, Add, clearGraph, runBenchmark } = useCircuit(
     graph,
     setGraph,
     clock_delays,
@@ -172,29 +177,583 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
     };
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.ctrlKey && e.key.toLowerCase() === "v") {
+        e.preventDefault();
+
+        pasteCopiedCircuit();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [copiedGraph, copiedClockDelays, graph, clock_delays]);
+
+  function pointInsideRect(point, rect, padding = 0) {
+    const minX = Math.min(rect.x0, rect.x1) - padding;
+    const maxX = Math.max(rect.x0, rect.x1) + padding;
+    const minY = Math.min(rect.y0, rect.y1) - padding;
+    const maxY = Math.max(rect.y0, rect.y1) + padding;
+
+    return (
+      point.x >= minX &&
+      point.x <= maxX &&
+      point.y >= minY &&
+      point.y <= maxY
+    );
+  }
+
+  function wireInsideRect(wire, rect) {
+    if (!wire.path || wire.path.length === 0) {
+      return false;
+    }
+
+    // Small padding makes it easier to capture wires that touch
+    // the boundary of the selection.
+    return wire.path.every(point =>
+      pointInsideRect(point, rect, 10)
+    );
+  }
+
+  function finalizeCopySelection(rect) {
+
+    const selectedNodes = graph.filter(node => {
+
+      // Ignore text labels when copying a circuit.
+      if (node.type === "TEXT") {
+        return false;
+      }
+
+      // Wires are handled separately.
+      if (node.type === "WIRE") {
+        return false;
+      }
+
+      return isNodeFullyContained(node, rect);
+    });
+
+    const selectedIds = new Set(
+      selectedNodes.map(node => node.id)
+    );
+
+    // ----------------------------------------------------------
+    // Select wires inside the selection rectangle.
+    // ----------------------------------------------------------
+
+    const selectedWires = graph.filter(node => {
+
+      if (node.type !== "WIRE") {
+        return false;
+      }
+
+      return wireInsideRect(node, rect);
+    });
+
+    const copiedIds = new Set([
+      ...selectedNodes.map(node => node.id),
+      ...selectedWires.map(node => node.id)
+    ]);
+
+    if (copiedIds.size === 0) {
+      alert("Nothing selected.");
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // Clone selected nodes.
+    // ----------------------------------------------------------
+
+    const selection = graph
+      .filter(node => copiedIds.has(node.id))
+      .map(node => structuredClone(node));
+
+    // ----------------------------------------------------------
+    // Keep only connections that remain inside the copied graph.
+    //
+    // External connections become disconnected when pasted.
+    // ----------------------------------------------------------
+
+    for (const node of selection) {
+
+      if (Array.isArray(node.inputs)) {
+
+        node.inputs = node.inputs.map(input => {
+
+          if (!input || input.index === -1) {
+            return input;
+          }
+
+          if (!copiedIds.has(input.id)) {
+            return {
+              id: -1,
+              index: -1
+            };
+          }
+
+          return {
+            ...input
+          };
+        });
+      }
+
+      if (Array.isArray(node.outputs)) {
+
+        node.outputs =
+          node.outputs.filter(outputId =>
+            copiedIds.has(outputId)
+          );
+      }
+    }
+
+    // ----------------------------------------------------------
+    // Copy clock information.
+    // ----------------------------------------------------------
+
+    const selectedClockIds =
+      new Set(
+        selection
+          .filter(node => node.type === "CLOCK")
+          .map(node => node.id)
+      );
+
+    const selectedDelays =
+      clock_delays
+        .filter(clock =>
+          selectedClockIds.has(clock.id)
+        )
+        .map(clock => ({
+          id: clock.id,
+          delay: clock.delay
+        }));
+
+    setCopiedGraph(selection);
+    setCopiedClockDelays(selectedDelays);
+
+    setCopySelectMode(false);
+    setSelectionRect(null);
+
+    console.log(
+      "Copied circuit:",
+      selection
+    );
+  }
+
+  function pasteCopiedCircuit() {
+
+    if (
+      !copiedGraph ||
+      copiedGraph.length === 0
+    ) {
+      alert("Nothing has been copied.");
+      return;
+    }
+
+    const mouse =
+      canvasMouseRef.current;
+
+    // ----------------------------------------------------------
+    // Clone clipboard graph.
+    // ----------------------------------------------------------
+
+    const pastedGraph =
+      structuredClone(copiedGraph);
+
+    // ----------------------------------------------------------
+    // Give every pasted node a temporary unique ID.
+    //
+    // These IDs are replaced by topologicalOrderAndReindex().
+    // ----------------------------------------------------------
+
+    let nextTempId = -1;
+
+    for (const node of graph) {
+
+      if (
+        typeof node.id === "number" &&
+        node.id >= nextTempId
+      ) {
+        nextTempId = node.id + 1;
+      }
+    }
+
+    const idMap =
+      new Map();
+
+    for (const node of pastedGraph) {
+
+      const oldId = node.id;
+
+      const newId = nextTempId++;
+
+      idMap.set(
+        oldId,
+        newId
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Remap IDs inside copied graph.
+    // ----------------------------------------------------------
+
+    for (const node of pastedGraph) {
+
+      const oldId = node.id;
+
+      node.id =
+        idMap.get(oldId);
+
+      // --------------------------------------------------------
+      // Inputs
+      // --------------------------------------------------------
+
+      if (Array.isArray(node.inputs)) {
+
+        node.inputs =
+          node.inputs.map(input => {
+
+            if (!input || input.index === -1) {
+              return input;
+            }
+
+            const remappedId =
+              idMap.get(input.id);
+
+            if (remappedId === undefined) {
+
+              return {
+                id: -1,
+                index: -1
+              };
+            }
+
+            return {
+              ...input,
+              id: remappedId
+            };
+          });
+      }
+
+      // --------------------------------------------------------
+      // Outputs
+      // --------------------------------------------------------
+
+      if (Array.isArray(node.outputs)) {
+
+        node.outputs =
+          node.outputs
+            .map(outputId =>
+              idMap.get(outputId)
+            )
+            .filter(
+              outputId =>
+                outputId !== undefined
+            );
+      }
+    }
+
+    // ----------------------------------------------------------
+    // Find bounds of copied circuit.
+    // ----------------------------------------------------------
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const node of pastedGraph) {
+
+      if (node.type === "WIRE") {
+
+        for (const point of node.path ?? []) {
+
+          minX = Math.min(
+            minX,
+            point.x
+          );
+
+          minY = Math.min(
+            minY,
+            point.y
+          );
+
+          maxX = Math.max(
+            maxX,
+            point.x
+          );
+
+          maxY = Math.max(
+            maxY,
+            point.y
+          );
+        }
+
+        continue;
+      }
+
+      if (
+        typeof node.x !== "number" ||
+        typeof node.y !== "number"
+      ) {
+        continue;
+      }
+
+      let width =
+        CONSTANTS.GATE_WIDTH;
+
+      let height =
+        CONSTANTS.GATE_HEIGHT;
+
+      if (
+        node.type === "INPUT" ||
+        node.type === "CLOCK"
+      ) {
+        width = 40;
+        height = 40;
+      }
+
+      if (node.type === "BULB") {
+        width = 30;
+        height = 30;
+      }
+
+      if (
+        node.rotation !== undefined &&
+        node.rotation % 180 !== 0
+      ) {
+        [width, height] =
+          [height, width];
+      }
+
+      minX = Math.min(
+        minX,
+        node.x
+      );
+
+      minY = Math.min(
+        minY,
+        node.y
+      );
+
+      maxX = Math.max(
+        maxX,
+        node.x + width
+      );
+
+      maxY = Math.max(
+        maxY,
+        node.y + height
+      );
+    }
+
+    // Nothing has positional information.
+    if (
+      !Number.isFinite(minX) ||
+      !Number.isFinite(minY) ||
+      !Number.isFinite(maxX) ||
+      !Number.isFinite(maxY)
+    ) {
+      return;
+    }
+
+    const centerX =
+      (minX + maxX) / 2;
+
+    const centerY =
+      (minY + maxY) / 2;
+
+    const dx =
+      mouse.x - centerX;
+
+    const dy =
+      mouse.y - centerY;
+
+    // ----------------------------------------------------------
+    // Move copied circuit to cursor.
+    // ----------------------------------------------------------
+
+    for (const node of pastedGraph) {
+
+      if (node.type === "WIRE") {
+
+        if (Array.isArray(node.path)) {
+
+          node.path =
+            node.path.map(point => ({
+              x: point.x + dx,
+              y: point.y + dy
+            }));
+        }
+
+        continue;
+      }
+
+      if (
+        typeof node.x === "number" &&
+        typeof node.y === "number"
+      ) {
+
+        node.x += dx;
+        node.y += dy;
+      }
+    }
+
+    // ----------------------------------------------------------
+    // Combine original + pasted graph.
+    // ----------------------------------------------------------
+
+    const combinedGraph = [
+      ...structuredClone(graph),
+      ...pastedGraph
+    ];
+
+    // ----------------------------------------------------------
+    // Reindex the entire graph.
+    //
+    // This restores the invariant:
+    //
+    //     graph[id] === node
+    //
+    // ----------------------------------------------------------
+
+    const [
+      newGraph,
+      ,
+      finalIdMap
+    ] =
+      topologicalOrderAndReindex(
+        combinedGraph
+      );
+
+    // ----------------------------------------------------------
+    // Rebuild clock delays.
+    // ----------------------------------------------------------
+
+    const now =
+      performance.now();
+
+    const newClockDelays = [];
+
+    // Existing clocks
+    for (const clock of clock_delays) {
+
+      const newId =
+        finalIdMap.get(
+          clock.id
+        );
+
+      if (newId === undefined) {
+        continue;
+      }
+
+      newClockDelays.push({
+        id: newId,
+        delay: clock.delay,
+        next_delay:
+          now + clock.delay
+      });
+    }
+
+    // Copied clocks
+    for (const clock of copiedClockDelays) {
+
+      const temporaryId =
+        idMap.get(clock.id);
+
+      if (temporaryId === undefined) {
+        continue;
+      }
+
+      const newId =
+        finalIdMap.get(
+          temporaryId
+        );
+
+      if (newId === undefined) {
+        continue;
+      }
+
+      newClockDelays.push({
+        id: newId,
+        delay: clock.delay,
+        next_delay:
+          now + clock.delay
+      });
+    }
+
+    // ----------------------------------------------------------
+    // Timing signals need the new IDs as well.
+    // ----------------------------------------------------------
+
+    remapTimingSignals(
+      finalIdMap
+    );
+
+    // ----------------------------------------------------------
+    // Update refs immediately.
+    // ----------------------------------------------------------
+
+    graphRef.current =
+      newGraph;
+
+    clockDelaysRef.current =
+      newClockDelays;
+
+    setGraph(newGraph);
+    setClockDelays(
+      newClockDelays
+    );
+
+    // ----------------------------------------------------------
+    // Evaluate pasted circuit.
+    // ----------------------------------------------------------
+
+    for (
+      let i = 0;
+      i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
+      i++
+    ) {
+
+      const changed =
+        evaluate(newGraph);
+
+      if (!changed) {
+        break;
+      }
+    }
+
+    console.log(
+      "Pasted circuit at:",
+      mouse
+    );
+  }
+
   function openTextEditor(id, currentText) {
     setEditingText({ id, draft: currentText ?? "" });
   }
   function handleBenchmark() {
-  if (!graph || graph.length === 0) {
-    alert("Circuit is empty.");
-    return;
+    if (!graph || graph.length === 0) {
+      alert("Circuit is empty.");
+      return;
+    }
+
+    setIsBenchmarking(true);
+
+    // Allow the UI to update before starting the benchmark.
+    setTimeout(() => {
+      const result = runBenchmark({
+        warmupRuns: 10,
+        benchmarkRuns: 500,
+        evaluateIterations: CONSTANTS.MAX_EVALUATION_ITERATIONS
+      });
+
+      setBenchmarkResult(result);
+      setIsBenchmarking(false);
+    }, 50);
   }
-
-  setIsBenchmarking(true);
-
-  // Allow the UI to update before starting the benchmark.
-  setTimeout(() => {
-    const result = runBenchmark({
-      warmupRuns: 10,
-      benchmarkRuns: 500,
-      evaluateIterations: CONSTANTS.MAX_EVALUATION_ITERATIONS
-    });
-
-    setBenchmarkResult(result);
-    setIsBenchmarking(false);
-  }, 50);
-}
 
   function commitTextEdit() {
     if (!editingText) return;
@@ -496,12 +1055,12 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
       // =====================================================
 
       for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-    const changed = evaluate(newGraph);
+        const changed = evaluate(newGraph);
 
-    if (!changed) {
-        break;
-    }
-}
+        if (!changed) {
+          break;
+        }
+      }
 
       // =====================================================
       // UPDATE STATE
@@ -564,12 +1123,12 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
       if (!changed) return;
 
       for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-    const changed = evaluate(newGraph);
+        const changed = evaluate(newGraph);
 
-    if (!changed) {
-        break;
-    }
-}
+        if (!changed) {
+          break;
+        }
+      }
 
       graphRef.current = newGraph;
       clockDelaysRef.current = newClockDelays;
@@ -628,7 +1187,7 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
 
   }, [isCapturing]);
 
-  
+
 
 
   function setoutputpin(id, index, pinX, pinY) {
@@ -704,9 +1263,22 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
 
   function drag(e) {
 
+    const point =
+      getSVGPoint(
+        e,
+        svgRef,
+        view
+      );
+
+    canvasMouseRef.current =
+      point;
+
     if (selectionRect) {
-      const point = getSVGPoint(e, svgRef, view);
-      setSelectionRect(prev => ({ ...prev, x1: point.x, y1: point.y }));
+      setSelectionRect(prev => ({
+        ...prev,
+        x1: point.x,
+        y1: point.y
+      }));
       return;
     }
 
@@ -774,8 +1346,22 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
 
   function stopDrag(e) {
     if (selectionRect) {
-      finalizeSelection(selectionRect);
+
+      if (copySelectMode) {
+
+        finalizeCopySelection(
+          selectionRect
+        );
+
+      } else {
+
+        finalizeSelection(
+          selectionRect
+        );
+      }
+
       setSelectionRect(null);
+
       return;
     }
     if (e.button === 0 && opin) { // live wire + left click = add bend
@@ -799,6 +1385,31 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
   }
 
   function startPan(e) {
+    const point =
+      getSVGPoint(
+        e,
+        svgRef,
+        view
+      );
+
+    canvasMouseRef.current =
+      point;
+
+    // COPY AREA MODE
+    if (
+      copySelectMode &&
+      e.button === 0
+    ) {
+
+      setSelectionRect({
+        x0: point.x,
+        y0: point.y,
+        x1: point.x,
+        y1: point.y
+      });
+
+      return;
+    }
     if (
       e.target === svgRef.current ||           // the <svg> element
       e.target.tagName === "svg"               // safety for browsers that wrap
@@ -992,12 +1603,12 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
 
         // Evaluate the circuit
         for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-    const changed = evaluate(newGraph);
+          const changed = evaluate(newGraph);
 
-    if (!changed) {
-        break;
-    }
-}
+          if (!changed) {
+            break;
+          }
+        }
 
         // Clear undo/redo on load
         setUndoStack([]);
@@ -1861,18 +2472,41 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
             </button>
           </>
         )}
+        <button
+          className="utilities-button"
+          onClick={() => {
+
+            // Exit normal selection mode.
+            setSelectMode(false);
+
+            // Clear any active wire interaction.
+            setoPin(null);
+            setMouse(null);
+            setWirePath([]);
+            setdraginfo(null);
+            setPan(null);
+
+            // Start copy-area selection.
+            setCopySelectMode(true);
+
+          }}
+        >
+          COPY AREA
+        </button>
+
         <button className="utilities-button" onClick={() => setShowLearnSidebar(v => !v)}>
           {showLearnSidebar ? "HIDE GUIDE" : "SELF-LEARN"}
         </button>
         <button className="utilities-button" onClick={() => setShowTimingDiagram(v => !v)}>
           {showTimingDiagram ? "HIDE TIMING" : "TIMING DIAGRAM"}
         </button>
+
         <button
-  onClick={handleBenchmark}
-  disabled={isBenchmarking}
->
-  {isBenchmarking ? "Benchmarking..." : "Benchmark Circuit"}
-</button>
+          onClick={handleBenchmark}
+          disabled={isBenchmarking}
+        >
+          {isBenchmarking ? "Benchmarking..." : "Benchmark Circuit"}
+        </button>
 
         {/* <button onClick={() => { printgraph(graph) }}>print</button> */}
 
@@ -2836,7 +3470,7 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
         </div>
       )}
 
-            {showTimingDiagram && (
+      {showTimingDiagram && (
         <TimingDiagram
           signals={timingSignals}
           history={timingHistory}
@@ -2853,54 +3487,54 @@ const [isBenchmarking, setIsBenchmarking] = useState(false);
       )}
 
       {benchmarkResult && benchmarkResult.success && (
-  <div className="benchmark-results">
-    <h3>Benchmark Results</h3>
+        <div className="benchmark-results">
+          <h3>Benchmark Results</h3>
 
-    <p>
-      Nodes: {benchmarkResult.nodeCount}
-    </p>
+          <p>
+            Nodes: {benchmarkResult.nodeCount}
+          </p>
 
-    <p>
-      Benchmark Runs: {benchmarkResult.benchmarkRuns}
-    </p>
+          <p>
+            Benchmark Runs: {benchmarkResult.benchmarkRuns}
+          </p>
 
-    <p>
-      Evaluation Iterations: {benchmarkResult.evaluateIterations}
-    </p>
+          <p>
+            Evaluation Iterations: {benchmarkResult.evaluateIterations}
+          </p>
 
-    <p>
-      Average Evaluation Time:{" "}
-      {benchmarkResult.averageEvaluationTime.toFixed(4)} ms
-    </p>
+          <p>
+            Average Evaluation Time:{" "}
+            {benchmarkResult.averageEvaluationTime.toFixed(4)} ms
+          </p>
 
-    <p>
-      Minimum Evaluation Time:{" "}
-      {benchmarkResult.minimumEvaluationTime.toFixed(4)} ms
-    </p>
+          <p>
+            Minimum Evaluation Time:{" "}
+            {benchmarkResult.minimumEvaluationTime.toFixed(4)} ms
+          </p>
 
-    <p>
-      Maximum Evaluation Time:{" "}
-      {benchmarkResult.maximumEvaluationTime.toFixed(4)} ms
-    </p>
+          <p>
+            Maximum Evaluation Time:{" "}
+            {benchmarkResult.maximumEvaluationTime.toFixed(4)} ms
+          </p>
 
-    <p>
-      Average Topological Sort Time:{" "}
-      {benchmarkResult.averageSortingTime.toFixed(4)} ms
-    </p>
+          <p>
+            Average Topological Sort Time:{" "}
+            {benchmarkResult.averageSortingTime.toFixed(4)} ms
+          </p>
 
-    <p>
-      Evaluations per Second:{" "}
-      {Number.isFinite(benchmarkResult.evaluationsPerSecond)
-        ? benchmarkResult.evaluationsPerSecond.toFixed(2)
-        : "∞"}
-    </p>
+          <p>
+            Evaluations per Second:{" "}
+            {Number.isFinite(benchmarkResult.evaluationsPerSecond)
+              ? benchmarkResult.evaluationsPerSecond.toFixed(2)
+              : "∞"}
+          </p>
 
-    <p>
-      Total Benchmark Time:{" "}
-      {benchmarkResult.totalBenchmarkTime.toFixed(2)} ms
-    </p>
-  </div>
-)}
+          <p>
+            Total Benchmark Time:{" "}
+            {benchmarkResult.totalBenchmarkTime.toFixed(2)} ms
+          </p>
+        </div>
+      )}
 
 
 
