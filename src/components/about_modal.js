@@ -116,20 +116,7 @@ export function AboutModal({ onClose }) {
             Navigate to "Self-Learn" to learn DLD (Digital Logic Design) concepts.
             The content is provided from geeksforgeeks.org in this section.
           </p>
-
-
-          <h4
-            style={{
-              color: '#aaa',
-              fontSize: '22px',
-              fontWeight: '500',
-              margin: '20px 0 8px 0'
-            }}
-          >
-            Limitations
-          </h4>
-
-          <p
+           <p
             style={{
               fontSize: '16px',
               lineHeight: '1.8',
@@ -137,10 +124,7 @@ export function AboutModal({ onClose }) {
               margin: '0'
             }}
           >
-            GateSim currently does not model physical propagation delays.
-            For sequential circuits such as flip-flops, master-slave
-            configurations are recommended to avoid
-            race-around conditions.
+            Navigate to Github to see technical documentation.
           </p>
 
           <p

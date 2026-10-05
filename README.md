@@ -1,7 +1,7 @@
 <table>
 <tr>
 <td>
-  <img src="public/gatesim-logo2.svg" width="120">
+  <img src="public/gatesim-logo.png" width="120">
 </td>
 <td>
   <h1 style="font-size: 48px; margin: 0; ">GateSim</h1>
@@ -11,11 +11,13 @@
 
 A browser-based digital logic circuit simulator built with React.
 
-<p align="center">
+<p align ="center">
 
   <a href="https://arpit-shinde.github.io/GateSim/"><strong>Try GateSim Online</strong></a>
 
   <a href="https://github.com/Arpit-Shinde/GateSim/releases/download/v1.0.0/GateSim.Setup.1.0.0.exe"><strong>Download for Windows</strong></a>
+
+  <a href="src/docs/README.md"><strong>View Technical Documentation</strong></a>
 
 </p>
 
@@ -38,36 +40,6 @@ GateSim is an interactive simulator for learning and experimenting with **Digita
 - Pan and zoom
 - Rotate gates
 
-### Logic Components
-
-### Basic gates
-
-- AND
-- OR
-- NOT
-- NAND
-- NOR
-- XOR
-- XNOR
-
-### Combinational circuits
-
-- Multiplexers
-- Adders
-
-### Sequential circuits
-
-- Clocks
-- Master-Slave JK Flip-Flops
-
-### Component Creation
-
-- Create reusable components from existing circuits
-- Define custom circuit components
-- Use created components as building blocks in larger circuits
-
-More sequential and combinational components are being added as development continues.
-
 ### Circuit Management
 
 - Save circuits
@@ -75,17 +47,6 @@ More sequential and combinational components are being added as development cont
 - Undo / Redo
 - Reset view
 - Clear circuit
-
-
-
-## Limitations
-
-GateSim is still under active development. Some aspects of real digital hardware are intentionally simplified.
-
-* No propagation delay simulation
-* Level-triggered flip-flops may exhibit race-around behavior
-* Master-Slave JK Flip-Flops can be used when edge-like behavior is required
-* Mobile support is limited; GateSim is primarily designed for desktop and PC use
 
 ## Learning Guide
 
@@ -112,10 +73,6 @@ GateSim allows users to create reusable components from circuits they have alrea
 A circuit can be selected and converted into a custom component by defining its input and output pins. The resulting component can then be added to the circuit like any other component.
 
 This allows larger circuits to be constructed hierarchically from smaller building blocks.
-
-## Circuit Saving
-
-Circuits can be saved and loaded so that designs can be continued later or shared between users.
 
 ## Future Development
 

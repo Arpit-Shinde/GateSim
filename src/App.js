@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { evaluate } from "./utils/evaluate"
-import { topologicalOrderAndReindex } from "./utils/topologicalSort"
 import { Gate } from "./components/gate"
 import { LiveWire } from "./components/wire"
 import { showTutorial } from "./components/tutorial_modal";
@@ -9,6 +8,7 @@ import { GateCard } from "./components/gatecard";
 import { getSVGPoint } from "./utils/svgHelpers";
 import { useCircuit } from "./hooks/useCircuit";
 import { AboutModal } from "./components/about_modal";
+import { compactAndReindex } from "./utils/reindex"
 import {
   inputGateRenderList, twoInputGateRenderList,
   threeInputGateRenderList, fourInputGateRenderList,
@@ -19,14 +19,15 @@ import {
 import logo from './gatesim-logo2.png';
 import { RenderUncommitedWire } from "./components/wire";
 import { RenderCUSTOM } from "./svg/gates_svg";
-import { LearnSidebar } from "./components/learnSideBar";
 import { isNodeFullyContained } from "./utils/selectionBox";
 import { TimingDiagram, defaultSignalLabel } from "./components/timingDiagram";
+import { propagate } from "./utils/evaluate";
 import "./components/timingDiagram.css";
 
 function App() {
 
   let [graph, setGraph] = useState([])
+  // console.log("RENDER", performance.now(), graph);
   let [clock_delays, setClockDelays] = useState([])
   let [view, setView] = useState({
     x: 0,
@@ -76,8 +77,6 @@ function App() {
   let [timingHistory, setTimingHistory] = useState([]); // [{t, values: {[signalId]: bool|null}}]
   let [isCapturing, setIsCapturing] = useState(false);
   let [showTimingDiagram, setShowTimingDiagram] = useState(false);
-  const [benchmarkResult, setBenchmarkResult] = useState(null);
-  const [isBenchmarking, setIsBenchmarking] = useState(false);
   let timingHistoryRef = useRef([]);
   let timingCaptureStartRef = useRef(null);
   let timingSignalsRef = useRef([]);
@@ -102,7 +101,7 @@ function App() {
     remapTimingSignals
   );
 
-  const branchDots = useMemo(() => {
+  let branchDots = useMemo(() => {
     const dots = [];
 
     for (const parent of graph) {
@@ -133,65 +132,16 @@ function App() {
     return dots;
   }, [graph]);
 
-  const tutorialShownRef = useRef(false);
-
-  useEffect(() => {
-    if (tutorialShownRef.current) return;
-    tutorialShownRef.current = true;
-    showTutorial();
-  }, []);
-  useEffect(() => {
-    graphRef.current = graph;
-  }, [graph]);
-
-  useEffect(() => {
-    clockDelaysRef.current = clock_delays;
-  }, [clock_delays]);
-
-  useEffect(() => { //disable ctrl mousewheel zoom
-    function preventBrowserZoom(e) {
-      if (e.ctrlKey || e.metaKey) {
-        if (
-          e.key === "+" ||
-          e.key === "-" ||
-          e.key === "=" ||
-          e.key === "0"
-        ) {
-          e.preventDefault();
-        }
-      }
-    }
-
-    function preventWheelZoom(e) {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-      }
-    }
-
-    window.addEventListener("keydown", preventBrowserZoom);
-    window.addEventListener("wheel", preventWheelZoom, { passive: false });
-
-    return () => {
-      window.removeEventListener("keydown", preventBrowserZoom);
-      window.removeEventListener("wheel", preventWheelZoom);
-    };
-  }, []);
-
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.ctrlKey && e.key.toLowerCase() === "v") {
-        e.preventDefault();
-
-        pasteCopiedCircuit();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [copiedGraph, copiedClockDelays, graph, clock_delays]);
+  let prevState = useRef({});
+  // useEffect(() => {
+  //   const now = {
+  //     graph, clock_delays, view, pan, opin, selectedGate, selectedWire,
+  //     draginfo, didDrag, mouse, undoStack, redoStack, timingHistory
+  //   };
+  //   for (const k in now)
+  //     if (prevState.current[k] !== now[k]) console.log("changed:", k);
+  //   prevState.current = now;
+  // });
 
   function pointInsideRect(point, rect, padding = 0) {
     const minX = Math.min(rect.x0, rect.x1) - padding;
@@ -240,10 +190,6 @@ function App() {
       selectedNodes.map(node => node.id)
     );
 
-    // ----------------------------------------------------------
-    // Select wires inside the selection rectangle.
-    // ----------------------------------------------------------
-
     const selectedWires = graph.filter(node => {
 
       if (node.type !== "WIRE") {
@@ -263,19 +209,13 @@ function App() {
       return;
     }
 
-    // ----------------------------------------------------------
-    // Clone selected nodes.
-    // ----------------------------------------------------------
-
     const selection = graph
       .filter(node => copiedIds.has(node.id))
       .map(node => structuredClone(node));
 
-    // ----------------------------------------------------------
     // Keep only connections that remain inside the copied graph.
     //
     // External connections become disconnected when pasted.
-    // ----------------------------------------------------------
 
     for (const node of selection) {
 
@@ -309,9 +249,7 @@ function App() {
       }
     }
 
-    // ----------------------------------------------------------
     // Copy clock information.
-    // ----------------------------------------------------------
 
     const selectedClockIds =
       new Set(
@@ -355,18 +293,14 @@ function App() {
     const mouse =
       canvasMouseRef.current;
 
-    // ----------------------------------------------------------
     // Clone clipboard graph.
-    // ----------------------------------------------------------
 
     const pastedGraph =
       structuredClone(copiedGraph);
 
-    // ----------------------------------------------------------
     // Give every pasted node a temporary unique ID.
     //
     // These IDs are replaced by topologicalOrderAndReindex().
-    // ----------------------------------------------------------
 
     let nextTempId = -1;
 
@@ -610,79 +544,15 @@ function App() {
       ...pastedGraph
     ];
 
-    // ----------------------------------------------------------
-    // Reindex the entire graph.
-    //
-    // This restores the invariant:
-    //
-    //     graph[id] === node
-    //
-    // ----------------------------------------------------------
-
     const [
       newGraph,
-      ,
+      newClockDelays,
       finalIdMap
     ] =
-      topologicalOrderAndReindex(
-        combinedGraph
+      compactAndReindex(
+        combinedGraph,
+        clock_delays
       );
-
-    // ----------------------------------------------------------
-    // Rebuild clock delays.
-    // ----------------------------------------------------------
-
-    const now =
-      performance.now();
-
-    const newClockDelays = [];
-
-    // Existing clocks
-    for (const clock of clock_delays) {
-
-      const newId =
-        finalIdMap.get(
-          clock.id
-        );
-
-      if (newId === undefined) {
-        continue;
-      }
-
-      newClockDelays.push({
-        id: newId,
-        delay: clock.delay,
-        next_delay:
-          now + clock.delay
-      });
-    }
-
-    // Copied clocks
-    for (const clock of copiedClockDelays) {
-
-      const temporaryId =
-        idMap.get(clock.id);
-
-      if (temporaryId === undefined) {
-        continue;
-      }
-
-      const newId =
-        finalIdMap.get(
-          temporaryId
-        );
-
-      if (newId === undefined) {
-        continue;
-      }
-
-      newClockDelays.push({
-        id: newId,
-        delay: clock.delay,
-        next_delay:
-          now + clock.delay
-      });
-    }
 
     // ----------------------------------------------------------
     // Timing signals need the new IDs as well.
@@ -731,28 +601,121 @@ function App() {
     );
   }
 
-  function openTextEditor(id, currentText) {
-    setEditingText({ id, draft: currentText ?? "" });
-  }
-  function handleBenchmark() {
-    if (!graph || graph.length === 0) {
-      alert("Circuit is empty.");
+  const aboutShownRef = useRef(false);
+  useEffect(() => { //for opening custom files through url
+    const params = new URLSearchParams(window.location.search);
+    const circuitId = params.get("circuit");
+
+    if (!circuitId) return;
+
+    // Sanitize: only allow alphanumeric, dash, underscore.
+    // Prevents path traversal via ?circuit=../../etc/passwd
+    if (!/^[a-zA-Z0-9_-]+$/.test(circuitId)) {
+      console.warn("Invalid circuit id:", circuitId);
       return;
     }
 
-    setIsBenchmarking(true);
+    const url = `${process.env.PUBLIC_URL}/docs/${circuitId}.json`;
 
-    // Allow the UI to update before starting the benchmark.
-    setTimeout(() => {
-      const result = runBenchmark({
-        warmupRuns: 10,
-        benchmarkRuns: 500,
-        evaluateIterations: CONSTANTS.MAX_EVALUATION_ITERATIONS
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        // Accept either {graph, clock_delays} or a raw array
+        let loadedGraph;
+        let loadedDelays = [];
+
+        if (Array.isArray(data)) {
+          loadedGraph = data;
+        } else if (data.graph && Array.isArray(data.graph)) {
+          loadedGraph = data.graph;
+          loadedDelays = data.clock_delays || [];
+        } else {
+          throw new Error("Invalid circuit file format");
+        }
+
+        resetTimingCapture();
+
+        const [newGraph, restoredDelays] = compactAndReindex(loadedGraph, loadedDelays);
+
+        for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+          const changed = evaluate(newGraph);
+          if (!changed) break;
+        }
+
+        setUndoStack([]);
+        setRedoStack([]);
+        setGraph(newGraph);
+        setClockDelays(restoredDelays);
+
+        console.log(`✅ Loaded circuit "${circuitId}" from URL`);
+      })
+      .catch(err => {
+        console.error("URL circuit load failed:", err);
+        alert(`Could not load circuit "${circuitId}" from URL.`);
       });
+  }, []);
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.ctrlKey && e.key.toLowerCase() === "v") {
+        e.preventDefault();
 
-      setBenchmarkResult(result);
-      setIsBenchmarking(false);
-    }, 50);
+        pasteCopiedCircuit();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [copiedGraph, copiedClockDelays, graph, clock_delays]);
+  useEffect(() => {
+    if (aboutShownRef.current) return;
+    aboutShownRef.current = true;
+    showabout();
+  }, []);
+  useEffect(() => {
+    graphRef.current = graph;
+  }, [graph]);
+
+  useEffect(() => {
+    clockDelaysRef.current = clock_delays;
+  }, [clock_delays]);
+
+  useEffect(() => { //disable ctrl mousewheel zoom
+    function preventBrowserZoom(e) {
+      if (e.ctrlKey || e.metaKey) {
+        if (
+          e.key === "+" ||
+          e.key === "-" ||
+          e.key === "=" ||
+          e.key === "0"
+        ) {
+          e.preventDefault();
+        }
+      }
+    }
+
+    function preventWheelZoom(e) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+      }
+    }
+
+    window.addEventListener("keydown", preventBrowserZoom);
+    window.addEventListener("wheel", preventWheelZoom, { passive: false });
+
+    return () => {
+      window.removeEventListener("keydown", preventBrowserZoom);
+      window.removeEventListener("wheel", preventWheelZoom);
+    };
+  }, []);
+
+  function openTextEditor(id, currentText) {
+    setEditingText({ id, draft: currentText ?? "" });
   }
 
   function commitTextEdit() {
@@ -805,7 +768,7 @@ function App() {
     const now = performance.now();
 
     if (newPauseState) {
-      // PAUSING
+      //pausing
       const remainingTimes = clockDelaysRef.current.map(clock => ({
         id: clock.id,
         remaining: Math.max(0, clock.next_delay - now),
@@ -815,8 +778,9 @@ function App() {
       pausedClocksRef.current = remainingTimes;
       setPausedClocks(remainingTimes);
 
-    } else {
-      // RESUMING
+    }
+    else {
+      //resuming
       const newClockDelays = clockDelaysRef.current.map(clock => {
         const paused = pausedClocksRef.current.find(
           p => p.id === clock.id
@@ -886,7 +850,7 @@ function App() {
     Add("CLOCK", null, null, delay);
   }
 
-  useEffect(() => {
+  useEffect(() => { //for deletion
     function handleKey(e) {
       if (e.key !== "Delete") return;
       if (selectedGate === null) return;
@@ -908,9 +872,7 @@ function App() {
 
       const nodeToDelete = newGraph[deleteIndex];
 
-      // =====================================================
-      // DELETE WIRE
-      // =====================================================
+      //delete wire
       if (nodeToDelete.type === "WIRE") {
 
         const idsToDelete = new Set([idToDelete]);
@@ -947,11 +909,7 @@ function App() {
           if (!node.inputs) continue;
 
           node.inputs = node.inputs.map(input =>
-            input &&
-              input.index !== -1 &&
-              idsToDelete.has(input.id)
-              ? { id: -1, index: -1 }
-              : input
+            input && input.index !== -1 && idsToDelete.has(input.id) ? { id: -1, index: -1 } : input
           );
         }
 
@@ -963,9 +921,7 @@ function App() {
         }
       }
 
-      // =====================================================
-      // DELETE GATE / COMPONENT
-      // =====================================================
+      //delete gate
       else {
 
         const idsToDelete = new Set([idToDelete]);
@@ -999,9 +955,7 @@ function App() {
               }
             }
 
-            // -----------------------------------------
             // Parent wire: the to-be-deleted node takes input from this wire
-            // -----------------------------------------
             if (
               nodeToDelete.inputs &&
               nodeToDelete.inputs.some(
@@ -1041,30 +995,16 @@ function App() {
         }
       }
 
-      // =====================================================
-      // REORDER + REINDEX
-      // =====================================================
-
-      const [newGraph2, new_clock_delays, idMap2] =
-        topologicalOrderAndReindex(newGraph);
+      const [newGraph2, new_clock_delays, idMap2] = compactAndReindex(newGraph, clock_delays);
 
       remapTimingSignals(idMap2);
 
-      // =====================================================
-      // RE-EVALUATE
-      // =====================================================
-
       for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-        const changed = evaluate(newGraph);
-
+        const changed = evaluate(newGraph2);
         if (!changed) {
           break;
         }
       }
-
-      // =====================================================
-      // UPDATE STATE
-      // =====================================================
 
       setGraph(newGraph2);
       setClockDelays(new_clock_delays);
@@ -1079,7 +1019,7 @@ function App() {
 
   }, [selectedGate, graph, clock_delays]);
 
-  useEffect(() => {
+  useEffect(() => { //for clocks
 
     if (pauseSim) return;
 
@@ -1092,6 +1032,7 @@ function App() {
 
       const newGraph = structuredClone(graph);
       let changed = false;
+      const changedClockIds = [];
 
       const newClockDelays = clocks.map(clock => {
 
@@ -1108,6 +1049,7 @@ function App() {
           clockNode.value[0] = !clockNode.value[0];
 
           changed = true;
+          changedClockIds.push(clock.id);
 
           console.log("tick");
 
@@ -1122,12 +1064,12 @@ function App() {
 
       if (!changed) return;
 
-      for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-        const changed = evaluate(newGraph);
+      // Propagate only from clocks that toggled.
+      for (const clockId of changedClockIds) {
+        let [steps, evaluates] = propagate(newGraph, clockId);
+        console.log("Propagation steps:", steps);
+        console.log("Number of evaluations:", evaluates);
 
-        if (!changed) {
-          break;
-        }
       }
 
       graphRef.current = newGraph;
@@ -1150,7 +1092,7 @@ function App() {
     timingSignalsRef.current = timingSignals;
   }, [timingSignals]);
 
-  useEffect(() => {
+  useEffect(() => { //timing diagrams
     if (!isCapturing) return;
 
     if (timingCaptureStartRef.current === null) {
@@ -1190,7 +1132,7 @@ function App() {
 
 
 
-  function setoutputpin(id, index, pinX, pinY) {
+  function setoutputpin(id, index, pinX, pinY) { //sets information about output pin when clicked on a output pin of node
     if (selectMode) return;
     setoPin({
       gateId: id,
@@ -1209,7 +1151,7 @@ function App() {
 
   }
 
-  function setinputpin(id, index, endx, endy) {
+  function setinputpin(id, index, endx, endy) { //when pressed on input pin, adds wire and its relevant connection
     if (opin === null) return
     if (selectMode) return;
     console.log(`setinputpin fired. currently, id=${id}, index=${index}`)
@@ -1232,7 +1174,7 @@ function App() {
 
   }
 
-  function selectWire(e, id) {
+  function selectWire(e, id) { //to select or branch wire
     if (selectMode) return;
     if (e.button === 1) {
       setSelectedGate({ id: id });
@@ -1385,6 +1327,7 @@ function App() {
   }
 
   function startPan(e) {
+
     const point =
       getSVGPoint(
         e,
@@ -1399,6 +1342,7 @@ function App() {
     if (
       copySelectMode &&
       e.button === 0
+
     ) {
 
       setSelectionRect({
@@ -1439,7 +1383,7 @@ function App() {
   let [undoStack, setUndoStack] = useState([])
   let [redoStack, setRedoStack] = useState([])
 
-  // ─── ADD TO UNDO ───
+
   function addToUndoStack(graph, delays) {
     let newUndoStack = [...undoStack];
     newUndoStack.push({
@@ -1453,7 +1397,6 @@ function App() {
     setRedoStack([]);
   }
 
-  // ─── UNDO ───
   function undo() {
     if (undoStack.length === 0) return;
 
@@ -1485,7 +1428,6 @@ function App() {
     setRedoStack(newRedoStack);
   }
 
-  // ─── REDO ───
   function redo() {
     if (redoStack.length === 0) return;
 
@@ -1589,17 +1531,10 @@ function App() {
         resetTimingCapture();
 
         // Reindex the loaded graph
-        let [newGraph, newClockDelays] = topologicalOrderAndReindex(loadedGraph);
-        // Rebuild clock delays with fresh next_delay
-        const now = performance.now();
-        const restoredDelays = newClockDelays.map(clock => {
-          const newId = newGraph.find(g => g.id === clock.id)?.id;
-          return {
-            id: newId !== undefined ? newId : clock.id,
-            delay: clock.delay,
-            next_delay: now + clock.delay
-          };
-        });
+        // Reindex the loaded graph. With no oldClockDelays passed,
+        // every clock in the file gets a fresh next_delay — the same
+        // behavior the manual rebuild above used to produce.
+        const [newGraph, restoredDelays] = compactAndReindex(loadedGraph);
 
         // Evaluate the circuit
         for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
@@ -1609,6 +1544,7 @@ function App() {
             break;
           }
         }
+
 
         // Clear undo/redo on load
         setUndoStack([]);
@@ -1681,7 +1617,7 @@ function App() {
     setGraph(newGraph);
   }
 
-  function createComponent() {
+  function createComponent() { //initialises and sets the creating mode
     setTempGraph([]);
     setComponentGraph([]);
     setComponentInputs([]);
@@ -1693,7 +1629,7 @@ function App() {
     setCreatingComponent(!creatingComponent)
   }
 
-  function PushToTempGraph() {
+  function PushToTempGraph() { // for manual one by one adding 
 
     if (creatingComponent && selectedGate) {
 
@@ -1715,101 +1651,44 @@ function App() {
       console.log("didnt select a gate. not adding to temp graph");
     }
   }
-  function abstractGraph(tempGraph) {
 
-    const abstractedGraph = structuredClone(tempGraph);
+  function abstractGraph(tempGraph) { //filters out wires and hence restores the connection of nodes, returns reindexed graph
+    if (tempGraph.length === 0) return;
 
-    for (let node of abstractedGraph) {
+    let tempgraph = structuredClone(tempGraph)
 
-      if (
-        node.type === "INPUT" ||
-        node.type === "CLOCK" ||
-        node.type === "WIRE"
-      ) {
-        continue;
-      }
-
+    for (let node of tempgraph) {
+      if (node.type === "INPUT" || node.type === "CLOCK") continue;
       for (let i = 0; i < node.inputs.length; i++) {
+        let input = graph[node.inputs[i].id]; // its a node
+        let index = node.inputs[i].index
 
-        let input = node.inputs[i];
+        while (input.type === "WIRE") { //keep tracing wires until we find a non-wire node
+          const wireInput = input.inputs[0];
 
-        if (input === null || input.id === -1) {
-          continue;
+          input = graph[wireInput.id];
+          index = wireInput.index;
         }
-
-        let connection = graph.find(
-          n => n.id === input.id
-        );
-
-        if (!connection) {
-          console.log("Connection not found:", input.id);
-          continue;
-        }
-
-        let connection_index = input.index;
-
-        while (connection.type === "WIRE") {
-
-          const wireInput = connection.inputs[0];
-
-          if (
-            wireInput === null ||
-            wireInput.id === -1
-          ) {
-            console.log(
-              "Wire has no source:",
-              connection.id
-            );
-            break;
-          }
-
-          connection_index = wireInput.index;
-
-          connection = graph.find(
-            n => n.id === wireInput.id
-          );
-
-          if (!connection) {
-            console.log(
-              "Wire source not found:",
-              wireInput.id
-            );
-            break;
-          }
-        }
-
-        node.inputs[i] = {
-          id: connection.id,
-          index: connection_index
-        };
+        node.inputs[i] = { id: input.id, index: index };
       }
     }
 
-    const [reindexedGraph, , idMap] = topologicalOrderAndReindex(
-      abstractedGraph.filter(node => node.type !== "WIRE")
-    );
-
-    return [reindexedGraph, idMap];
+    return compactAndReindex(tempgraph);
   }
 
 
   function findExtInputs(graph) {
-
     let inputs = [];
-
     for (let node of graph) {
-
-      if (!node.inputs) continue;
-
       for (let i = 0; i < node.inputs.length; i++) {
 
-        let input = node.inputs[i];
+        let input = node.inputs[i]; // {id: , index: }
 
         if (!input) continue;
 
-        let source = graph.find(n => n.id === input.id);
+        let source = graph[input.id]
 
-        if (source && source.type === "INPUT") {
+        if (source.type === "INPUT") { //if the node is connected to a toggle
 
           inputs.push({
             id: node.id,
@@ -1944,14 +1823,12 @@ function App() {
       return;
     }
 
-    // ── Validate: only WIREs selected ──
     const nonWire = tempGraph.filter(n => n.type !== "WIRE");
     if (nonWire.length === 0) {
       alert("Only wires selected. A component must contain at least one gate.");
       return;
     }
 
-    // ── Validate: no BULB-only selection ──
     const hasNonBulb = nonWire.some(
       n => n.type !== "BULB" && n.type !== "INPUT" && n.type !== "CLOCK"
     );
@@ -1960,20 +1837,26 @@ function App() {
       return;
     }
 
-    const [abstractedGraph, idMap] = abstractGraph(tempGraph);
+    const [abstractedGraph, , idMap] = abstractGraph(tempGraph);
+
     componentIdMapRef.current = idMap;
 
     const inputs = findExtInputs(abstractedGraph);
     const outputs = findExtOutputs(abstractedGraph);
-
-    console.table(inputs);
-    console.log(outputs);
 
     const componentGraph = abstractedGraph.filter(
       node =>
         node.type !== "INPUT" &&
         node.type !== "BULB"
     );
+    console.log("Abstracted Graph")
+    console.table(abstractedGraph)
+    console.log("Component Graph")
+    console.table(componentGraph)
+    console.log("Component Inputs")
+    console.table(inputs)
+    console.log("Component Inputs")
+    console.table(outputs)
 
     setComponentGraph(componentGraph);
     setComponentInputs(inputs);
@@ -1985,23 +1868,18 @@ function App() {
         inputs.map(entry => entry.sourceId)
       )
     ];
+    console.log("Input Order")
+
+    console.table(uniqueInputSources)
 
     setInputOrder(uniqueInputSources);
-
     setPinIndex(0);
-
-    if (uniqueInputSources.length > 0) {
-      setPinPhase("input");
-    }
-    else if (outputs.length > 0) {
-      setPinPhase("output");
-    }
-    else {
-      setPinPhase("input");
-    }
-
+    setPinPhase("input");
     setSpecifyingInputs(true);
     setTempGraph([]);
+    console.log("Id Map")
+
+    console.table(idMap)
   }
 
   function finalizeSelection(rect) {
@@ -2036,8 +1914,6 @@ function App() {
     setSelectionRect(null);
   }
 
-  // ── Timing diagram: id-remap / reset ──
-
   function remapTimingSignals(idMap) {
     setTimingSignals(prev =>
       prev.map(sig => {
@@ -2061,8 +1937,6 @@ function App() {
     setTimingHistory([]);
     setIsCapturing(false);
   }
-
-  // ── Timing diagram: signal management ──
 
   function addSelectedSignalToTiming() {
     if (!selectedGate) {
@@ -2116,8 +1990,6 @@ function App() {
     );
   }
 
-  // ── Timing diagram: capture control ──
-
   function startTimingCapture() {
     if (timingSignals.length === 0) {
       alert("Add at least one signal before starting capture.");
@@ -2140,69 +2012,86 @@ function App() {
     setIsCapturing(false);
   }
 
-  function beautify(graph) {
-    const newGraph = structuredClone(graph);
+  const EPS = 0.5;
+  const same = (a, b) => Math.abs(a - b) < EPS;
 
-    for (const node of newGraph) {
-      if (node.type !== "WIRE") continue;
-      if (!node.path || node.path.length < 2) continue;
+  // Bend points needed to get from `from` to `to` using only horizontal/vertical lines.
+  // `prev` is the point before `from`, used to avoid doubling back on the previous segment.
+  function routeSegment(from, to, prev) {
+    if (same(from.x, to.x) || same(from.y, to.y)) return [];     // already straight
 
-      const path = node.path;
-      const newPath = [path[0]];
-
-      for (let i = 1; i < path.length; i++) {
-        const prev = newPath[newPath.length - 1];
-        const curr = path[i];
-
-        if (prev.x === curr.x || prev.y === curr.y) {
-          newPath.push(curr);
-          continue;
-        }
-
-        const dx = Math.abs(curr.x - prev.x);
-        const dy = Math.abs(curr.y - prev.y);
-
-        if (dx >= dy) {
-          newPath.push({
-            x: curr.x,
-            y: prev.y
-          });
-        } else {
-          newPath.push({
-            x: prev.x,
-            y: curr.y
-          });
-        }
-
-        newPath.push(curr);
+    let horizontalFirst;
+    if (prev) {
+      // Continue in the direction of the previous segment when possible
+      if (same(prev.y, from.y)) {                                // previous was horizontal
+        horizontalFirst = Math.sign(to.x - from.x) === Math.sign(from.x - prev.x);
+      } else {                                                   // previous was vertical
+        horizontalFirst = Math.sign(to.y - from.y) !== Math.sign(from.y - prev.y);
       }
-
-      const simplified = [newPath[0]];
-
-      for (let i = 1; i < newPath.length - 1; i++) {
-        const a = simplified[simplified.length - 1];
-        const b = newPath[i];
-        const c = newPath[i + 1];
-
-        const horizontal =
-          a.y === b.y &&
-          b.y === c.y;
-
-        const vertical =
-          a.x === b.x &&
-          b.x === c.x;
-
-        if (!horizontal && !vertical) {
-          simplified.push(b);
-        }
-      }
-
-      simplified.push(newPath[newPath.length - 1]);
-
-      node.path = simplified;
+    } else {
+      horizontalFirst = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y);
     }
 
-    setGraph(newGraph);
+    if (horizontalFirst) {
+      const midX = (from.x + to.x) / 2;
+      return [{ x: midX, y: from.y }, { x: midX, y: to.y }];     // H → V → H
+    }
+    const midY = (from.y + to.y) / 2;
+    return [{ x: from.x, y: midY }, { x: to.x, y: midY }];       // V → H → V
+  }
+
+  function beautifyPath(path) {
+    if (!path || path.length < 2) return path;
+
+    // 1. drop consecutive duplicate points
+    const pts = [path[0]];
+    for (let i = 1; i < path.length; i++) {
+      const p = path[i], q = pts[pts.length - 1];
+      if (!(same(p.x, q.x) && same(p.y, q.y))) pts.push(p);
+    }
+    if (pts.length < 2) return path;
+
+    // 2. make every segment horizontal/vertical
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const from = out[out.length - 1];
+      const prev = out.length > 1 ? out[out.length - 2] : null;
+      out.push(...routeSegment(from, pts[i], prev), pts[i]);
+    }
+
+    // 3. remove points that lie on a straight line
+    const result = [out[0]];
+    for (let i = 1; i < out.length - 1; i++) {
+      const a = result[result.length - 1], b = out[i], c = out[i + 1];
+      const collinear =
+        (same(a.x, b.x) && same(b.x, c.x)) ||
+        (same(a.y, b.y) && same(b.y, c.y));
+      if (!collinear) result.push(b);
+    }
+    result.push(out[out.length - 1]);
+    return result;
+  }
+
+  function beautify(graph) {
+    addToUndoStack(graph, clock_delays);
+
+    // Wires that other wires branch from must not move, or the branch start point
+    // would no longer lie on them.
+    const parentIds = new Set();
+    for (const n of graph) {
+      if (n.type !== "WIRE") continue;
+      for (const inp of n.inputs ?? []) {
+        if (inp && inp.index !== -1 && graph[inp.id]?.type === "WIRE") parentIds.add(inp.id);
+      }
+    }
+
+    setGraph(
+      graph.map(node =>
+        node.type === "WIRE" && !parentIds.has(node.id)
+          ? { ...node, path: beautifyPath(node.path) }
+          : node
+      )
+    );
   }
 
   function saveComponent(component) {
@@ -2392,7 +2281,6 @@ function App() {
           onClick={showabout}
         />
 
-        {/* ── FILE ── */}
         <details className="utilities-menu">
           <summary className="utilities-button">FILE</summary>
           <div className="utilities-menu-content">
@@ -2402,7 +2290,6 @@ function App() {
           </div>
         </details>
 
-        {/* ── EDIT ── */}
         <details className="utilities-menu">
           <summary className="utilities-button">EDIT</summary>
           <div className="utilities-menu-content">
@@ -2417,7 +2304,6 @@ function App() {
           </div>
         </details>
 
-        {/* ── VIEW ── */}
         <details className="utilities-menu">
           <summary className="utilities-button">VIEW</summary>
           <div className="utilities-menu-content">
@@ -2434,7 +2320,6 @@ function App() {
           </div>
         </details>
 
-        {/* ── SIMULATION ── */}
         <details className="utilities-menu">
           <summary className="utilities-button">SIMULATION</summary>
           <div className="utilities-menu-content">
@@ -2443,9 +2328,6 @@ function App() {
             </button>
           </div>
         </details>
-        <button className="utilities-button" onClick={showTutorial}>TUTORIAL</button>
-
-        {/* ── TOOLS ── */}
         <details className="utilities-menu">
           <summary className="utilities-button">TOOLS</summary>
           <div className="utilities-menu-content">
@@ -2453,8 +2335,9 @@ function App() {
 
           </div>
         </details>
+        <button className="utilities-button" onClick={showTutorial}>TUTORIAL</button>
 
-        {/* ── CREATE COMPONENT (contextual) ── */}
+      
         {!creatingComponent ? (
           <button className="utilities-button" onClick={createComponent}>
             CREATE COMPONENT
@@ -2472,6 +2355,15 @@ function App() {
             </button>
           </>
         )}
+        <button className="utilities-button" onClick={() => setShowLearnSidebar(v => !v)}>
+          {showLearnSidebar ? "HIDE GUIDE" : "SELF-LEARN"}
+        </button>
+        <button className="utilities-button" onClick={() => setShowTimingDiagram(v => !v)}>
+          {showTimingDiagram ? "HIDE TIMING" : "TIMING DIAGRAM"}
+        </button>
+
+
+        {/* <button onClick={() => { console.table(graph) }}>print</button> */}
         <button
           className="utilities-button"
           onClick={() => {
@@ -2493,23 +2385,6 @@ function App() {
         >
           COPY AREA
         </button>
-
-        <button className="utilities-button" onClick={() => setShowLearnSidebar(v => !v)}>
-          {showLearnSidebar ? "HIDE GUIDE" : "SELF-LEARN"}
-        </button>
-        <button className="utilities-button" onClick={() => setShowTimingDiagram(v => !v)}>
-          {showTimingDiagram ? "HIDE TIMING" : "TIMING DIAGRAM"}
-        </button>
-
-        <button
-          onClick={handleBenchmark}
-          disabled={isBenchmarking}
-        >
-          {isBenchmarking ? "Benchmarking..." : "Benchmark Circuit"}
-        </button>
-
-        {/* <button onClick={() => { printgraph(graph) }}>print</button> */}
-
         {/* Hidden file inputs */}
         <input
           ref={fileInputRef}
@@ -3136,6 +3011,7 @@ function App() {
 
                   const mappedId =
                     componentIdMapRef.current.get(selectedGate?.id);
+                  console.log(selectedGate.id)
 
                   const idx = newOrder.indexOf(mappedId);
 
@@ -3150,9 +3026,10 @@ function App() {
 
                   // Move that toggle to the current pin position.
                   const [moved] = newOrder.splice(idx, 1);
+                  console.log(newOrder)
 
                   newOrder.splice(pinIndex, 0, moved);
-
+                  console.log(newOrder)
                   // Save the new ordering.
                   setInputOrder(newOrder);
 
@@ -3187,7 +3064,7 @@ function App() {
                     setPinIndex(0);
 
                     // Default name for first output.
-                    setPinName("O1");
+                    setPinName("O0");
 
                     return;
                   }
@@ -3198,8 +3075,7 @@ function App() {
                     return;
                   }
 
-                  // Expand component-level ordering
-                  // back into all internal mappings.
+                  // pins having same source (fan out case) are placed consecutively, and lets visualise them forming a group. these group appear in orderedInputs in the order which user selects toggles to specify input pins. 
                   const orderedInputs = newOrder.flatMap(
                     sourceId =>
                       componentInputs
@@ -3243,7 +3119,8 @@ function App() {
                   setPinName("");
                   setSpecifyingInputs(false);
 
-                } else {
+                }
+                else {
 
                   const mappedId =
                     componentIdMapRef.current.get(selectedGate?.id);
@@ -3427,9 +3304,7 @@ function App() {
         </div>
       )}
 
-      {showLearnSidebar && (
-        <LearnSidebar onClose={() => setShowLearnSidebar(false)} />
-      )}
+
 
       {editingText && (
         <div className="text-edit-overlay" onClick={cancelTextEdit}>
@@ -3486,55 +3361,7 @@ function App() {
         />
       )}
 
-      {benchmarkResult && benchmarkResult.success && (
-        <div className="benchmark-results">
-          <h3>Benchmark Results</h3>
 
-          <p>
-            Nodes: {benchmarkResult.nodeCount}
-          </p>
-
-          <p>
-            Benchmark Runs: {benchmarkResult.benchmarkRuns}
-          </p>
-
-          <p>
-            Evaluation Iterations: {benchmarkResult.evaluateIterations}
-          </p>
-
-          <p>
-            Average Evaluation Time:{" "}
-            {benchmarkResult.averageEvaluationTime.toFixed(4)} ms
-          </p>
-
-          <p>
-            Minimum Evaluation Time:{" "}
-            {benchmarkResult.minimumEvaluationTime.toFixed(4)} ms
-          </p>
-
-          <p>
-            Maximum Evaluation Time:{" "}
-            {benchmarkResult.maximumEvaluationTime.toFixed(4)} ms
-          </p>
-
-          <p>
-            Average Topological Sort Time:{" "}
-            {benchmarkResult.averageSortingTime.toFixed(4)} ms
-          </p>
-
-          <p>
-            Evaluations per Second:{" "}
-            {Number.isFinite(benchmarkResult.evaluationsPerSecond)
-              ? benchmarkResult.evaluationsPerSecond.toFixed(2)
-              : "∞"}
-          </p>
-
-          <p>
-            Total Benchmark Time:{" "}
-            {benchmarkResult.totalBenchmarkTime.toFixed(2)} ms
-          </p>
-        </div>
-      )}
 
 
 
@@ -3542,4 +3369,4 @@ function App() {
   )
 }
 
-export default App; 
+export default App;
