@@ -19,6 +19,8 @@ A browser-based digital logic circuit simulator built with React.
 
   <a href="src/docs/README.md"><strong>View Technical Documentation</strong></a>
 
+  <a href="public/docs/gatesim-research9.pdf"><strong>View Whitepaper</strong></a>
+
 </p>
 
 ---
