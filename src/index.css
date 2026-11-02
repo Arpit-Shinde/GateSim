@@ -8,6 +8,23 @@ body {
   background-color: rgb(58, 54, 54);
 }
 
+/* Canvas - right side, takes remaining space */
+.canvas {
+    height: 720px;
+    width:1400px;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+.canvas-wrapper {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
@@ -114,22 +131,7 @@ code {
     overflow: hidden;
 }
 
-/* Canvas - right side, takes remaining space */
-.canvas {
-    height: 720px;
-    width:1080px;
-    overflow: hidden;
-    flex-shrink: 0;
-    box-sizing: border-box;
-}
-.canvas-wrapper {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+
 .toolsBar {
   
     min-width: 220px;
@@ -201,7 +203,7 @@ code {
 }
 
 .actual-gate.selected-gate {
-  filter: drop-shadow(0 2px 8px rgb(249, 249, 249));
+  filter: drop-shadow(0 2px 8px rgb(255, 255, 255,1));
   
 }
 
@@ -227,7 +229,7 @@ code {
     color: #1a202c;
 
     border: 1px solid #cbd5e0;
-    border-radius: 6px;
+    
 
     font-size: 13px;
     font-weight: 500;
@@ -245,6 +247,9 @@ code {
         border-color 0.12s ease,
         color 0.12s ease,
         transform 0.06s ease;
+}
+.utilities-button.active {
+    filter: brightness(0.8);     /* 20% darker than its normal colour */
 }
 
 .utilities-button:hover {
@@ -754,6 +759,7 @@ code {
     cursor: pointer;
 
     font-size: 14px;
+    user-select: none;
 }
 
 .toolButton:hover {
@@ -1202,11 +1208,7 @@ code {
     padding: 24px 28px 40px;
 
     font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Helvetica,
+        "Inter"
         Arial,
         sans-serif;
 
@@ -1550,25 +1552,23 @@ code {
     min-width: 180px;
     padding: 6px;
 
-    background: #1a1d23;
+    background: #fcfcfc;
     border: 1px solid #4a5568;
-    border-radius: 6px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
 .utilities-menu-content button {
     all: unset;
     padding: 8px 10px;
-    color: #cbd5e0;
+    color: #000000;
     font-size: 13px;
-    border-radius: 4px;
     cursor: pointer;
     white-space: nowrap;
 }
 
 .utilities-menu-content button:hover {
-    background: #2d3748;
-    color: #e2e8f0;
+    background: #adadad;
+    color: #000000;
 }
 
 .text-edit-overlay {

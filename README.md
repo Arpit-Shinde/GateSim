@@ -9,7 +9,7 @@
 </tr>
 </table>
 
-A browser-based digital logic circuit simulator built with React.
+A browser-based interactive digital logic circuit simulator for learning and experimenting with **Digital Logic Design (DLD)**. Built with React.
 
 <p align ="center">
 
@@ -25,22 +25,20 @@ A browser-based digital logic circuit simulator built with React.
 
 ---
 
-## What is GateSim?
-
-GateSim is an interactive simulator for learning and experimenting with **Digital Logic Design (DLD)**.
-
 
 ## Features
 
 ### Circuit Construction
 
 - Dynamic gate creation
-- Interactive wiring
+- Interactive color-based wiring
 - Wire and gate deletion
 - Support for gates with 2, 3, and 4 inputs
 - Move components freely on an infinite canvas
 - Pan and zoom
 - Rotate gates
+- Support for clocks
+- Support for live timing diagrams
 
 ### Circuit Management
 
@@ -49,6 +47,7 @@ GateSim is an interactive simulator for learning and experimenting with **Digita
 - Undo / Redo
 - Reset view
 - Clear circuit
+- Copy & Paste circuit
 
 ## Learning Guide
 
@@ -83,5 +82,3 @@ Planned development includes:
 * Expanded learning material
 * More combinational and sequential components
 * Further usability improvements based on student feedback
-* Adding architecture explaination in README
-

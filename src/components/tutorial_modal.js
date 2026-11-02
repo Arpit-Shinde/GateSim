@@ -96,9 +96,9 @@ export function showTutorial() {
         </h4>
 
         <p style="margin: 0;">
-          <b>Move gate:</b> Left-click + drag
+          <b>Move gate:</b> Select Pointer from Top bar, then left click on a gate and drag
           <br>
-          <b>Pan canvas:</b> Middle-click + drag
+          <b>Pan canvas:</b> Select Palm from Top bar, then left-click on canvas and drag
           <br>
           <b>Zoom:</b> Scroll wheel
         </p>
@@ -117,6 +117,7 @@ export function showTutorial() {
         </h4>
 
         <p style="margin: 0;">
+          Make sure Pointer is selected from Top Bar
           <b>Start wire:</b> Click an output pin
           <br>
           <b>Connect:</b> Click an input pin
@@ -198,6 +199,8 @@ export function showTutorial() {
           <b>Start Clocks:</b> SIMULATION → START CLOCKS
           <br>
           <b>Add labels:</b> Left-click LABEL (from toolsbar) → Double left-click on "label" on canvas → Change the text
+          <br>
+          <b>Copy Area:</b> EDIT → COPY AREA, then left-click drag on canvas to create selection area. Then Ctrl+V will paste the circuit at cursor location
         </p>
       </section>
       <section>

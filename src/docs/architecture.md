@@ -1,7 +1,7 @@
 # Architecture
 
 ## Circuit Representation 
-Every component inside the canvas is a object, called `node` with the following properties:
+Every component inside the canvas is a object, called `node` with the following properties in general:
 
 
 | Property | Type | Description |
@@ -15,6 +15,8 @@ Every component inside the canvas is a object, called `node` with the following 
 | `y` | Number | Y coordinate in canvas coordinate system|
 | `Z` | Number | Z index|
 | `rotation` | Number | Angle of orientation |
+
+A array of these objects forms a graph.
 
 Other types of node such as `CLOCK` have additional properties, like `delay`. Will be discussed later.
 
@@ -47,15 +49,14 @@ We empty `nxt` and for each node in `resNodes`, we mutate its value with the new
 
 This phase 1 and phase 2 is ran until `cur` is empty or a max limit of iterations is reached. If the control exits loop with non empty `cur`, a unstable loop is deduced, and logged in console.
 
-Now consider a circuit as shown below
+A `visited` set is maintained to eliminate duplicate entries in a frontier.
 
-![Alt Text for the Image](fig1.png)
-Suppose source signal changes and hence all A, B, C, D change their state. 
+## Clocking
 
-At step 0, $F_0 = \{A,B,C,D\}$ and to find $C_0$, we loop through $F_0$ and see all elements have changed their value, so output of all nodes must be added in $F_1$, which leads to $F_1 = \{E,E,E,E\}$. Incase E is a huge network, computing such $F_1$ in step 1 isn't optimal. 
+When clock is clicked from the tool bar, `Add` ([src/hooks/useCircuit.js](../hooks/useCircuit.js)) is called with type="CLOCK", clockDelay=null. As a result, a clock window is displayed `ClockWindow` ([src/components/ClockWindow.js](../components/ClockWindow.js)). Upon appropriate inputs by the user, `Add` is called with type="CLOCK", clockDelay=delay entered by user. As a result, a node with additional property `delay` is pushed into graph.
 
-Once E is added, we can prevent adding it further, so only one reference of E exists in $F_1$. In general, $F_i$ must contain unique references only. Thats the point of having `visited` set.
+An array `clockDelays` is maintained, consisting objects of the kind `{id: , delay: , next_tick: }`. `useClocks`([src/hooks/useClocks.js](../hooks/useClocks.js)) is responsible to tick the clocks, in which a useEffect runs every `MIN_FRAME_TIME` ([src/constants/constants.js](../constants/constants.js)). When `performance.now()` exceeds `next_tick` of a clock, the state of clock is flipped, `next_tick` is updated of the clock and signal is propagated through this clock.
 
-## Custom Components
+Pressing on pause clocks in the UI sets `pauseSim` ([App.js](../App.js)) to true, and useClock returns without updating any of the clocks.
 
-To do.
+View custom component architecture [here](../docs/custom_component.md)

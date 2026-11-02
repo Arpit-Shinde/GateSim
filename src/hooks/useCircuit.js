@@ -1,14 +1,21 @@
-// hooks/useCircuit.js
-
 import { propagate, settle } from "../utils/evaluate";
 import { compactAndReindex } from "../utils/reindex";
+import { RANDOM_POSITION_OFFSET_MULTIPLIER } from "../constants/constants"
 
 const INPUT_COUNTS = {
   NOT: 1,
   AND: 2, OR: 2, NAND: 2, NOR: 2, XOR: 2, XNOR: 2, HALF_ADDER: 2,
   AND3: 3, OR3: 3, NAND3: 3, NOR3: 3, XOR3: 3, XNOR3: 3, MUX2: 3, FULL_ADDER: 3,
   AND4: 4, OR4: 4, NAND4: 4, NOR4: 4, XOR4: 4, XNOR4: 4,
-  MUX4: 6
+  MUX4: 6, JK: 3
+};
+
+const VALUE_COUNTS = {
+  NOT: 1,
+  AND: 1, OR: 1, NAND: 1, NOR: 1, XOR: 1, XNOR: 1, HALF_ADDER: 2,
+  AND3: 1, OR3: 1, NAND3: 1, NOR3: 1, XOR3: 1, XNOR3: 1, MUX2: 1, FULL_ADDER: 2,
+  AND4: 1, OR4: 1, NAND4: 1, NOR4: 1, XOR4: 1, XNOR4: 1,
+  MUX4: 1, JK: 2
 };
 
 function maxZ(graph) {
@@ -24,130 +31,125 @@ export function useCircuit(
   setClockDelays,
   view,
   addToUndoStack,
-  setoPin,
-  setSelectedGate,
-  setSelectedWire,
   setShowClockWindow,
-  setClockDelayInput,
-  onReindex
+  remapTimingSignals
 ) {
 
   function toggle(id) {
-    let start = performance.now()
-    
-    const node = graph[id];
+    // let start = performance.now()
+    let newGraph = structuredClone(graph);
+
+    const node = newGraph[id];
     if (!node) return;
 
-    if (node.value && node.value[0]) {
-      node.value = [false];
-    } else {
-      node.value = [true];
-    }
-    
-    let [steps, evaluates] = propagate(graph, id);
-    console.log("Propagation steps:", steps);
-    console.log("Number of evaluations:", evaluates);
-    console.log("Propagation time:", (performance.now() - start) * 1000, "µs");
-    
-    setGraph(graph); //can be removed, cuz other click handlers attached to toggle SVG fire re-renders
+    node.value[0] = !node.value[0];
+
+    let [steps, evaluates] = propagate(newGraph, id);
+    // console.log("Propagation steps:", steps);
+    // console.log("Number of evaluations:", evaluates);
+    // console.log("Propagation time:", (performance.now() - start) * 1000, "µs");
+
+    setGraph(newGraph); //other click handlers attached to toggle SVG also trigger re-renders
 
   }
 
 
-  function Add(
-    gate,
-    wireData = null,
-    inputpin = null,
-    clockDelay = null,
-    customComponent = null
-  ) {
-    if (!gate) return;
+  function Add(type, wireData = null, inputpin = null, clockDelay = null, customComponent = null) {
+    if (!type) return;
 
-    if (gate === "CLOCK" && clockDelay === null) {
-      setClockDelayInput("");
+    if (type === "CLOCK" && clockDelay === null) {
       setShowClockWindow(true);
       return;
     }
 
-    if (gate === "CUSTOM" && !customComponent) return;
+    if (type === "CUSTOM" && !customComponent) return;
 
     addToUndoStack(graph, clock_delays);
 
-    // Working copy: never mutate React state in place.
-    const g = graph.map(n => ({
-      ...n,
-      inputs: n.inputs ? [...n.inputs] : n.inputs,
-      outputs: n.outputs ? [...n.outputs] : n.outputs
-    }));
+    const graphCopy = graph.map((node) => {
+      return { ...node, inputs: node.inputs ? [...node.inputs] : node.inputs, outputs: node.outputs ? [...node.outputs] : node.outputs }
+    })
 
-    const id = g.length;
-    const x = view.x + view.width / 2;
-    const y = view.y + view.height / 2;
-    const z = maxZ(graph) + 1;
+    const newClockDelays = structuredClone(clock_delays)
+
+    const id = graphCopy.length;
+    const initialX = view.x + view.width / 2 + (Math.random() * 2 - 1) * RANDOM_POSITION_OFFSET_MULTIPLIER;
+    const initialY = view.y + view.height / 2 + (Math.random() * 2 - 1) * RANDOM_POSITION_OFFSET_MULTIPLIER;
+    const zIndex = maxZ(graph) + 1;
 
     let newGate;
 
-    if (gate === "CLOCK") {
-      newGate = {
-        type: gate, id, value: [false], inputs: [], outputs: [],
-        x, y, z, rotation: 0, delay: Number(clockDelay)
-      };
-    }
-    else if (gate === "WIRE") {
-      newGate = {
-        type: gate, id, value: [false], outputs: [],
-        path: wireData.path,
-        inputs: [{ id: wireData.inputId, index: wireData.outputIndex }]
-      };
-    }
-    else if (gate === "CUSTOM") {
-      const n = new Set(customComponent.inputs.map(i => i.sourceId)).size; //finds number of unique ids
-      newGate = {
-        type: "CUSTOM", id, outputs: [],
-        name: customComponent.name,
-        inputs: Array(n).fill(null),
-        ext_inputs: structuredClone(customComponent.inputs),
-        value: customComponent.outputs.map(() => false),
-        ext_outputs: structuredClone(customComponent.outputs),
-        ref_graph: structuredClone(customComponent.ref_graph),
-        x, y, z, rotation: 0
-      };
-    }
-    else if (gate === "TEXT") {
-      newGate = {
-        type: "TEXT", id, text: "Label",
-        x, y, z, rotation: 0, inputs: [], value: []
-      };
-    }
-    else {
-      newGate = {
-        type: gate, id, value: [false], outputs: [],
-        inputs: Array(INPUT_COUNTS[gate] ?? 0).fill(null),
-        x, y, z, rotation: 0
-      };
+    switch (type) {
+
+      case "CLOCK":
+        newGate = {
+          type: type, id: id, value: [false], inputs: [], outputs: [],
+          x: initialX, y: initialY, z: zIndex, rotation: 0, delay: Number(clockDelay)
+        };
+        newClockDelays.push({
+          id: id,
+          delay: Number(clockDelay),
+          next_tick: performance.now() + Number(clockDelay)
+        });
+        break;
+
+      case "WIRE":
+        newGate = {
+          type: type, id: id, value: [false], outputs: [], path: wireData.path,
+          inputs: [{ id: wireData.inputId, index: wireData.outputIndex }]
+        };
+        break;
+
+      case "CUSTOM": {
+        const n = new Set(customComponent.inputs.map(i => i.sourceId)).size; //finds number of unique ids
+        newGate = {
+          type: "CUSTOM", id: id, outputs: [], name: customComponent.name,
+          inputs: Array(n).fill(null),
+          ext_inputs: structuredClone(customComponent.inputs),
+          value: customComponent.outputs.map(() => false),
+          ext_outputs: structuredClone(customComponent.outputs),
+          ref_graph: structuredClone(customComponent.ref_graph),
+          x: initialX, y: initialY, z: zIndex, rotation: 0
+        };
+        break;
+      }
+
+      case "TEXT":
+        newGate = { type: "TEXT", id: id, text: "Label", x: initialX, y: initialY, z: zIndex, rotation: 0, inputs: [], value: [] };
+        break;
+
+      default:
+        newGate = {
+          type: type, id: id, value: Array(VALUE_COUNTS[type] ?? 0).fill(false), outputs: [],
+          inputs: Array(INPUT_COUNTS[type] ?? 0).fill(null), x: initialX, y: initialY, z: zIndex, rotation: 0
+        };
+        break;
+
     }
 
-    // ---- connect ----
+    //Connect
     if (wireData) {
-      g[wireData.inputId].outputs.push(id);
+      graphCopy[wireData.inputId].outputs.push(id);
     }
 
     if (inputpin) {
-      const target = g[inputpin.gateId];
+      const target = graphCopy[inputpin.gateId];
+      if (target.inputs[inputpin.gateIndex]) graphCopy.splice(target.inputs[inputpin.gateIndex].id, 1);
+      
       target.inputs[inputpin.gateIndex] = { id, index: 0 };
       newGate.outputs.push(inputpin.gateId);
     }
 
-    g.push(newGate);
+    graphCopy.push(newGate);
 
-    const [newGraph, newDelays, idMap] = compactAndReindex(g, clock_delays);
+    const [newGraph, idMap] = compactAndReindex(graphCopy);
 
     settle(newGraph);
 
-    if (onReindex) onReindex(idMap);
+    if (remapTimingSignals) remapTimingSignals(idMap);
 
     setGraph(newGraph);
-    setClockDelays(newDelays);
+    setClockDelays(newClockDelays);
 
     return idMap.get(id);
   }

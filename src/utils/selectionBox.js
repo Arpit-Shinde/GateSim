@@ -49,3 +49,24 @@ export function isNodeFullyContained(node, rect) {
     box.y1 <= ry1
   );
 }
+
+export function SelectionRectangle({ selectionRect }) {
+  const x = Math.min(selectionRect.x0, selectionRect.x1);
+  const y = Math.min(selectionRect.y0, selectionRect.y1);
+  const w = Math.abs(selectionRect.x1 - selectionRect.x0);
+  const h = Math.abs(selectionRect.y1 - selectionRect.y0);
+
+  return (
+    <rect
+      x={x}
+      y={y}
+      width={w}
+      height={h}
+      fill={CONSTANTS.SELECTION_FILL_COLOR}
+      stroke={CONSTANTS.SELECTION_STROKE_COLOR}
+      strokeDasharray="6 4"
+      strokeWidth={1.5}
+      pointerEvents="none"
+    />
+  );
+}

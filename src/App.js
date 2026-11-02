@@ -15,44 +15,56 @@ import {
   sequentialGateRenderList,
   MuxGateRenderList, AdderGateRenderList,
   outputGateRenderList
-} from "./constants/gates";
+} from "./constants/gatesList";
 import logo from './gatesim-logo2.png';
 import { RenderUncommitedWire } from "./components/wire";
-import { RenderCUSTOM } from "./svg/gates_svg";
-import { isNodeFullyContained } from "./utils/selectionBox";
+import { RenderCUSTOM } from "./svg/gatesSvg";
+import { isNodeFullyContained, SelectionRectangle } from "./utils/selectionBox";
 import { TimingDiagram, defaultSignalLabel } from "./components/timingDiagram";
-import { propagate } from "./utils/evaluate";
 import "./components/timingDiagram.css";
+import { ClockWindow } from "./components/clockWindow";
+import { useClocks, togglePauseSim } from "./hooks/useClocks";
+import { TopBar } from "./components/topBar";
+import { ToolsBar } from "./components/toolBar";
+import { DownloadDialog } from "./components/downloadDialog";
+import { ComponentDialog } from "./components/componentDialog";
+import { SpecifyInputsSidebar } from "./components/componentRightSidebar";
+import { CanvasArea } from "./components/canvas";
+import { finalizeCopySelection, pasteCopiedCircuit } from "./utils/copyMode";
+import { TextEditDialog, openTextEditor, commitTextEdit, cancelTextEdit } from "./components/textEdit";
+import { useDeleteNode } from "./hooks/useDeleteNode";
+import { beautify } from "./utils/beautify";
+import { commitDownload, loadCircuit } from "./utils/fileIO";
+import { redo, undo } from "./utils/undoRedo";
+import { LearnSidebar } from "./components/learnSideBar";
 
 function App() {
 
-  let [graph, setGraph] = useState([])
-  // console.log("RENDER", performance.now(), graph);
-  let [clock_delays, setClockDelays] = useState([])
+  let [graph, setGraph] = useState([]);
+  let [clock_delays, setClockDelays] = useState([]);
   let [view, setView] = useState({
     x: 0,
     y: 0,
-    width: 1080,
-    height: 720
-  })
-  let [pan, setPan] = useState(null)
-  let svgRef = useRef(null)
-  let graphRef = useRef(graph)
-  let clockDelaysRef = useRef(clock_delays)
-  let [opin, setoPin] = useState(null)
+    width: CONSTANTS.CANVAS_INITIAL_VIEW_WIDTH,
+    height: CONSTANTS.CANVAS_INITIAL_VIEW_HEIGHT
+  });
+  let [pan, setPan] = useState(null);
+  let svgRef = useRef(null);
+  let graphRef = useRef(graph);
+  let clockDelaysRef = useRef(clock_delays);
+  let [opin, setoPin] = useState(null);
   let [selectedWire, setSelectedWire] = useState(null);
-  let [selectedGate, setSelectedGate] = useState(null)
+  let [selectedGate, setSelectedGate] = useState(null);
   let [draginfo, setdraginfo] = useState(null);
   let [didDrag, setDidDrag] = useState(false);
-  let [mouse, setMouse] = useState(null)
-  let [theme, setTheme] = useState(false)
-  let [pauseSim, setPauseSim] = useState(false)
+  let [mouse, setMouse] = useState(null);
+  let [theme, setTheme] = useState(false);
+  let [pauseSim, setPauseSim] = useState(false);
   let [showClockWindow, setShowClockWindow] = useState(false);
-  let [clockDelayInput, setClockDelayInput] = useState("");
   let [pausedClocks, setPausedClocks] = useState([]); //to store remaining time for clock tick after pause
   let pausedClocksRef = useRef([]);
   let [wirePath, setWirePath] = useState([]); //to store bending points of wire which is being drawn 
-  let [tempGraph, setTempGraph] = useState([])
+  let [tempGraph, setTempGraph] = useState([]);
   let [creatingComponent, setCreatingComponent] = useState(false)
   let [showComponentDialog, setShowComponentDialog] = useState(false);
   let [componentGraph, setComponentGraph] = useState([]);
@@ -80,26 +92,26 @@ function App() {
   let timingHistoryRef = useRef([]);
   let timingCaptureStartRef = useRef(null);
   let timingSignalsRef = useRef([]);
-
   let [copySelectMode, setCopySelectMode] = useState(false);
   let [copiedGraph, setCopiedGraph] = useState([]);
   let [copiedClockDelays, setCopiedClockDelays] = useState([]);
   let canvasMouseRef = useRef({ x: 0, y: 0 });
-
-  let { toggle, Add, clearGraph, runBenchmark } = useCircuit(
+  let fileInputRef = useRef(null);
+  let { toggle, Add, clearGraph } = useCircuit(
     graph,
     setGraph,
     clock_delays,
     setClockDelays,
     view,
     addToUndoStack,
-    setoPin,
-    setSelectedGate,
-    setSelectedWire,
     setShowClockWindow,
-    setClockDelayInput,
     remapTimingSignals
   );
+  let [undoStack, setUndoStack] = useState([]);
+  let [redoStack, setRedoStack] = useState([]);
+  let [showAbout, setShowAbout] = useState(false);
+  let [interactivityMode, setInteractivityMode] = useState("DRAG");
+  let tempGraphIds = new Set(tempGraph.map(n => n.id));
 
   let branchDots = useMemo(() => {
     const dots = [];
@@ -132,474 +144,17 @@ function App() {
     return dots;
   }, [graph]);
 
-  let prevState = useRef({});
+
+  // let prevState = useRef({});
   // useEffect(() => {
   //   const now = {
   //     graph, clock_delays, view, pan, opin, selectedGate, selectedWire,
   //     draginfo, didDrag, mouse, undoStack, redoStack, timingHistory
   //   };
   //   for (const k in now)
-  //     if (prevState.current[k] !== now[k]) console.log("changed:", k);
+  //     if (prevState.current[k] !== now[k]) // console.log("changed:", k);
   //   prevState.current = now;
   // });
-
-  function pointInsideRect(point, rect, padding = 0) {
-    const minX = Math.min(rect.x0, rect.x1) - padding;
-    const maxX = Math.max(rect.x0, rect.x1) + padding;
-    const minY = Math.min(rect.y0, rect.y1) - padding;
-    const maxY = Math.max(rect.y0, rect.y1) + padding;
-
-    return (
-      point.x >= minX &&
-      point.x <= maxX &&
-      point.y >= minY &&
-      point.y <= maxY
-    );
-  }
-
-  function wireInsideRect(wire, rect) {
-    if (!wire.path || wire.path.length === 0) {
-      return false;
-    }
-
-    // Small padding makes it easier to capture wires that touch
-    // the boundary of the selection.
-    return wire.path.every(point =>
-      pointInsideRect(point, rect, 10)
-    );
-  }
-
-  function finalizeCopySelection(rect) {
-
-    const selectedNodes = graph.filter(node => {
-
-      // Ignore text labels when copying a circuit.
-      if (node.type === "TEXT") {
-        return false;
-      }
-
-      // Wires are handled separately.
-      if (node.type === "WIRE") {
-        return false;
-      }
-
-      return isNodeFullyContained(node, rect);
-    });
-
-    const selectedIds = new Set(
-      selectedNodes.map(node => node.id)
-    );
-
-    const selectedWires = graph.filter(node => {
-
-      if (node.type !== "WIRE") {
-        return false;
-      }
-
-      return wireInsideRect(node, rect);
-    });
-
-    const copiedIds = new Set([
-      ...selectedNodes.map(node => node.id),
-      ...selectedWires.map(node => node.id)
-    ]);
-
-    if (copiedIds.size === 0) {
-      alert("Nothing selected.");
-      return;
-    }
-
-    const selection = graph
-      .filter(node => copiedIds.has(node.id))
-      .map(node => structuredClone(node));
-
-    // Keep only connections that remain inside the copied graph.
-    //
-    // External connections become disconnected when pasted.
-
-    for (const node of selection) {
-
-      if (Array.isArray(node.inputs)) {
-
-        node.inputs = node.inputs.map(input => {
-
-          if (!input || input.index === -1) {
-            return input;
-          }
-
-          if (!copiedIds.has(input.id)) {
-            return {
-              id: -1,
-              index: -1
-            };
-          }
-
-          return {
-            ...input
-          };
-        });
-      }
-
-      if (Array.isArray(node.outputs)) {
-
-        node.outputs =
-          node.outputs.filter(outputId =>
-            copiedIds.has(outputId)
-          );
-      }
-    }
-
-    // Copy clock information.
-
-    const selectedClockIds =
-      new Set(
-        selection
-          .filter(node => node.type === "CLOCK")
-          .map(node => node.id)
-      );
-
-    const selectedDelays =
-      clock_delays
-        .filter(clock =>
-          selectedClockIds.has(clock.id)
-        )
-        .map(clock => ({
-          id: clock.id,
-          delay: clock.delay
-        }));
-
-    setCopiedGraph(selection);
-    setCopiedClockDelays(selectedDelays);
-
-    setCopySelectMode(false);
-    setSelectionRect(null);
-
-    console.log(
-      "Copied circuit:",
-      selection
-    );
-  }
-
-  function pasteCopiedCircuit() {
-
-    if (
-      !copiedGraph ||
-      copiedGraph.length === 0
-    ) {
-      alert("Nothing has been copied.");
-      return;
-    }
-
-    const mouse =
-      canvasMouseRef.current;
-
-    // Clone clipboard graph.
-
-    const pastedGraph =
-      structuredClone(copiedGraph);
-
-    // Give every pasted node a temporary unique ID.
-    //
-    // These IDs are replaced by topologicalOrderAndReindex().
-
-    let nextTempId = -1;
-
-    for (const node of graph) {
-
-      if (
-        typeof node.id === "number" &&
-        node.id >= nextTempId
-      ) {
-        nextTempId = node.id + 1;
-      }
-    }
-
-    const idMap =
-      new Map();
-
-    for (const node of pastedGraph) {
-
-      const oldId = node.id;
-
-      const newId = nextTempId++;
-
-      idMap.set(
-        oldId,
-        newId
-      );
-    }
-
-    // ----------------------------------------------------------
-    // Remap IDs inside copied graph.
-    // ----------------------------------------------------------
-
-    for (const node of pastedGraph) {
-
-      const oldId = node.id;
-
-      node.id =
-        idMap.get(oldId);
-
-      // --------------------------------------------------------
-      // Inputs
-      // --------------------------------------------------------
-
-      if (Array.isArray(node.inputs)) {
-
-        node.inputs =
-          node.inputs.map(input => {
-
-            if (!input || input.index === -1) {
-              return input;
-            }
-
-            const remappedId =
-              idMap.get(input.id);
-
-            if (remappedId === undefined) {
-
-              return {
-                id: -1,
-                index: -1
-              };
-            }
-
-            return {
-              ...input,
-              id: remappedId
-            };
-          });
-      }
-
-      // --------------------------------------------------------
-      // Outputs
-      // --------------------------------------------------------
-
-      if (Array.isArray(node.outputs)) {
-
-        node.outputs =
-          node.outputs
-            .map(outputId =>
-              idMap.get(outputId)
-            )
-            .filter(
-              outputId =>
-                outputId !== undefined
-            );
-      }
-    }
-
-    // ----------------------------------------------------------
-    // Find bounds of copied circuit.
-    // ----------------------------------------------------------
-
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-
-    for (const node of pastedGraph) {
-
-      if (node.type === "WIRE") {
-
-        for (const point of node.path ?? []) {
-
-          minX = Math.min(
-            minX,
-            point.x
-          );
-
-          minY = Math.min(
-            minY,
-            point.y
-          );
-
-          maxX = Math.max(
-            maxX,
-            point.x
-          );
-
-          maxY = Math.max(
-            maxY,
-            point.y
-          );
-        }
-
-        continue;
-      }
-
-      if (
-        typeof node.x !== "number" ||
-        typeof node.y !== "number"
-      ) {
-        continue;
-      }
-
-      let width =
-        CONSTANTS.GATE_WIDTH;
-
-      let height =
-        CONSTANTS.GATE_HEIGHT;
-
-      if (
-        node.type === "INPUT" ||
-        node.type === "CLOCK"
-      ) {
-        width = 40;
-        height = 40;
-      }
-
-      if (node.type === "BULB") {
-        width = 30;
-        height = 30;
-      }
-
-      if (
-        node.rotation !== undefined &&
-        node.rotation % 180 !== 0
-      ) {
-        [width, height] =
-          [height, width];
-      }
-
-      minX = Math.min(
-        minX,
-        node.x
-      );
-
-      minY = Math.min(
-        minY,
-        node.y
-      );
-
-      maxX = Math.max(
-        maxX,
-        node.x + width
-      );
-
-      maxY = Math.max(
-        maxY,
-        node.y + height
-      );
-    }
-
-    // Nothing has positional information.
-    if (
-      !Number.isFinite(minX) ||
-      !Number.isFinite(minY) ||
-      !Number.isFinite(maxX) ||
-      !Number.isFinite(maxY)
-    ) {
-      return;
-    }
-
-    const centerX =
-      (minX + maxX) / 2;
-
-    const centerY =
-      (minY + maxY) / 2;
-
-    const dx =
-      mouse.x - centerX;
-
-    const dy =
-      mouse.y - centerY;
-
-    // ----------------------------------------------------------
-    // Move copied circuit to cursor.
-    // ----------------------------------------------------------
-
-    for (const node of pastedGraph) {
-
-      if (node.type === "WIRE") {
-
-        if (Array.isArray(node.path)) {
-
-          node.path =
-            node.path.map(point => ({
-              x: point.x + dx,
-              y: point.y + dy
-            }));
-        }
-
-        continue;
-      }
-
-      if (
-        typeof node.x === "number" &&
-        typeof node.y === "number"
-      ) {
-
-        node.x += dx;
-        node.y += dy;
-      }
-    }
-
-    // ----------------------------------------------------------
-    // Combine original + pasted graph.
-    // ----------------------------------------------------------
-
-    const combinedGraph = [
-      ...structuredClone(graph),
-      ...pastedGraph
-    ];
-
-    const [
-      newGraph,
-      newClockDelays,
-      finalIdMap
-    ] =
-      compactAndReindex(
-        combinedGraph,
-        clock_delays
-      );
-
-    // ----------------------------------------------------------
-    // Timing signals need the new IDs as well.
-    // ----------------------------------------------------------
-
-    remapTimingSignals(
-      finalIdMap
-    );
-
-    // ----------------------------------------------------------
-    // Update refs immediately.
-    // ----------------------------------------------------------
-
-    graphRef.current =
-      newGraph;
-
-    clockDelaysRef.current =
-      newClockDelays;
-
-    setGraph(newGraph);
-    setClockDelays(
-      newClockDelays
-    );
-
-    // ----------------------------------------------------------
-    // Evaluate pasted circuit.
-    // ----------------------------------------------------------
-
-    for (
-      let i = 0;
-      i < CONSTANTS.MAX_EVALUATION_ITERATIONS;
-      i++
-    ) {
-
-      const changed =
-        evaluate(newGraph);
-
-      if (!changed) {
-        break;
-      }
-    }
-
-    console.log(
-      "Pasted circuit at:",
-      mouse
-    );
-  }
 
   const aboutShownRef = useRef(false);
   useEffect(() => { //for opening custom files through url
@@ -638,7 +193,7 @@ function App() {
 
         resetTimingCapture();
 
-        const [newGraph, restoredDelays] = compactAndReindex(loadedGraph, loadedDelays);
+        const [newGraph,] = compactAndReindex(loadedGraph);
 
         for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
           const changed = evaluate(newGraph);
@@ -648,9 +203,9 @@ function App() {
         setUndoStack([]);
         setRedoStack([]);
         setGraph(newGraph);
-        setClockDelays(restoredDelays);
+        setClockDelays(loadedDelays);
 
-        console.log(`✅ Loaded circuit "${circuitId}" from URL`);
+        // console.log(`✅ Loaded circuit "${circuitId}" from URL`);
       })
       .catch(err => {
         console.error("URL circuit load failed:", err);
@@ -662,7 +217,20 @@ function App() {
       if (e.ctrlKey && e.key.toLowerCase() === "v") {
         e.preventDefault();
 
-        pasteCopiedCircuit();
+        pasteCopiedCircuit({
+          copiedGraph,
+          mousePosition: canvasMouseRef.current,
+          graph,
+          clock_delays,
+          CONSTANTS,
+          compactAndReindex,
+          evaluate,
+          remapTimingSignals,
+          setGraph,
+          setClockDelays,
+          graphRef,
+          clockDelaysRef
+        });
       }
     }
 
@@ -714,97 +282,6 @@ function App() {
     };
   }, []);
 
-  function openTextEditor(id, currentText) {
-    setEditingText({ id, draft: currentText ?? "" });
-  }
-
-  function commitTextEdit() {
-    if (!editingText) return;
-
-    const trimmed = editingText.draft.trim();
-    if (trimmed === "") {
-      // treat empty as cancel
-      setEditingText(null);
-      return;
-    }
-
-    updateTextLabel(editingText.id, trimmed);
-    setEditingText(null);
-  }
-
-  function cancelTextEdit() {
-    setEditingText(null);
-  }
-
-  function updateTextLabel(id, newText) {
-    addToUndoStack(graph, clock_delays);
-
-    setGraph(prev => {
-      const next = structuredClone(prev);
-      const node = next.find(n => n.id === id);
-      if (node && node.type === "TEXT") {
-        node.text = newText;
-      }
-      return next;
-    });
-  }
-
-  function startDrag(e, id) {
-    if (e.button === 1) return;
-    if (selectMode) return;
-    addToUndoStack(graph, clock_delays)
-    const point = getSVGPoint(e, svgRef, view);
-
-    setdraginfo({
-      gateId: id,
-      offsetX: point.x - graph[id].x,
-      offsetY: point.y - graph[id].y
-    });
-
-    setDidDrag(false);
-  }
-  function togglePauseSim() {
-    const newPauseState = !pauseSim;
-    const now = performance.now();
-
-    if (newPauseState) {
-      //pausing
-      const remainingTimes = clockDelaysRef.current.map(clock => ({
-        id: clock.id,
-        remaining: Math.max(0, clock.next_delay - now),
-        delay: clock.delay
-      }));
-
-      pausedClocksRef.current = remainingTimes;
-      setPausedClocks(remainingTimes);
-
-    }
-    else {
-      //resuming
-      const newClockDelays = clockDelaysRef.current.map(clock => {
-        const paused = pausedClocksRef.current.find(
-          p => p.id === clock.id
-        );
-
-        if (paused) {
-          return {
-            ...clock,
-            next_delay: now + paused.remaining
-          };
-        }
-
-        return {
-          ...clock,
-          next_delay: now + clock.delay
-        };
-      });
-
-      clockDelaysRef.current = newClockDelays;
-      setClockDelays(newClockDelays);
-    }
-
-    setPauseSim(newPauseState);
-  }
   function zoom(e) {
     e.preventDefault();
 
@@ -829,261 +306,27 @@ function App() {
     }));
   }
 
-  function confirmClock() {
-    if (clockDelayInput.trim() === "") return;
-
-    const delay = Number(clockDelayInput);
-
-    if (!Number.isFinite(delay)) {
-      alert("Enter a valid number");
-      return;
-    }
-
-    if (delay < CONSTANTS.MIN_FRAME_TIME) {
-      alert(`Delay entered less than ${CONSTANTS.MIN_FRAME_TIME}`);
-      return;
-    }
-
-    setShowClockWindow(false);
-    setClockDelayInput("");
-
-    Add("CLOCK", null, null, delay);
-  }
-
-  useEffect(() => { //for deletion
-    function handleKey(e) {
-      if (e.key !== "Delete") return;
-      if (selectedGate === null) return;
-
-      addToUndoStack(graph, clock_delays);
-
-      const newGraph = structuredClone(graph);
-
-      const idToDelete = selectedGate.id;
-
-      const deleteIndex = newGraph.findIndex(
-        node => node.id === idToDelete
-      );
-
-      if (deleteIndex === -1) {
-        setSelectedGate(null);
-        return;
-      }
-
-      const nodeToDelete = newGraph[deleteIndex];
-
-      //delete wire
-      if (nodeToDelete.type === "WIRE") {
-
-        const idsToDelete = new Set([idToDelete]);
-
-        let changed = true;
-
-        // Find all downstream child wires recursively
-        while (changed) {
-          changed = false;
-
-          for (const node of newGraph) {
-
-            if (node.type !== "WIRE") continue;
-            if (!node.inputs || node.inputs.length === 0) continue;
-
-            const input = node.inputs[0];
-
-            if (
-              input &&
-              input.index !== -1 &&
-              idsToDelete.has(input.id)
-            ) {
-              if (!idsToDelete.has(node.id)) {
-                idsToDelete.add(node.id);
-                changed = true;
-              }
-            }
-          }
-        }
-
-        // Disconnect references to deleted wires
-        for (const node of newGraph) {
-
-          if (!node.inputs) continue;
-
-          node.inputs = node.inputs.map(input =>
-            input && input.index !== -1 && idsToDelete.has(input.id) ? { id: -1, index: -1 } : input
-          );
-        }
-
-        // Delete all collected wires
-        for (let i = newGraph.length - 1; i >= 0; i--) {
-          if (idsToDelete.has(newGraph[i].id)) {
-            newGraph.splice(i, 1);
-          }
-        }
-      }
-
-      //delete gate
-      else {
-
-        const idsToDelete = new Set([idToDelete]);
-
-        let changed = true;
-
-        // Collect connected wires
-        while (changed) {
-
-          changed = false;
-
-          for (const node of newGraph) {
-
-            if (node.type !== "WIRE") continue;
-
-            // -----------------------------------------
-            // Child wire: this wire's source is a to-be-deleted node
-            // -----------------------------------------
-            if (node.inputs && node.inputs.length > 0) {
-              const input = node.inputs[0];
-
-              if (
-                input &&
-                input.index !== -1 &&
-                idsToDelete.has(input.id)
-              ) {
-                if (!idsToDelete.has(node.id)) {
-                  idsToDelete.add(node.id);
-                  changed = true;
-                }
-              }
-            }
-
-            // Parent wire: the to-be-deleted node takes input from this wire
-            if (
-              nodeToDelete.inputs &&
-              nodeToDelete.inputs.some(
-                input =>
-                  input &&
-                  input.index !== -1 &&
-                  input.id === node.id
-              )
-            ) {
-              if (!idsToDelete.has(node.id)) {
-                idsToDelete.add(node.id);
-                changed = true;
-              }
-            }
-          }
-        }
-
-        // Disconnect references to deleted nodes/wires
-        for (const node of newGraph) {
-
-          if (!node.inputs) continue;
-
-          node.inputs = node.inputs.map(input =>
-            input &&
-              input.index !== -1 &&
-              idsToDelete.has(input.id)
-              ? { id: -1, index: -1 }
-              : input
-          );
-        }
-
-        // Delete gate + all collected wires
-        for (let i = newGraph.length - 1; i >= 0; i--) {
-          if (idsToDelete.has(newGraph[i].id)) {
-            newGraph.splice(i, 1);
-          }
-        }
-      }
-
-      const [newGraph2, new_clock_delays, idMap2] = compactAndReindex(newGraph, clock_delays);
-
-      remapTimingSignals(idMap2);
-
-      for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-        const changed = evaluate(newGraph2);
-        if (!changed) {
-          break;
-        }
-      }
-
-      setGraph(newGraph2);
-      setClockDelays(new_clock_delays);
-      setSelectedGate(null);
-    }
-
-    window.addEventListener("keydown", handleKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleKey);
-    };
-
-  }, [selectedGate, graph, clock_delays]);
-
-  useEffect(() => { //for clocks
-
-    if (pauseSim) return;
-
-    const intervalId = setInterval(() => {
-
-      const now = performance.now();
-
-      const graph = graphRef.current;
-      const clocks = clockDelaysRef.current;
-
-      const newGraph = structuredClone(graph);
-      let changed = false;
-      const changedClockIds = [];
-
-      const newClockDelays = clocks.map(clock => {
-
-        if (now >= clock.next_delay) {
-
-          const clockNode = newGraph.find(
-            node => node.id === clock.id
-          );
-
-          if (!clockNode) {
-            return clock;
-          }
-
-          clockNode.value[0] = !clockNode.value[0];
-
-          changed = true;
-          changedClockIds.push(clock.id);
-
-          console.log("tick");
-
-          return {
-            ...clock,
-            next_delay: clock.next_delay + clock.delay
-          };
-        }
-
-        return clock;
-      });
-
-      if (!changed) return;
-
-      // Propagate only from clocks that toggled.
-      for (const clockId of changedClockIds) {
-        let [steps, evaluates] = propagate(newGraph, clockId);
-        console.log("Propagation steps:", steps);
-        console.log("Number of evaluations:", evaluates);
-
-      }
-
-      graphRef.current = newGraph;
-      clockDelaysRef.current = newClockDelays;
-
-      setGraph(newGraph);
-      setClockDelays(newClockDelays);
-
-    }, CONSTANTS.MIN_FRAME_TIME);
-
-    return () => clearInterval(intervalId);
-
-  }, [pauseSim]);
-
+  useDeleteNode({
+    selectedGate,
+    graph,
+    clock_delays,
+    addToUndoStack,
+    setGraph,
+    setClockDelays,
+    setSelectedGate,
+    compactAndReindex,
+    remapTimingSignals,
+    evaluate,
+    CONSTANTS
+  });
+
+  useClocks(
+    pauseSim,
+    graphRef,
+    clockDelaysRef,
+    setGraph,
+    setClockDelays
+  )
 
   // Mirror timingSignals into a ref so the capture interval below always
   // reads the latest signal list without needing to restart on every add/
@@ -1130,10 +373,9 @@ function App() {
   }, [isCapturing]);
 
 
-
-
   function setoutputpin(id, index, pinX, pinY) { //sets information about output pin when clicked on a output pin of node
     if (selectMode) return;
+    if (interactivityMode === "PAN") return;
     setoPin({
       gateId: id,
       outputIndex: index,
@@ -1152,9 +394,10 @@ function App() {
   }
 
   function setinputpin(id, index, endx, endy) { //when pressed on input pin, adds wire and its relevant connection
-    if (opin === null) return
+    if (opin === null) return;
     if (selectMode) return;
-    console.log(`setinputpin fired. currently, id=${id}, index=${index}`)
+    if (interactivityMode === "PAN") return;
+    // console.log(`setinputpin fired. currently, id=${id}, index=${index}`)
     Add(
       "WIRE",
       {
@@ -1195,25 +438,33 @@ function App() {
       });
       setWirePath([{ x: point.x, y: point.y }]);
 
-      console.log("added point to live wire");
+      // console.log("added point to live wire");
 
 
     }
 
   }
 
+  function startDrag(e, id) {
+    if (e.button === 1) return;
+    if (selectMode) return;
+    addToUndoStack(graph, clock_delays)
+    const point = getSVGPoint(e, svgRef, view); //coordinates of mouse with origin as top of canvas
+
+    setdraginfo({
+      gateId: id,
+      offsetX: point.x - graph[id].x,
+      offsetY: point.y - graph[id].y
+    });
+
+    setDidDrag(false);
+  }
 
   function drag(e) {
 
-    const point =
-      getSVGPoint(
-        e,
-        svgRef,
-        view
-      );
+    const point = getSVGPoint(e, svgRef, view);
 
-    canvasMouseRef.current =
-      point;
+    canvasMouseRef.current = point;
 
     if (selectionRect) {
       setSelectionRect(prev => ({
@@ -1236,7 +487,7 @@ function App() {
         y: pan.viewY - dy
       }));
     }
-    else if (draginfo) {
+    else if (draginfo && interactivityMode === "DRAG") {
 
       setDidDrag(true);
 
@@ -1244,11 +495,9 @@ function App() {
 
       const newGraph = structuredClone(graph);
 
-      newGraph[draginfo.gateId].x =
-        point.x - draginfo.offsetX;
+      newGraph[draginfo.gateId].x = point.x - draginfo.offsetX;
 
-      newGraph[draginfo.gateId].y =
-        point.y - draginfo.offsetY;
+      newGraph[draginfo.gateId].y = point.y - draginfo.offsetY;
 
       setGraph(newGraph);
     }
@@ -1279,7 +528,6 @@ function App() {
         );
       }
 
-
       setoPin(null)
 
       setMouse(null);
@@ -1288,18 +536,20 @@ function App() {
 
   function stopDrag(e) {
     if (selectionRect) {
-
       if (copySelectMode) {
-
-        finalizeCopySelection(
-          selectionRect
-        );
-
-      } else {
-
-        finalizeSelection(
-          selectionRect
-        );
+        finalizeCopySelection({
+          rect: selectionRect,
+          graph,
+          clock_delays,
+          isNodeFullyContained,
+          setCopiedGraph,
+          setCopiedClockDelays,
+          setCopySelectMode,
+          setSelectionRect
+        });
+      }
+      else {
+        finalizeSelection(selectionRect);
       }
 
       setSelectionRect(null);
@@ -1315,7 +565,7 @@ function App() {
         { x: point.x, y: point.y }
       ]);
 
-      console.log("added point to live wire");
+      // console.log("added point to live wire");
       setoPin(prev => ({
         ...prev,
         pinX: point.x,
@@ -1328,22 +578,12 @@ function App() {
 
   function startPan(e) {
 
-    const point =
-      getSVGPoint(
-        e,
-        svgRef,
-        view
-      );
+    const point = getSVGPoint(e, svgRef, view);
 
-    canvasMouseRef.current =
-      point;
+    canvasMouseRef.current = point;
 
     // COPY AREA MODE
-    if (
-      copySelectMode &&
-      e.button === 0
-
-    ) {
+    if (copySelectMode && e.button === 0) {
 
       setSelectionRect({
         x0: point.x,
@@ -1367,96 +607,37 @@ function App() {
       setSelectionRect({ x0: point.x, y0: point.y, x1: point.x, y1: point.y });
       return;
     }
+    if (
+      (interactivityMode === "PAN" && e.button === 0) ||
+      (interactivityMode === "DRAG" && e.button === 1)
+    ) {
+      e.preventDefault();
 
-    if (e.button !== 1) return;
+      setPan({
+        startX: e.clientX,
+        startY: e.clientY,
+        viewX: view.x,
+        viewY: view.y
+      });
+    };
 
-    e.preventDefault();
 
-    setPan({
-      startX: e.clientX,
-      startY: e.clientY,
-      viewX: view.x,
-      viewY: view.y
-    });
   }
-
-  let [undoStack, setUndoStack] = useState([])
-  let [redoStack, setRedoStack] = useState([])
-
 
   function addToUndoStack(graph, delays) {
     let newUndoStack = [...undoStack];
+    const now = performance.now();
     newUndoStack.push({
       graph: structuredClone(graph),
       clock_delays: delays.map(clock => ({
         id: clock.id,
-        delay: clock.delay
+        delay: clock.delay,
+        next_tick: now + clock.delay
       }))
     });
+    // console.log(newUndoStack)
     setUndoStack(newUndoStack);
     setRedoStack([]);
-  }
-
-  function undo() {
-    if (undoStack.length === 0) return;
-
-    let newUndoStack = [...undoStack];
-    let state = newUndoStack.pop();
-
-    // Save current to redo
-    let newRedoStack = [...redoStack];
-    newRedoStack.push({
-      graph: structuredClone(graph),
-      clock_delays: clock_delays.map(c => ({ id: c.id, delay: c.delay }))
-    });
-
-    // Restore graph
-    let restoredGraph = state.graph;
-
-    // Rebuild clock delays with fresh next_delay
-    const now = performance.now();
-    let restoredDelays = state.clock_delays.map(clock => ({
-      id: clock.id,
-      delay: clock.delay,
-      next_delay: now + clock.delay
-    }));
-    setSelectedGate(null);
-    setSelectedWire(null);
-    setGraph(restoredGraph);
-    setClockDelays(restoredDelays);
-    setUndoStack(newUndoStack);
-    setRedoStack(newRedoStack);
-  }
-
-  function redo() {
-    if (redoStack.length === 0) return;
-
-    let newRedoStack = [...redoStack];
-    let state = newRedoStack.pop();
-
-    // Save current to undo
-    let newUndoStack = [...undoStack];
-    newUndoStack.push({
-      graph: structuredClone(graph),
-      clock_delays: clock_delays.map(c => ({ id: c.id, delay: c.delay }))
-    });
-
-    // Restore graph
-    let restoredGraph = state.graph;
-
-    // Rebuild clock delays with fresh next_delay
-    const now = performance.now();
-    let restoredDelays = state.clock_delays.map(clock => ({
-      id: clock.id,
-      delay: clock.delay,
-      next_delay: now + clock.delay
-    }));
-    setSelectedGate(null);
-    setSelectedWire(null);
-    setGraph(restoredGraph);
-    setClockDelays(restoredDelays);
-    setRedoStack(newRedoStack);
-    setUndoStack(newUndoStack);
   }
 
   function openDownloadDialog() {
@@ -1464,113 +645,16 @@ function App() {
     setShowDownloadDialog(true);
   }
 
-  function commitDownload() {
-    const trimmed = downloadFileName.trim();
-    if (!trimmed) {
-      alert("Please enter a file name.");
-      return;
-    }
 
-    const safeName = trimmed.replace(/[^a-z0-9_\-]+/gi, "_");
-    const fullName = safeName.endsWith(".json") ? safeName : `${safeName}.json`;
-
-    const data = {
-      graph: graph,
-      clock_delays: clock_delays.map(c => ({
-        id: c.id,
-        delay: c.delay
-      }))
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json"
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fullName;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    setShowDownloadDialog(false);
-  }
 
   function cancelDownload() {
     setShowDownloadDialog(false);
   }
 
-  const fileInputRef = useRef(null);
-
-  function loadCircuit(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target.result);
-
-        let loadedGraph;
-        let loadedDelays = [];
-
-        // Handle both old and new formats
-        if (Array.isArray(data)) {
-          loadedGraph = data;
-        } else if (data.graph && Array.isArray(data.graph)) {
-          loadedGraph = data.graph;
-          loadedDelays = data.clock_delays || [];
-        } else {
-          throw new Error("Invalid circuit file format");
-        }
-
-        // Reindex the loaded graph
-        // A freshly loaded circuit has no relationship to any previously
-        // tracked timing signals — start the capture panel clean rather
-        // than trying to remap ids across two unrelated graphs.
-        resetTimingCapture();
-
-        // Reindex the loaded graph
-        // Reindex the loaded graph. With no oldClockDelays passed,
-        // every clock in the file gets a fresh next_delay — the same
-        // behavior the manual rebuild above used to produce.
-        const [newGraph, restoredDelays] = compactAndReindex(loadedGraph);
-
-        // Evaluate the circuit
-        for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
-          const changed = evaluate(newGraph);
-
-          if (!changed) {
-            break;
-          }
-        }
-
-
-        // Clear undo/redo on load
-        setUndoStack([]);
-        setRedoStack([]);
-
-        setGraph(newGraph);
-        setClockDelays(restoredDelays);
-
-        console.log("✅ Circuit loaded successfully!");
-
-      } catch (error) {
-        console.error("Load error:", error);
-        alert("Invalid circuit file. Please check the file format.");
-      }
-    };
-
-    reader.readAsText(file);
-    e.target.value = "";
-  }
-
   function resetView() {
-    setView({ x: 0, y: 0, width: 1500, height: 1200 })
+    setView({ x: 0, y: 0, width: CONSTANTS.CANVAS_INITIAL_VIEW_WIDTH, height: CONSTANTS.CANVAS_INITIAL_VIEW_HEIGHT })
 
   }
-
-  const [showAbout, setShowAbout] = useState(false);
 
   function showabout() {
     setShowAbout(true);
@@ -1617,7 +701,7 @@ function App() {
     setGraph(newGraph);
   }
 
-  function createComponent() { //initialises and sets the creating mode
+  function beginCreateComponent() { //initialises and sets the creating mode
     setTempGraph([]);
     setComponentGraph([]);
     setComponentInputs([]);
@@ -1627,6 +711,8 @@ function App() {
     setSelectMode(false);
     setSelectionRect(null);
     setCreatingComponent(!creatingComponent)
+    // console.log("Starting component creation. Initial graph:")
+    console.table(graph)
   }
 
   function PushToTempGraph() { // for manual one by one adding 
@@ -1638,7 +724,7 @@ function App() {
       );
 
       if (alreadyAdded) {
-        console.log("already added");
+        // console.log("already added");
         return;
       }
 
@@ -1648,7 +734,7 @@ function App() {
       ]);
 
     } else {
-      console.log("didnt select a gate. not adding to temp graph");
+      // console.log("didnt select a gate. not adding to temp graph");
     }
   }
 
@@ -1805,12 +891,16 @@ function App() {
     };
   }
 
-
   function FinaliseComponentCreation() {
 
     setCreatingComponent(false);
     setSelectMode(false);
     setSelectionRect(null);
+
+    // console.log("FinaliseComponentCreation called")
+
+    // console.log("tempGraph = ")
+    console.table(tempGraph)
 
     const check = validateNoDanglingInputs(tempGraph, graph);
     if (!check.ok) {
@@ -1837,9 +927,14 @@ function App() {
       return;
     }
 
-    const [abstractedGraph, , idMap] = abstractGraph(tempGraph);
+    const [abstractedGraph, idMap] = abstractGraph(tempGraph);
+    // console.log("Abstracted Graph = ")
+    console.table(abstractedGraph)
+
 
     componentIdMapRef.current = idMap;
+    // console.log("componentIdMapRef = ");
+    console.table(componentIdMapRef.current)
 
     const inputs = findExtInputs(abstractedGraph);
     const outputs = findExtOutputs(abstractedGraph);
@@ -1849,14 +944,7 @@ function App() {
         node.type !== "INPUT" &&
         node.type !== "BULB"
     );
-    console.log("Abstracted Graph")
-    console.table(abstractedGraph)
-    console.log("Component Graph")
-    console.table(componentGraph)
-    console.log("Component Inputs")
-    console.table(inputs)
-    console.log("Component Inputs")
-    console.table(outputs)
+
 
     setComponentGraph(componentGraph);
     setComponentInputs(inputs);
@@ -1868,18 +956,24 @@ function App() {
         inputs.map(entry => entry.sourceId)
       )
     ];
-    console.log("Input Order")
-
-    console.table(uniqueInputSources)
 
     setInputOrder(uniqueInputSources);
     setPinIndex(0);
     setPinPhase("input");
     setSpecifyingInputs(true);
     setTempGraph([]);
-    console.log("Id Map")
 
-    console.table(idMap)
+    // console.log("ComponentGraph = ")
+    console.table(componentGraph)
+    // console.log("ComponentInputs = ")
+    console.table(inputs)
+    // console.log("ComponentOutputs = ")
+    console.table(outputs)
+    // console.log("InputOrder = ")
+    console.table(uniqueInputSources)
+    // console.log("Exiting FinaliseComponentCreation")
+
+
   }
 
   function finalizeSelection(rect) {
@@ -1915,6 +1009,7 @@ function App() {
   }
 
   function remapTimingSignals(idMap) {
+    // console.log("onReindex here")
     setTimingSignals(prev =>
       prev.map(sig => {
         if (sig.gateId === null) return sig; // already disconnected, leave as-is
@@ -2012,88 +1107,6 @@ function App() {
     setIsCapturing(false);
   }
 
-  const EPS = 0.5;
-  const same = (a, b) => Math.abs(a - b) < EPS;
-
-  // Bend points needed to get from `from` to `to` using only horizontal/vertical lines.
-  // `prev` is the point before `from`, used to avoid doubling back on the previous segment.
-  function routeSegment(from, to, prev) {
-    if (same(from.x, to.x) || same(from.y, to.y)) return [];     // already straight
-
-    let horizontalFirst;
-    if (prev) {
-      // Continue in the direction of the previous segment when possible
-      if (same(prev.y, from.y)) {                                // previous was horizontal
-        horizontalFirst = Math.sign(to.x - from.x) === Math.sign(from.x - prev.x);
-      } else {                                                   // previous was vertical
-        horizontalFirst = Math.sign(to.y - from.y) !== Math.sign(from.y - prev.y);
-      }
-    } else {
-      horizontalFirst = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y);
-    }
-
-    if (horizontalFirst) {
-      const midX = (from.x + to.x) / 2;
-      return [{ x: midX, y: from.y }, { x: midX, y: to.y }];     // H → V → H
-    }
-    const midY = (from.y + to.y) / 2;
-    return [{ x: from.x, y: midY }, { x: to.x, y: midY }];       // V → H → V
-  }
-
-  function beautifyPath(path) {
-    if (!path || path.length < 2) return path;
-
-    // 1. drop consecutive duplicate points
-    const pts = [path[0]];
-    for (let i = 1; i < path.length; i++) {
-      const p = path[i], q = pts[pts.length - 1];
-      if (!(same(p.x, q.x) && same(p.y, q.y))) pts.push(p);
-    }
-    if (pts.length < 2) return path;
-
-    // 2. make every segment horizontal/vertical
-    const out = [pts[0]];
-    for (let i = 1; i < pts.length; i++) {
-      const from = out[out.length - 1];
-      const prev = out.length > 1 ? out[out.length - 2] : null;
-      out.push(...routeSegment(from, pts[i], prev), pts[i]);
-    }
-
-    // 3. remove points that lie on a straight line
-    const result = [out[0]];
-    for (let i = 1; i < out.length - 1; i++) {
-      const a = result[result.length - 1], b = out[i], c = out[i + 1];
-      const collinear =
-        (same(a.x, b.x) && same(b.x, c.x)) ||
-        (same(a.y, b.y) && same(b.y, c.y));
-      if (!collinear) result.push(b);
-    }
-    result.push(out[out.length - 1]);
-    return result;
-  }
-
-  function beautify(graph) {
-    addToUndoStack(graph, clock_delays);
-
-    // Wires that other wires branch from must not move, or the branch start point
-    // would no longer lie on them.
-    const parentIds = new Set();
-    for (const n of graph) {
-      if (n.type !== "WIRE") continue;
-      for (const inp of n.inputs ?? []) {
-        if (inp && inp.index !== -1 && graph[inp.id]?.type === "WIRE") parentIds.add(inp.id);
-      }
-    }
-
-    setGraph(
-      graph.map(node =>
-        node.type === "WIRE" && !parentIds.has(node.id)
-          ? { ...node, path: beautifyPath(node.path) }
-          : node
-      )
-    );
-  }
-
   function saveComponent(component) {
     if (!component) return;
 
@@ -2104,8 +1117,7 @@ function App() {
       component
     };
 
-    const safeName =
-      (component.name || "component").replace(/[^a-z0-9_\-]+/gi, "_");
+    const safeName = (component.name || "component").replace(/[^a-z0-9_\-]+/gi, "_");
 
     const blob = new Blob(
       [JSON.stringify(payload, null, 2)],
@@ -2170,7 +1182,7 @@ function App() {
 
         setCustomComponents(prev => [...prev, incoming]);
 
-        console.log("✅ Component loaded:", incoming.name);
+        // console.log("✅ Component loaded:", incoming.name);
 
       } catch (err) {
         console.error("Component load error:", err);
@@ -2212,1043 +1224,223 @@ function App() {
     // Clear pin id map used during ordering
     componentIdMapRef.current = new Map();
   }
-  const tempGraphIds = new Set(tempGraph.map(n => n.id));
 
-  function printgraph(graph, title = "GRAPH") {
-    console.log(`\n========== ${title} ==========`);
-
-    function printValue(value, indent = "") {
-      if (value === null) {
-        console.log(indent + "null");
-        return;
-      }
-
-      if (value === undefined) {
-        console.log(indent + "undefined");
-        return;
-      }
-
-      if (typeof value !== "object") {
-        console.log(indent + String(value));
-        return;
-      }
-
-      if (Array.isArray(value)) {
-        console.log(indent + `[Array: ${value.length}]`);
-
-        value.forEach((item, i) => {
-          console.log(`${indent}  [${i}]`);
-          printValue(item, indent + "    ");
-        });
-
-        return;
-      }
-
-      const keys = Object.keys(value);
-
-      console.log(indent + `{`);
-
-      keys.forEach(key => {
-        const val = value[key];
-
-        if (val !== null && typeof val === "object") {
-          console.log(`${indent}  ${key}:`);
-          printValue(val, indent + "    ");
-        } else {
-          console.log(`${indent}  ${key}: ${String(val)}`);
-        }
-      });
-
-      console.log(indent + `}`);
-    }
-
-    printValue(graph);
-
-    console.log(`========== END ${title} ==========\n`);
+  const handleBeautify = () => {
+    beautify({
+      addToUndoStack,
+      graph,
+      clock_delays,
+      setGraph
+    })
   }
-
+  const handleCommitDownload = () => {
+    commitDownload(
+      downloadFileName,
+      graph,
+      clock_delays,
+      setShowDownloadDialog
+    )
+  }
+  const handleLoadCircuit = (e) => {
+    loadCircuit(
+      e,
+      resetTimingCapture,
+      compactAndReindex,
+      CONSTANTS,
+      evaluate,
+      setUndoStack,
+      setRedoStack,
+      setGraph,
+      setClockDelays
+    )
+  }
+  const handleUndo = () => {
+    undo(
+      undoStack,
+      redoStack,
+      graph,
+      clock_delays,
+      setSelectedGate,
+      setSelectedWire,
+      setGraph,
+      setClockDelays,
+      setUndoStack,
+      setRedoStack
+    )
+  }
+  const handleRedo = () => {
+    redo(
+      redoStack,
+      undoStack,
+      graph,
+      clock_delays,
+      setSelectedGate,
+      setSelectedWire,
+      setGraph,
+      setClockDelays,
+      setRedoStack,
+      setUndoStack
+    )
+  }
+  const handleTogglePauseSim = () => {
+    togglePauseSim({
+      pauseSim,
+      setPauseSim,
+      clockDelaysRef,
+      setClockDelays,
+      pausedClocksRef,
+      setPausedClocks
+    });
+  };
 
   return (
     <div className="homepage">
-      <div className="utilities">
-        <img
-          src={logo}
-          alt="GateSim Logo"
-          width={55}
-          height={75}
-          className="logo"
-          style={{ marginRight: '8px' }}
-          onClick={showabout}
-        />
+      <TopBar
+        logo={logo}
+        showabout={showabout}
+        openDownloadDialog={openDownloadDialog}
+        fileInputRef={fileInputRef}
+        setShowComponentIO={setShowComponentIO}
+        undo={handleUndo}
+        redo={handleRedo}
+        clearGraph={clearGraph}
+        setTempGraph={setTempGraph}
+        setSelectedGate={setSelectedGate}
+        beautify={handleBeautify}
+        graph={graph}
+        resetView={resetView}
+        setTheme={setTheme}
+        theme={theme}
+        CONSTANTS={CONSTANTS}
+        togglePauseSim={handleTogglePauseSim}
+        pauseSim={pauseSim}
+        RotateGate={RotateGate}
+        showTutorial={showTutorial}
+        creatingComponent={creatingComponent}
+        beginCreateComponent={beginCreateComponent}
+        PushToTempGraph={PushToTempGraph}
+        toggleSelectMode={toggleSelectMode}
+        selectMode={selectMode}
+        FinaliseComponentCreation={FinaliseComponentCreation}
+        setShowLearnSidebar={setShowLearnSidebar}
+        showLearnSidebar={showLearnSidebar}
+        setShowTimingDiagram={setShowTimingDiagram}
+        showTimingDiagram={showTimingDiagram}
+        setSelectMode={setSelectMode}
+        setoPin={setoPin}
+        setMouse={setMouse}
+        setWirePath={setWirePath}
+        setdraginfo={setdraginfo}
+        setPan={setPan}
+        setCopySelectMode={setCopySelectMode}
+        loadCircuit={handleLoadCircuit}
+        componentFileInputRef={componentFileInputRef}
+        loadComponent={loadComponent}
+        setInteractivityMode={setInteractivityMode}
+        interactivityMode={interactivityMode}
+      />
 
-        <details className="utilities-menu">
-          <summary className="utilities-button">FILE</summary>
-          <div className="utilities-menu-content">
-            <button onClick={openDownloadDialog}>DOWNLOAD CIRCUIT</button>
-            <button onClick={() => fileInputRef.current.click()}>LOAD CIRCUIT</button>
-            <button onClick={() => setShowComponentIO(true)}>COMPONENTS</button>
-          </div>
-        </details>
-
-        <details className="utilities-menu">
-          <summary className="utilities-button">EDIT</summary>
-          <div className="utilities-menu-content">
-            <button onClick={() => undo()}>↶ UNDO</button>
-            <button onClick={() => redo()}>↷ REDO</button>
-            <button onClick={() => clearGraph()}>CLEAR CIRCUIT</button>
-            <button onClick={() => {
-              setTempGraph([])
-              setSelectedGate(null)
-            }}>DESELECT ALL</button>
-            <button onClick={() => { beautify(graph) }}>BEAUTIFY</button>
-          </div>
-        </details>
-
-        <details className="utilities-menu">
-          <summary className="utilities-button">VIEW</summary>
-          <div className="utilities-menu-content">
-            <button onClick={() => resetView()}>RESET VIEW</button>
-            <button
-              onClick={() => {
-                setTheme(!theme);
-                CONSTANTS.toggleTheme(document, theme);
-              }}
-            >
-              TOGGLE THEME
-            </button>
-
-          </div>
-        </details>
-
-        <details className="utilities-menu">
-          <summary className="utilities-button">SIMULATION</summary>
-          <div className="utilities-menu-content">
-            <button onClick={togglePauseSim}>
-              {pauseSim ? "▶ START CLOCKS" : "⏸ PAUSE CLOCKS"}
-            </button>
-          </div>
-        </details>
-        <details className="utilities-menu">
-          <summary className="utilities-button">TOOLS</summary>
-          <div className="utilities-menu-content">
-            <button onClick={() => RotateGate()}>ROTATE</button>
-
-          </div>
-        </details>
-        <button className="utilities-button" onClick={showTutorial}>TUTORIAL</button>
-
-      
-        {!creatingComponent ? (
-          <button className="utilities-button" onClick={createComponent}>
-            CREATE COMPONENT
-          </button>
-        ) : (
-          <>
-            <button className="utilities-button" onClick={PushToTempGraph}>
-              ADD
-            </button>
-            <button className="utilities-button" onClick={toggleSelectMode}>
-              {selectMode ? "EXIT SELECT" : "SELECT MODE"}
-            </button>
-            <button className="utilities-button" onClick={FinaliseComponentCreation}>
-              DONE
-            </button>
-          </>
-        )}
-        <button className="utilities-button" onClick={() => setShowLearnSidebar(v => !v)}>
-          {showLearnSidebar ? "HIDE GUIDE" : "SELF-LEARN"}
-        </button>
-        <button className="utilities-button" onClick={() => setShowTimingDiagram(v => !v)}>
-          {showTimingDiagram ? "HIDE TIMING" : "TIMING DIAGRAM"}
-        </button>
-
-
-        {/* <button onClick={() => { console.table(graph) }}>print</button> */}
-        <button
-          className="utilities-button"
-          onClick={() => {
-
-            // Exit normal selection mode.
-            setSelectMode(false);
-
-            // Clear any active wire interaction.
-            setoPin(null);
-            setMouse(null);
-            setWirePath([]);
-            setdraginfo(null);
-            setPan(null);
-
-            // Start copy-area selection.
-            setCopySelectMode(true);
-
-          }}
-        >
-          COPY AREA
-        </button>
-        {/* Hidden file inputs */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: "none" }}
-          onChange={loadCircuit}
-        />
-        <input
-          ref={componentFileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: "none" }}
-          onChange={loadComponent}
-        />
-      </div>
       <div className="tools-and-canvas">
-        <div className="toolsBar">
-
-          <details className="toolSection">
-            <summary className="toolButton">
-              <span>Input</span>
-              <span>▼</span>
-            </summary>
-
-            <div className="toolGateCards">
-              {inputGateRenderList.map((object) => (
-                <div
-                  key={object.type}
-                  onClick={() => Add(object.type)}
-                >
-                  <GateCard
-                    renderFxn={object.render}
-                    gateType={object.type}
-                  />
-                </div>
-              ))}
-            </div>
-          </details>
-
-
-          <details className="toolSection">
-            <summary className="toolButton">
-              <span>Gates</span>
-              <span>▼</span>
-            </summary>
-
-            <div className="gateCategories">
-
-              <details className="gateCategory">
-                <summary className="categoryButton">
-                  2-INPUT
-                </summary>
-
-                <div className="toolGateCards">
-                  {twoInputGateRenderList.map((object) => (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </details>
-
-
-              <details className="gateCategory">
-                <summary className="categoryButton">
-                  3-INPUT
-                </summary>
-
-                <div className="toolGateCards">
-                  {threeInputGateRenderList.map((object) => (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </details>
-
-
-
-
-              <details className="gateCategory">
-                <summary className="categoryButton">
-                  4-INPUT
-                </summary>
-
-                <div className="toolGateCards">
-                  {fourInputGateRenderList.map((object) => (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </details>
-
-            </div>
-          </details>
-
-          <details className="toolSection">
-            <summary className="toolButton">
-              <span>Sequential</span>
-              <span>▼</span>
-            </summary>
-
-            <div className="gateCategories">
-
-              <details className="gateCategory">
-                <summary className="categoryButton">
-                  FLIP-FLOPS
-                </summary>
-
-                <div className="toolGateCards">
-                  {sequentialGateRenderList.map((object) => (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </details>
-
-            </div>
-          </details>
-
-          <details className="toolSection">
-            <summary className="toolButton">
-              <span>Combinational</span>
-              <span>▼</span>
-            </summary>
-
-            <div className="gateCategories">
-
-              <details className="gateCategory">
-                <summary className="categoryButton">
-                  MuX
-                </summary>
-
-                <div className="toolGateCards">
-                  {MuxGateRenderList.map((object) => (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </details>
-              <details className="gateCategory">
-                <summary className="categoryButton">
-                  Adder
-                </summary>
-
-                <div className="toolGateCards">
-                  {AdderGateRenderList.map((object) => (
-                    <div
-                      key={object.type}
-                      onClick={() => Add(object.type)}
-                    >
-                      <GateCard
-                        renderFxn={object.render}
-                        gateType={object.type}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </details>
-
-            </div>
-          </details>
-
-
-          <details className="toolSection">
-            <summary className="toolButton">
-              <span>Output</span>
-              <span>▼</span>
-            </summary>
-
-            <div className="toolGateCards">
-              {outputGateRenderList.map((object) => (
-                <div
-                  key={object.type}
-                  onClick={() => Add(object.type)}
-                >
-                  <GateCard
-                    renderFxn={object.render}
-                    gateType={object.type}
-                  />
-                </div>
-              ))}
-            </div>
-          </details>
-          <div
-            className="toolButton"
-            onClick={() => Add("TEXT")}
-            style={{ cursor: "pointer" }}
-          >
-            <span>LABEL</span>
-
-          </div>
-          <details className="toolSection">
-            <summary className="toolButton">
-              <span>Custom</span>
-              <span>▼</span>
-            </summary>
-
-            <div className="toolGateCards">
-              {customComponents.map((component, index) => (
-                <div
-                  key={`${component.name}-${index}`}
-                  onClick={() => Add("CUSTOM", null, null, null, component)}
-                >
-                  <GateCard
-                    renderFxn={() => <RenderCUSTOM node={component} />}
-                    gateType={component.name}
-                  />
-                </div>
-              ))}
-            </div>
-          </details>
-
-
-        </div>
+        <ToolsBar
+          inputGateRenderList={inputGateRenderList}
+          twoInputGateRenderList={twoInputGateRenderList}
+          threeInputGateRenderList={threeInputGateRenderList}
+          fourInputGateRenderList={fourInputGateRenderList}
+          sequentialGateRenderList={sequentialGateRenderList}
+          MuxGateRenderList={MuxGateRenderList}
+          AdderGateRenderList={AdderGateRenderList}
+          outputGateRenderList={outputGateRenderList}
+          customComponents={customComponents}
+          Add={Add}
+          GateCard={GateCard}
+          RenderCUSTOM={RenderCUSTOM}
+        />
         <div className="canvas-wrapper">
-          <div className="canvas">
-            <svg
-              width="100%"
-              height="100%"
-              ref={svgRef}
-              viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
-              style={{
-                backgroundColor: CONSTANTS.CANVAS_BACKGROUND,
-                border: '2px solid #4a5568',
-                boxSizing: 'border-box'
-              }}
-              onMouseDown={startPan}
-              onMouseMove={drag}
-              onMouseUp={stopDrag}
-              onWheel={zoom}
-              onContextMenu={cancelWire}
-            >
-
-
-
-              {opin && (() => {
-
-                return (
-                  <LiveWire
-                    start={[
-                      opin.pinX,
-                      opin.pinY
-                    ]}
-                    end={[mouse.x, mouse.y]}
-                    color={CONSTANTS.WIRE_COLOR}
-                    strokeWidth={CONSTANTS.WIRE_STROKE_WIDTH}
-                  />
-
-                );
-              })()}
-
-              {opin && (() => {
-
-                return (
-                  <RenderUncommitedWire path={wirePath}></RenderUncommitedWire>
-
-                );
-              })()}
-
-
-              {/* ─── LAYER 1: WIRES (rendered first, behind gates) ─── */}
-              {graph
-                .filter(node => node.type === "WIRE")
-                .map((node) => (
-                  <Gate
-                    key={node.id}
-                    node={node}
-                    toggle={toggle}
-                    graph={graph}
-                    didDrag={didDrag}
-                    startDrag={startDrag}
-                    setoutputpin={setoutputpin}
-                    setinputpin={setinputpin}
-                    setSelectedGate={setSelectedGate}
-                    setSelectedWire={setSelectedWire}
-                    isSelected={selectedGate?.id === node.id || tempGraphIds.has(node.id)}
-                    path={node.path}
-                    selectWire={selectWire}
-                  />
-                ))}
-
-              {branchDots.map((point, i) => (
-                <circle
-                  key={`branch-dot-${i}`}
-                  cx={point.x}
-                  cy={point.y}
-                  r={4}
-                  fill={
-                    point.value
-                      ? CONSTANTS.BULB_ON_COLOR
-                      : CONSTANTS.GATE_STROKE_COLOR
-                  }
-                  pointerEvents="none"
-                />
-              ))}
-
-              {/* ─── LAYER 2: GATES (rendered second, on top of wires) ─── */}
-              {[...graph]
-                .filter(node => node.type !== "WIRE")
-                .sort((a, b) => a.z - b.z)
-                .map((node) => (
-                  <Gate
-                    key={node.id}
-                    node={node}
-                    toggle={toggle}
-                    graph={graph}
-                    didDrag={didDrag}
-                    startDrag={startDrag}
-                    setoutputpin={setoutputpin}
-                    setinputpin={setinputpin}
-                    setSelectedGate={setSelectedGate}
-                    setSelectedWire={setSelectedWire}
-                    isSelected={selectedGate?.id === node.id || tempGraphIds.has(node.id)}
-                    onEditText={openTextEditor}
-                  />
-                ))}
-              {selectionRect && (() => {
-                const x = Math.min(selectionRect.x0, selectionRect.x1);
-                const y = Math.min(selectionRect.y0, selectionRect.y1);
-                const w = Math.abs(selectionRect.x1 - selectionRect.x0);
-                const h = Math.abs(selectionRect.y1 - selectionRect.y0);
-
-                return (
-                  <rect
-                    x={x}
-                    y={y}
-                    width={w}
-                    height={h}
-                    fill={CONSTANTS.SELECTION_FILL_COLOR}
-                    stroke={CONSTANTS.SELECTION_STROKE_COLOR}
-                    strokeDasharray="6 4"
-                    strokeWidth={1.5}
-                    pointerEvents="none"
-                  />
-                );
-              })()}
-
-
-            </svg>
-          </div>
+          <CanvasArea
+            svgRef={svgRef}
+            view={view}
+            CONSTANTS={CONSTANTS}
+            startPan={startPan}
+            drag={drag}
+            stopDrag={stopDrag}
+            zoom={zoom}
+            cancelWire={cancelWire}
+            opin={opin}
+            mouse={mouse}
+            wirePath={wirePath}
+            graph={graph}
+            toggle={toggle}
+            didDrag={didDrag}
+            startDrag={startDrag}
+            setoutputpin={setoutputpin}
+            setinputpin={setinputpin}
+            setSelectedGate={setSelectedGate}
+            setSelectedWire={setSelectedWire}
+            selectedGate={selectedGate}
+            tempGraphIds={tempGraphIds}
+            selectWire={selectWire}
+            branchDots={branchDots}
+            openTextEditor={openTextEditor}
+            selectionRect={selectionRect}
+            LiveWire={LiveWire}
+            RenderUncommitedWire={RenderUncommitedWire}
+            Gate={Gate}
+            SelectionRectangle={SelectionRectangle}
+            setEditingText={setEditingText}
+          />
         </div>
       </div>
       {showAbout && <AboutModal onClose={closeAbout} />}
-      {showDownloadDialog && (
-        <div className="text-edit-overlay" onClick={cancelDownload}>
-          <div
-            className="text-edit-dialog"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-edit-title">Download Circuit</div>
-
-            <input
-              className="text-edit-input"
-              autoFocus
-              placeholder="circuit"
-              value={downloadFileName}
-              onChange={(e) => setDownloadFileName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitDownload();
-                if (e.key === "Escape") cancelDownload();
-              }}
-            />
-
-            <div className="text-edit-hint">
-              Saved as <code>{downloadFileName.trim().replace(/[^a-z0-9_\-]+/gi, "_") || "circuit"}.json</code>
-            </div>
-
-            <div className="text-edit-buttons">
-              <button className="utilities-button" onClick={cancelDownload}>
-                CANCEL
-              </button>
-              <button className="utilities-button primary" onClick={commitDownload}>
-                SAVE
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showClockWindow && (
-        <div className="clock-window-overlay">
-          <div className="clock-window">
-
-            <div className="clock-window-title">
-              Add Clock
-            </div>
-
-            <div className="clock-window-content">
-
-              <label>
-                Clock Delay
-              </label>
-
-              <div className="clock-input-row">
-                <input
-                  type="number"
-                  min={CONSTANTS.MIN_FRAME_TIME}
-                  value={clockDelayInput}
-                  autoFocus
-                  onChange={(e) =>
-                    setClockDelayInput(e.target.value)
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      confirmClock();
-                    }
-
-                    if (e.key === "Escape") {
-                      setShowClockWindow(false);
-                      setClockDelayInput("");
-                    }
-                  }}
-                />
-
-                <span>ms</span>
-              </div>
-
-              <div className="clock-minimum">
-                Minimum: {CONSTANTS.MIN_FRAME_TIME} ms
-              </div>
-
-            </div>
-
-            <div className="clock-window-buttons">
-
-              <button
-                onClick={() => {
-                  setShowClockWindow(false);
-                  setClockDelayInput("");
-                }}
-              >
-                Cancel
-              </button>
-
-              <button onClick={confirmClock}>
-                Add Clock
-              </button>
-
-            </div>
-
-          </div>
-        </div>
-      )}
-      {showComponentDialog && (
-        <div className="component-dialog-overlay">
-
-          <div className="component-dialog">
-
-            <h2>Create Component</h2>
-
-            <input
-              className="component-name-input"
-              placeholder="Component name"
-              value={componentName}
-              onChange={(e) => setComponentName(e.target.value)}
-            />
-
-            <div className="component-graph-preview">
-              {/* render componentGraph here */}
-            </div>
-
-            <div>
-              <h3>Input Pins</h3>
-
-              <div className="component-pin-list">
-                {componentInputs.map((input, index) => (
-                  <div className="component-pin" key={index}>
-                    Input {index} → Node {input.nodeId}, pin {input.index}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-
-
-            <div className="component-dialog-buttons">
-
-              <button
-                onClick={() => {
-                  setShowComponentDialog(false);
-                }}
-              >
-                CANCEL
-              </button>
-
-              <button
-                onClick={() => {
-
-                  if (!componentName.trim()) {
-                    alert("Please enter a component name.");
-                    return;
-                  }
-
-                  if (componentOutputs.length === 0) {
-                    alert("Please select at least one output pin.");
-                    return;
-                  }
-
-                  const customComponent = {
-                    type: "CUSTOM",
-                    name: componentName.trim(),
-
-                    inputs: structuredClone(componentInputs),
-                    outputs: structuredClone(componentOutputs),
-
-                    ref_graph: structuredClone(componentGraph)
-                  };
-
-                  console.log("Created component:", customComponent);
-
-                  setCustomComponents(prev => [
-                    ...prev,
-                    customComponent
-                  ]);
-
-                  // Reset
-                  setComponentGraph([]);
-                  setComponentInputs([]);
-                  setComponentOutputs([]);
-                  setComponentName("");
-
-                  setShowComponentDialog(false);
-
-                }}
-              >
-                CREATE
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
-      {specifyingInputs && (
-        <div className="right-sidebar">
-          <div className="right-sidebar-content">
-
-            <input
-              className="component-name-input"
-              placeholder="Component name"
-              value={componentName}
-              onChange={(e) => setComponentName(e.target.value)}
-            />
-
-            {pinPhase === "input" ? (
-              <>
-                <p>Specify input for pin number {pinIndex}</p>
-
-              </>
-            ) : (
-              <>
-                <p>Specify output for pin number{pinIndex}</p>
-
-              </>
-            )}
-
-          </div>
-
-          {specifyingInputs && (
-            <>
-              <label>
-                {pinPhase === "input"
-                  ? `Input ${pinIndex}`
-                  : `Output ${pinIndex + 1}`}
-              </label>
-
-              <input
-                type="text"
-                value={pinName}
-                onChange={(e) => setPinName(e.target.value)}
-                placeholder={
-                  pinPhase === "input"
-                    ? `I${pinIndex}`
-                    : `O${pinIndex + 1}`
-                }
-              />
-            </>
-          )}
-
-          <div className="right-sidebar-footer">
-            <button
-              className="utilities-button"
-              onClick={() => {
-
-                if (pinPhase === "input") {
-
-                  const newOrder = [...inputOrder];
-
-                  const mappedId =
-                    componentIdMapRef.current.get(selectedGate?.id);
-                  console.log(selectedGate.id)
-
-                  const idx = newOrder.indexOf(mappedId);
-
-                  if (idx === -1) {
-                    alert("Please select a valid input toggle.");
-                    return;
-                  }
-
-                  // Use entered name, or default to I0, I1, I2, ...
-                  const name =
-                    pinName.trim() || `I${pinIndex}`;
-
-                  // Move that toggle to the current pin position.
-                  const [moved] = newOrder.splice(idx, 1);
-                  console.log(newOrder)
-
-                  newOrder.splice(pinIndex, 0, moved);
-                  console.log(newOrder)
-                  // Save the new ordering.
-                  setInputOrder(newOrder);
-
-                  // Save the pin name.
-                  // This updates every internal mapping belonging
-                  // to this external input source.
-                  setComponentInputs(prev =>
-                    prev.map(entry =>
-                      entry.sourceId === mappedId
-                        ? { ...entry, name }
-                        : entry
-                    )
-                  );
-
-                  setSelectedGate(null);
-
-                  // Still have more component inputs to specify.
-                  if (pinIndex + 1 < newOrder.length) {
-
-                    setPinIndex(pinIndex + 1);
-
-                    // Default name for next input.
-                    setPinName(`I${pinIndex + 1}`);
-
-                    return;
-                  }
-
-                  // Input specification finished.
-                  if (componentOutputs.length > 0) {
-
-                    setPinPhase("output");
-                    setPinIndex(0);
-
-                    // Default name for first output.
-                    setPinName("O0");
-
-                    return;
-                  }
-
-                  // No outputs → create component.
-                  if (!componentName.trim()) {
-                    alert("Please enter a component name.");
-                    return;
-                  }
-
-                  // pins having same source (fan out case) are placed consecutively, and lets visualise them forming a group. these group appear in orderedInputs in the order which user selects toggles to specify input pins. 
-                  const orderedInputs = newOrder.flatMap(
-                    sourceId =>
-                      componentInputs
-                        .filter(
-                          entry => entry.sourceId === sourceId
-                        )
-                        .map(entry => ({
-                          ...entry,
-                          name:
-                            entry.sourceId === mappedId
-                              ? name
-                              : entry.name
-                        }))
-                  );
-
-                  const customComponent = {
-
-                    type: "CUSTOM",
-
-                    name: componentName.trim(),
-
-                    inputs: structuredClone(orderedInputs),
-
-                    outputs: structuredClone(componentOutputs),
-
-                    ref_graph: structuredClone(componentGraph)
-
-                  };
-
-                  setCustomComponents(prev => [
-                    ...prev,
-                    customComponent
-                  ]);
-
-                  // Reset component creation state.
-                  setComponentGraph([]);
-                  setComponentInputs([]);
-                  setComponentOutputs([]);
-                  setInputOrder([]);
-                  setComponentName("");
-                  setPinName("");
-                  setSpecifyingInputs(false);
-
-                }
-                else {
-
-                  const mappedId =
-                    componentIdMapRef.current.get(selectedGate?.id);
-
-                  const idx = componentOutputs.findIndex(
-                    (entry, i) =>
-                      i >= pinIndex &&
-                      entry.bulbId === mappedId
-                  );
-
-                  if (idx === -1) {
-                    alert("Please select a valid output bulb.");
-                    return;
-                  }
-
-                  // Use entered name, or default to O1, O2, O3, ...
-                  const name =
-                    pinName.trim() || `O${pinIndex + 1}`;
-
-                  // Create the reordered output array locally.
-                  // This is important because React state updates
-                  // are asynchronous.
-                  const reorderedOutputs = [
-                    ...componentOutputs
-                  ];
-
-                  const [moved] =
-                    reorderedOutputs.splice(idx, 1);
-
-                  const namedOutput = {
-                    ...moved,
-                    name
-                  };
-
-                  reorderedOutputs.splice(
-                    pinIndex,
-                    0,
-                    namedOutput
-                  );
-
-                  // Save the updated outputs.
-                  setComponentOutputs(reorderedOutputs);
-                  setSelectedGate(null);
-
-                  // Still have more component outputs to specify.
-                  if (
-                    pinIndex + 1 <
-                    reorderedOutputs.length
-                  ) {
-
-                    setPinIndex(pinIndex + 1);
-
-                    // Default name for next output.
-                    setPinName(
-                      `O${pinIndex + 2}`
-                    );
-
-                    return;
-                  }
-
-                  // Output specification finished.
-                  if (!componentName.trim()) {
-                    alert("Please enter a component name.");
-                    return;
-                  }
-
-                  const orderedInputs =
-                    inputOrder.flatMap(
-                      sourceId =>
-                        componentInputs.filter(
-                          entry =>
-                            entry.sourceId === sourceId
-                        )
-                    );
-
-                  const customComponent = {
-
-                    type: "CUSTOM",
-
-                    name: componentName.trim(),
-
-                    inputs: structuredClone(
-                      orderedInputs
-                    ),
-
-                    // IMPORTANT:
-                    // Use reorderedOutputs rather than
-                    // componentOutputs because the state
-                    // update above may not have completed yet.
-                    outputs: structuredClone(
-                      reorderedOutputs
-                    ),
-
-                    ref_graph: structuredClone(
-                      componentGraph
-                    )
-
-                  };
-
-                  setCustomComponents(prev => [
-                    ...prev,
-                    customComponent
-                  ]);
-
-                  // Reset component creation state.
-                  setComponentGraph([]);
-                  setComponentInputs([]);
-                  setComponentOutputs([]);
-                  setInputOrder([]);
-                  setComponentName("");
-                  setPinName("");
-                  setSpecifyingInputs(false);
-                }
-              }}
-            >
-              DONE
-            </button>
-
-            <button
-              className="utilities-button"
-              onClick={cancelComponentCreation}
-              style={{ marginRight: "auto" }}
-            >
-              CANCEL
-            </button>
-          </div>
-        </div>
-      )}
+      {showDownloadDialog && <DownloadDialog
+        cancelDownload={cancelDownload}
+        downloadFileName={downloadFileName}
+        setDownloadFileName={setDownloadFileName}
+        commitDownload={handleCommitDownload}
+      />}
+
+      {showClockWindow && <ClockWindow
+        setShowClockWindow={setShowClockWindow}
+        Add={Add}
+      />
+      }
+
+      {showComponentDialog && <ComponentDialog
+        componentName={componentName}
+        setComponentName={setComponentName}
+        componentGraph={componentGraph}
+        setComponentGraph={setComponentGraph}
+        componentInputs={componentInputs}
+        setComponentInputs={setComponentInputs}
+        componentOutputs={componentOutputs}
+        setComponentOutputs={setComponentOutputs}
+        setShowComponentDialog={setShowComponentDialog}
+        setCustomComponents={setCustomComponents}
+      />}
+      {specifyingInputs && <SpecifyInputsSidebar
+        componentName={componentName}
+        setComponentName={setComponentName}
+        pinPhase={pinPhase}
+        pinIndex={pinIndex}
+        specifyingInputs={specifyingInputs}
+        pinName={pinName}
+        setPinName={setPinName}
+        inputOrder={inputOrder}
+        setInputOrder={setInputOrder}
+        componentIdMapRef={componentIdMapRef}
+        selectedGate={selectedGate}
+        setSelectedGate={setSelectedGate}
+        componentInputs={componentInputs}
+        setComponentInputs={setComponentInputs}
+        componentOutputs={componentOutputs}
+        setComponentOutputs={setComponentOutputs}
+        componentGraph={componentGraph}
+        setComponentGraph={setComponentGraph}
+        setCustomComponents={setCustomComponents}
+        setPinPhase={setPinPhase}
+        setPinIndex={setPinIndex}
+        setSpecifyingInputs={setSpecifyingInputs}
+        cancelComponentCreation={cancelComponentCreation}
+      />}
 
       {showComponentIO && (
         <div className="component-dialog-overlay">
@@ -3304,46 +1496,19 @@ function App() {
         </div>
       )}
 
-
-
-      {editingText && (
-        <div className="text-edit-overlay" onClick={cancelTextEdit}>
-          <div
-            className="text-edit-dialog"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-edit-title">Edit Label</div>
-
-            <input
-              className="text-edit-input"
-              autoFocus
-              value={editingText.draft}
-              onChange={(e) =>
-                setEditingText(prev => ({ ...prev, draft: e.target.value }))
-              }
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitTextEdit();
-                if (e.key === "Escape") cancelTextEdit();
-              }}
-            />
-
-            <div className="text-edit-buttons">
-              <button
-                className="utilities-button"
-                onClick={cancelTextEdit}
-              >
-                CANCEL
-              </button>
-              <button
-                className="utilities-button primary"
-                onClick={commitTextEdit}
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {editingText && <TextEditDialog
+        editingText={editingText}
+        setEditingText={setEditingText}
+        commitTextEdit={() => commitTextEdit({
+          editingText,
+          setEditingText,
+          graph,
+          setGraph,
+          clock_delays,
+          addToUndoStack
+        })}
+        cancelTextEdit={() => cancelTextEdit(setEditingText)}
+      />}
 
       {showTimingDiagram && (
         <TimingDiagram
@@ -3360,11 +1525,7 @@ function App() {
           onClose={() => setShowTimingDiagram(false)}
         />
       )}
-
-
-
-
-
+      {showLearnSidebar && <LearnSidebar onClose={() => setShowLearnSidebar(!showLearnSidebar)}></LearnSidebar>}
     </div>
   )
 }

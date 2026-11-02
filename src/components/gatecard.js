@@ -1,7 +1,6 @@
 import * as CONSTANTS from "../constants/constants";
 
-export function GateCard({ renderFxn, gateType }) {
-  const RenderFn = renderFxn;
+export function GateCard({ RenderFn, gateType }) {
   return (
     <div className="gate-card">
       <div className="gate-preview">

@@ -1,4 +1,4 @@
-import * as RENDER_GATES from "../svg/gates_svg";
+import * as RENDER_GATES from "../svg/gatesSvg";
 
 export const inputGateRenderList = [
   { type: 'INPUT', render: RENDER_GATES.RenderINPUT },

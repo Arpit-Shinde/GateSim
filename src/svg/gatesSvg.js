@@ -3,61 +3,56 @@ import * as GATE from "../components/gate"
 
 
 export function RenderINPUT() {
+  const size = CONSTANTS.TOGGLE_HEIGHT; // square: width === height
+
   return (
     <g
-      style={{ cursor: "pointer" }}
+      style={{ cursor: "pointer" }} transform="translate(14,0)"
     >
       <line
-        x1={CONSTANTS.TOGGLE_WIDTH}
-        y1={CONSTANTS.TOGGLE_HEIGHT / 2}
-        x2={CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X}
-        y2={CONSTANTS.TOGGLE_HEIGHT / 2}
+        x1={size}
+        y1={size / 2}
+        x2={size - CONSTANTS.INPUT_PIN_X}
+        y2={size / 2}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-      <rect
-        width={CONSTANTS.TOGGLE_WIDTH}
-        height={CONSTANTS.TOGGLE_HEIGHT}
-        fill={CONSTANTS.GATE_FILL_COLOR}
-        stroke={CONSTANTS.GATE_STROKE_COLOR}
-        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-      >
-      </rect>
 
+      {/* Square with rounded corners */}
       <rect
-        x={CONSTANTS.TOGGLE_WIDTH / 4}
-        y={CONSTANTS.TOGGLE_HEIGHT / 4}
-        width={CONSTANTS.TOGGLE_WIDTH / 2}
-        height={CONSTANTS.TOGGLE_HEIGHT / 2}
-        fill={CONSTANTS.GATE_FILL_COLOR}
-        stroke={CONSTANTS.GATE_STROKE_COLOR}
-        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        width={size}
+        height={size}
         rx={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
         ry={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
-      >
-      </rect>
-
-      <circle
-        cx={CONSTANTS.TOGGLE_WIDTH / 4 + CONSTANTS.TOGGLE_CAPSULE_RADIUS}
-        cy={CONSTANTS.TOGGLE_HEIGHT / 2}
-        r={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
         fill={CONSTANTS.GATE_FILL_COLOR}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-
       />
+
+      {/* 0 / 1 text in center */}
+      <text
+        x={size / 2}
+        y={size / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={size * 0.6}
+        fontFamily="monospace"
+        fill={CONSTANTS.GATE_STROKE_COLOR}
+        pointerEvents="none"
+        style={{ userSelect: "none" }}
+      >
+        0
+      </text>
 
       <circle
         className="render-gate-pin"
-
-        cx={CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X}
-        cy={CONSTANTS.TOGGLE_HEIGHT / 2}
+        cx={size - CONSTANTS.INPUT_PIN_X}
+        cy={size / 2}
         r={CONSTANTS.PIN_RADIUS}
         fill={CONSTANTS.GATE_FILL_COLOR}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
       />
-
     </g>
   )
 }
@@ -589,52 +584,63 @@ export function RenderNOT() {
 // gates_svg.js
 
 export function RenderCLOCK() {
+  const size = CONSTANTS.TOGGLE_HEIGHT; // square body, same as canvas
+  const localX = CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X - 25;
+  const localY = CONSTANTS.TOGGLE_HEIGHT / 2;
+
+  // Same waveform geometry as the canvas CLOCK branch
+  const wfW = size * 0.65;
+  const wfH = size * 0.45;
+  const wfX = (size - wfW) / 2 + 3;
+  const wfY = (size - wfH) / 2;
+  const waveform = `
+    M ${wfX} ${wfY + wfH}
+    L ${wfX} ${wfY}
+    L ${wfX + wfW * 0.35} ${wfY}
+    L ${wfX + wfW * 0.35} ${wfY + wfH}
+    L ${wfX + wfW * 0.7} ${wfY + wfH}
+    L ${wfX + wfW * 0.7} ${wfY}
+  `;
+
   return (
-    <g transform={`scale(${0.9}) translate(5,-7)`}>
-      {/* Clock body - rectangle like your design */}
+    <g transform="translate(15,0)">
+      {/* Output wire stub */}
+      <line
+        x1={size}
+        y1={size / 2}
+        x2={size - CONSTANTS.INPUT_PIN_X}
+        y2={size / 2}
+        stroke={CONSTANTS.GATE_STROKE_COLOR}
+        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+      />
+
+      {/* Body — identical shape language to the canvas CLOCK */}
       <rect
-        x={0}
-        y={5}
-        width={CONSTANTS.GATE_WIDTH}
-        height={CONSTANTS.GATE_HEIGHT - 10}
+        width={size}
+        height={size}
+        rx={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
+        ry={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
         fill={CONSTANTS.GATE_FILL_COLOR}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
         strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-
       />
 
+      {/* Waveform glyph — same weight + colour as the canvas version */}
       <path
-        d="
-    
-    M 20 40
-    L 20 18
-    L 35 18
-    L 35 40
-    L 50 40
-    L 50 18
-  
-  "
+        d={waveform}
         fill="none"
-        stroke="#a0aec0"
-        strokeWidth="3"
-
-      />
-
-      {/* Output wire stub */}
-      <line
-        x1={CONSTANTS.GATE_WIDTH}
-        y1={CONSTANTS.OUTPUT_PIN_Y}
-        x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-        y2={CONSTANTS.OUTPUT_PIN_Y}
         stroke={CONSTANTS.GATE_STROKE_COLOR}
-        strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        pointerEvents="none"
       />
 
       {/* Output pin */}
       <circle
         className="render-gate-pin"
-        cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-        cy={CONSTANTS.OUTPUT_PIN_Y}
+        cx={localX}
+        cy={localY}
         r={CONSTANTS.PIN_RADIUS}
         fill={CONSTANTS.GATE_FILL_COLOR}
         stroke={CONSTANTS.GATE_STROKE_COLOR}

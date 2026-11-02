@@ -20,7 +20,7 @@ export const BULB_WIDTH = 30
 export const BULB_PIN_X = BULB_WIDTH / 2
 export const BULB_PIN_Y = BULB_WIDTH
 export const BULB_PIN_LENGTH = 15
-export const BULB_ON_COLOR = "#63fd04"
+export const BULB_ON_COLOR = "#62ff00"
 
 // Base dimensions for the INPUT component
 export const INPUT_WIDTH = 40;
@@ -28,12 +28,12 @@ export const INPUT_HEIGHT = 40;
 
 export const TOGGLE_WIDTH = 60
 export const TOGGLE_HEIGHT = 40
-export const TOGGLE_CAPSULE_RADIUS = 10
+export const TOGGLE_CAPSULE_RADIUS = 5
 
 export let WIRE_COLOR = "#838383"
 export const WIRE_STROKE_WIDTH = 3
 
-export const MAX_EVALUATION_ITERATIONS = 5;
+export const MAX_EVALUATION_ITERATIONS = 500;
 export const MIN_FRAME_TIME = 50;
 
 
@@ -64,10 +64,10 @@ export const JK_OUTPUT_PINS = {
 };
 
 export function toggleTheme(document, theme) {
-  if (theme) {
-    WIRE_COLOR = "#acacac" //dark mode
-    GATE_CARD_BACKGROUND = "#c9c9c9"
-    CANVAS_BACKGROUND = "#313131"
+  if (theme) {//dark mode
+    WIRE_COLOR = "#acacac" 
+    GATE_CARD_BACKGROUND = "#ffffff"
+    
     document.documentElement.style.setProperty(
       "--utilities-background",
       "#3c3c3c"
@@ -81,17 +81,17 @@ export function toggleTheme(document, theme) {
       "#c7c7c7"
     );
   }
-  else {
+  else {//light mode
     WIRE_COLOR = "#000000"
-    GATE_CARD_BACKGROUND = "#fbfbfb"
-    CANVAS_BACKGROUND = "#ababab"
+    GATE_CARD_BACKGROUND = "#ffffff"
+    CANVAS_BACKGROUND = "#bfbfbf"
     document.documentElement.style.setProperty(
       "--utilities-background",
       "#e6e6e6"
     );
     document.documentElement.style.setProperty(
       "--homepage-background",
-      "#cacaca"
+      "#e5e5e5"
     );
     document.documentElement.style.setProperty(
       "--gatecard-label-background",
@@ -106,3 +106,12 @@ export const TIMING_PX_PER_MS = 0.4;      // horizontal scale of the waveform
 export const TIMING_AXIS_HEIGHT = 24;     // px reserved for the time axis row
 export const TIMING_LOW_COLOR = "#8a8a8a";
 export const TIMING_GRID_COLOR = "#3a3a3a";
+
+
+export const RANDOM_POSITION_OFFSET_MULTIPLIER = 50;
+export const CANVAS_INITIAL_VIEW_WIDTH = 1400;
+export const CANVAS_INITIAL_VIEW_HEIGHT = 720;
+
+export const GRID_COLOR = "#a6a6a6";
+export const GRID_STROKE_WIDTH = 0.2;
+export const MIN_CUSTOM_COMPONENT_WIDTH = 70;
