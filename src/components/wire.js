@@ -1,11 +1,13 @@
-import { WIRE_COLOR,WIRE_STROKE_WIDTH } from "../constants/constants";
+import { WIRE_COLOR,WIRE_STROKE_WIDTH, GRID_SIZE } from "../constants/constants";
 
 export function LiveWire({ start, end }) {
 
   const path = `
-  M ${start[0]},${start[1]}
-  L ${end[0]},${end[1]}
+  M ${Math.round(start[0]/GRID_SIZE)*GRID_SIZE},${Math.round(start[1]/GRID_SIZE)*GRID_SIZE}
+  L ${Math.round(end[0]/GRID_SIZE)*GRID_SIZE},${Math.round(end[1]/GRID_SIZE)*GRID_SIZE}
+  
 `;
+// console.log(end[0], end[1])
 
   return (
     <path
@@ -24,7 +26,7 @@ export function RenderUncommitedWire({ path }) {
 
     const d = path
         .map((point, i) =>
-            `${i === 0 ? "M" : "L"} ${point.x} ${point.y}`
+            `${i === 0 ? "M" : "L"} ${Math.round(point.x/GRID_SIZE)*GRID_SIZE} ${Math.round(point.y/GRID_SIZE)*GRID_SIZE}`
         )
         .join(" ");
 

@@ -1,5 +1,6 @@
 // utils/selectionBox.js
 import * as CONSTANTS from "../constants/constants";
+import { busNodeSize } from "./busUtils";
 
 export function getNodeBoundingBox(node) {
   if (node.type === "WIRE") {
@@ -22,9 +23,11 @@ export function getNodeBoundingBox(node) {
 
   // Same width/height-swap-on-rotation logic RotateGate() already uses.
   const rotated = (node.rotation ?? 0) % 180 !== 0;
-  const width = rotated ? CONSTANTS.GATE_HEIGHT : CONSTANTS.GATE_WIDTH;
-  const height = rotated ? CONSTANTS.GATE_WIDTH : CONSTANTS.GATE_HEIGHT;
-
+  const dims = busNodeSize(node);
+  const baseW = dims ? dims.w : CONSTANTS.GATE_WIDTH;
+  const baseH = dims ? dims.h : CONSTANTS.GATE_HEIGHT;
+  const width = rotated ? baseH : baseW;
+  const height = rotated ? baseW : baseH;
   return {
     x0: node.x,
     x1: node.x + width,

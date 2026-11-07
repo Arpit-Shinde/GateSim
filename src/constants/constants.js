@@ -1,12 +1,18 @@
-export const GATE_WIDTH = 70
-export const GATE_HEIGHT = 60
+export const GRID_COLOR = "#a6a6a6";
+export const GRID_STROKE_WIDTH = 0.2;
+export const GRID_SIZE = 20;
 
-export const INPUT_PIN_X = -20;
+export const GATE_WIDTH = 4*GRID_SIZE
+export const GATE_HEIGHT = 4*GRID_SIZE
+
+export const INPUT_PIN_X = -5;
 export const INPUT_PIN_Y_TOP = GATE_HEIGHT / 6;
 export const INPUT_PIN_Y_BOTTOM = 5 * GATE_HEIGHT / 6;
 export const OUTPUT_PIN_Y = GATE_HEIGHT / 2;
 export const INPUT_PIN_Y = GATE_HEIGHT / 2;
 export const PIN_RADIUS = 5;
+export const TWO_INPUT_PIN_Y = GRID_SIZE;
+export const NAND_PIN_RADIUS = 7.2
 
 export const GATE_STROKE_WIDTH = 0.7;
 export const GATE_STROKE_COLOR = "#000000";
@@ -14,7 +20,7 @@ export const GATE_FILL_COLOR = "#ffffff"
 export const CUSTOM_GATE_BODY_TEXT_COLOR = "#2f2f2f"
 export const CUSTOM_GATE_PINS_TEXT_COLOR = "#686868"
 
-export const NAND_PIN_RADIUS = 3
+
 
 export const BULB_WIDTH = 30
 export const BULB_PIN_X = BULB_WIDTH / 2
@@ -112,6 +118,5 @@ export const RANDOM_POSITION_OFFSET_MULTIPLIER = 50;
 export const CANVAS_INITIAL_VIEW_WIDTH = 1400;
 export const CANVAS_INITIAL_VIEW_HEIGHT = 720;
 
-export const GRID_COLOR = "#a6a6a6";
-export const GRID_STROKE_WIDTH = 0.2;
+
 export const MIN_CUSTOM_COMPONENT_WIDTH = 70;

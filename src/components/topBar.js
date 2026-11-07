@@ -1,5 +1,9 @@
 import mouse_png from "../mouse.png"
 import palm_png from "../palm.png"
+import question from "../question-mark.png"
+import openBook from "../open-book.png"
+import pointerClick from "../pointer-click.png"
+import terminal from "../terminal.png"
 
 export function TopBar({
     logo,
@@ -43,7 +47,9 @@ export function TopBar({
     componentFileInputRef,
     loadComponent,
     setInteractivityMode,
-    interactivityMode
+    interactivityMode,
+    showTutorial2,
+    setDevTools
 }) {
     return (
         <div className="utilities">
@@ -131,7 +137,7 @@ export function TopBar({
 
                 </div>
             </details>
-            <button className="utilities-button" onClick={showTutorial}>TUTORIAL</button>
+            
 
 
             {!creatingComponent ? (
@@ -157,10 +163,24 @@ export function TopBar({
             <button className="utilities-button" onClick={() => setShowTimingDiagram(v => !v)}>
                 {showTimingDiagram ? "HIDE TIMING" : "TIMING DIAGRAM"}
             </button>
+            <button 
+                className="utilities-button" 
+                onClick={() => setDevTools(v => !v)}
+                title="DevTools"
+            >
+                <img
+                    src={terminal}
+                    alt=""
+                    width={16}
+                    height={16}
+                    style={{ display: 'block' }}
+                />
+            </button>
             <button
                 className={`utilities-button ${interactivityMode === "DRAG" ? "active" : ""}`}
                 onClick={() => setInteractivityMode("DRAG")}
                 style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                title="Drag"
             >
                 <img
                     src={mouse_png}
@@ -174,9 +194,40 @@ export function TopBar({
                 className={`utilities-button ${interactivityMode === "PAN" ? "active" : ""}`}
                 onClick={() => setInteractivityMode("PAN")}
                 style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                title="Pan"
             >
                 <img
                     src={palm_png}
+                    alt=""
+                    width={16}
+                    height={16}
+                    style={{ display: 'block' }}
+                />
+            </button>
+            <button 
+                className="utilities-button" 
+                onClick={showTutorial2}
+                style={{ marginLeft: 'auto'}}
+                title="Tutorial Book"
+                
+            >
+                <img
+                    src={openBook}
+                    alt=""
+                    width={16}
+                    height={16}
+                    style={{ display: 'block' }}
+                />
+            </button>
+
+            <button 
+                className="utilities-button" 
+                onClick={showTutorial}
+                style={{ marginRight: '16px'}}
+                title="Interactive Tutorial"
+            >
+                <img
+                    src={pointerClick}
                     alt=""
                     width={16}
                     height={16}

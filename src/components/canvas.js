@@ -1,24 +1,47 @@
-function GridLines({ view, CONSTANTS, gridSize = 20 }) {
+import { useState, useEffect } from "react";
+
+function GridLines({ view, CONSTANTS, gridSize, pxWidth }) {
   const { x, y, width, height } = view;
 
-  // Snap to grid so lines don't "crawl" as you pan
+  // ── existing grid lines (unchanged) ──
   const startX = Math.floor(x / gridSize) * gridSize;
   const startY = Math.floor(y / gridSize) * gridSize;
-  const endX   = x + width;
-  const endY   = y + height;
+  const endX = x + width;
+  const endY = y + height;
 
   const verticals = [];
-  for (let gx = startX; gx <= endX; gx += gridSize) {
-    verticals.push(gx);
-  }
+  for (let gx = startX; gx <= endX; gx += gridSize) verticals.push(gx);
 
   const horizontals = [];
-  for (let gy = startY; gy <= endY; gy += gridSize) {
-    horizontals.push(gy);
+  for (let gy = startY; gy <= endY; gy += gridSize) horizontals.push(gy);
+
+  const stroke = "red";
+  const strokeWidth = CONSTANTS.GRID_STROKE_WIDTH ?? 0.5;
+
+  // ── axis labels ──
+
+  // screen px per world unit (fallback: 1 before first measure)
+  const screenScale = pxWidth && width ? pxWidth / width : 1;
+
+  // aim for ~70 screen px between labels, snapped to a multiple of gridSize
+  const pxPerCell = gridSize * screenScale;
+  const N = Math.max(1, Math.round(70 / Math.max(pxPerCell, 1e-6)));
+  const labelStep = N * gridSize;
+
+  // 10 screen px font, 6 screen px inset from the edge
+  const fontSize = 10 / Math.max(screenScale, 1e-6);
+  const pad = 6 / Math.max(screenScale, 1e-6);
+
+  const xLabels = [];
+  for (let lx = Math.ceil(x / labelStep) * labelStep; lx <= endX; lx += labelStep) {
+    xLabels.push(lx);
+  }
+  const yLabels = [];
+  for (let ly = Math.ceil(y / labelStep) * labelStep; ly <= endY; ly += labelStep) {
+    yLabels.push(ly);
   }
 
-  const stroke = CONSTANTS.GRID_COLOR ?? '#e0e0e0';
-  const strokeWidth = CONSTANTS.GRID_STROKE_WIDTH ?? 0.5;
+  const labelColor = "rgb(111, 111, 111)";
 
   return (
     <g pointerEvents="none">
@@ -35,10 +58,40 @@ function GridLines({ view, CONSTANTS, gridSize = 20 }) {
         <line
           key={`h-${gy}`}
           x1={startX} y1={gy}
-          x2={endX}   y2={gy}
+          x2={endX} y2={gy}
           stroke={stroke}
           strokeWidth={strokeWidth}
         />
+      ))}
+
+      {/* x-axis labels along the bottom of the view */}
+      {xLabels.map((lx) => (
+        <text
+          key={`lx-${lx}`}
+          x={lx}
+          y={endY - pad}
+          textAnchor="middle"
+          fontFamily="monospace"
+          fontSize={fontSize}
+          fill={labelColor}
+        >
+          {lx}
+        </text>
+      ))}
+
+      {/* y-axis labels along the left of the view */}
+      {yLabels.map((ly) => (
+        <text
+          key={`ly-${ly}`}
+          x={x + pad}
+          y={ly + fontSize * 0.35}
+          textAnchor="start"
+          fontFamily="monospace"
+          fontSize={fontSize}
+          fill={labelColor}
+        >
+          {ly}
+        </text>
       ))}
     </g>
   );
@@ -74,9 +127,29 @@ export function CanvasArea({
   RenderUncommitedWire,
   Gate,
   SelectionRectangle,
-  setEditingText
+  setEditingText,
+  onHoverNode
 }) {
+  const [svgWidth, setSvgWidth] = useState(0);
+
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+
+    const measure = () => setSvgWidth(el.getBoundingClientRect().width);
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [svgRef]);
+
+  const hoverProps = (id) => ({
+    onMouseEnter: () => onHoverNode && onHoverNode(id),
+    onMouseLeave: () => onHoverNode && onHoverNode(null)
+  });
   return (
+
     <div className="canvas">
       <svg
         width="100%"
@@ -94,7 +167,7 @@ export function CanvasArea({
         onWheel={zoom}
         onContextMenu={cancelWire}
       >
-        <GridLines view={view} CONSTANTS={CONSTANTS} gridSize={20} />
+        <GridLines view={view} CONSTANTS={CONSTANTS} gridSize={CONSTANTS.GRID_SIZE} pxWidth={svgWidth} />
         
         {opin && (
           <LiveWire
@@ -113,6 +186,7 @@ export function CanvasArea({
         {graph
           .filter((node) => node.type === "WIRE")
           .map((node) => (
+            <g key = {node.id} {...hoverProps(node.id)}>
             <Gate
               key={node.id}
               node={node}
@@ -130,6 +204,7 @@ export function CanvasArea({
               path={node.path}
               selectWire={selectWire}
             />
+            </g>
           ))}
 
         {branchDots.map((point, i) => (
@@ -152,6 +227,7 @@ export function CanvasArea({
           .filter((node) => node.type !== "WIRE")
           .sort((a, b) => a.z - b.z)
           .map((node) => (
+            <g key={node.id} {...hoverProps(node.id)}>
             <Gate
               key={node.id}
               node={node}
@@ -169,6 +245,7 @@ export function CanvasArea({
               onEditText={openTextEditor}
               setEditingText={setEditingText}
             />
+            </g>
           ))}
 
         {selectionRect && (

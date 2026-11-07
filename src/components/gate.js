@@ -1,4 +1,6 @@
 import * as CONSTANTS from "../constants/constants";
+import { BUS_TYPES } from "../utils/busUtils";
+import { BusNode } from "./busNode";
 
 const r = CONSTANTS.GATE_HEIGHT / 2;
 
@@ -72,6 +74,22 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
     return { x: node.x + p.x, y: node.y + p.y };
   };
 
+  if (BUS_TYPES.has(node.type)) {
+    return (
+      <BusNode
+        node={node}
+        toggle={toggle}
+        didDrag={didDrag}
+        startDrag={startDrag}
+        setoutputpin={setoutputpin}
+        setinputpin={setinputpin}
+        setSelectedGate={setSelectedGate}
+        isSelected={isSelected}
+        outputPinPosition={outputPinPosition}
+      />
+    );
+  }
+
   if (node.type === "WIRE") {
     const path = node.path
       .map((point, i) =>
@@ -83,7 +101,9 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
       <g className={gateClass}>
         <path
           d={path}
-          stroke={node.value[0] ? CONSTANTS.BULB_ON_COLOR : CONSTANTS.WIRE_COLOR}
+          stroke={(node.width ?? 1) > 1
+            ? CONSTANTS.WIRE_COLOR
+            : (node.value[0] ? CONSTANTS.BULB_ON_COLOR : CONSTANTS.WIRE_COLOR)}
           strokeWidth={CONSTANTS.WIRE_STROKE_WIDTH}
           fill="none"
           className={gateClass}
@@ -112,14 +132,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           return true
         }}
       >
-        <line
-          x1={size}
-          y1={size / 2}
-          x2={size - CONSTANTS.INPUT_PIN_X}
-          y2={size / 2}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
 
         {/* Square with rounded corners */}
         <rect
@@ -170,28 +183,48 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   }
 
   else if (node.type === "BULB") {
+    const localX = CONSTANTS.TOGGLE_WIDTH - CONSTANTS.INPUT_PIN_X - 25;
+    const localY = CONSTANTS.TOGGLE_HEIGHT / 2;
+    const isOn = node.value[0];
+    const size = CONSTANTS.TOGGLE_HEIGHT; // square: width === height
     return (
-      <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={CONSTANTS.BULB_PIN_X}
-          y1={CONSTANTS.BULB_PIN_Y}
-          x2={CONSTANTS.BULB_PIN_X}
-          y2={CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+      <g
+        transform={`translate(${node.x}, ${node.y}) rotate(${rot})`}
+        className={gateClass}
+        onClick={() => {
+          setSelectedGate({ id: node.id })
+          return true
+        }}
+      >
 
-        <path
-          d={bulb_path}
-          fill={node.value[0] ? CONSTANTS.BULB_ON_COLOR : CONSTANTS.GATE_FILL_COLOR}
+
+        {/* Square with rounded corners */}
+        <rect
+          width={size}
+          height={size}
+          rx={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
+          ry={CONSTANTS.TOGGLE_CAPSULE_RADIUS}
+          fill={isOn ? CONSTANTS.BULB_ON_COLOR : CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
           onMouseDown={(e) => startDrag(e, node.id)}
-          onClick={() => {
-            setSelectedGate({ id: node.id })
-            return true
-          }}
+          style={{ cursor: "pointer" }}
         />
+
+        {/* 0 / 1 text in center */}
+        <text
+          x={size / 2}
+          y={size / 2}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={size * 0.6}
+          fontFamily="monospace"
+          fill={CONSTANTS.GATE_STROKE_COLOR}
+          pointerEvents="none"
+          style={{ userSelect: "none" }}
+        >
+          {isOn ? "1" : "0"}
+        </text>
 
         <circle
           className="pin"
@@ -199,14 +232,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation(); //when input pin clicked, prevent stopDrag call
           }}
           onClick={(e) => {
-            const p = outputPinPosition(
-              CONSTANTS.BULB_PIN_X,
-              CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH
-            );
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.BULB_PIN_X}
-          cy={CONSTANTS.BULB_PIN_Y + CONSTANTS.BULB_PIN_LENGTH}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -219,30 +249,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "AND") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
         <path
           d={and_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -260,11 +266,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -276,11 +282,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y * 3);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -289,10 +295,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -306,30 +312,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "OR") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -347,11 +329,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -363,11 +345,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y * 3);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -376,10 +358,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -393,30 +375,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "NAND") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
         <path
           d={and_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -442,11 +400,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -458,11 +416,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y * 3);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -471,10 +429,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH + + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH + + CONSTANTS.GRID_SIZE}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -488,30 +446,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "NOR") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -537,11 +472,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -553,11 +488,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y * 3);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -566,10 +501,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -583,30 +518,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "XOR") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -631,11 +543,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -647,11 +559,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y * 3);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -660,10 +572,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -677,30 +589,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "XNOR") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -733,11 +622,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -749,11 +638,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y * 3);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -762,10 +651,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -777,31 +666,19 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   }
 
   else if (node.type === "NOT") {
+    const s = 0.5;
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
 
-        <line
-          x1={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS * 2}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
+
 
         <path
           d={not_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
+          transform={`scale(${s})`}
           onMouseDown={(e) => startDrag(e, node.id)}
           onClick={() => {
             setSelectedGate({ id: node.id })
@@ -810,8 +687,8 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         />
 
         <circle
-          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.NAND_PIN_RADIUS}
-          cy={CONSTANTS.OUTPUT_PIN_Y}
+          cx={CONSTANTS.GATE_WIDTH / 2 + CONSTANTS.NAND_PIN_RADIUS}
+          cy={CONSTANTS.OUTPUT_PIN_Y / 2}
           r={CONSTANTS.NAND_PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -824,11 +701,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y);
+            const p = outputPinPosition(0, CONSTANTS.TWO_INPUT_PIN_Y);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y}
+          cx={0}
+          cy={CONSTANTS.TWO_INPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -838,14 +715,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(
-              CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2 - 2,
-              CONSTANTS.OUTPUT_PIN_Y
-            );
+            const p = outputPinPosition(3 * CONSTANTS.GATE_WIDTH / 4, CONSTANTS.OUTPUT_PIN_Y / 2);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X + CONSTANTS.NAND_PIN_RADIUS * 2 - 2}
-          cy={CONSTANTS.OUTPUT_PIN_Y}
+          cx={3 * CONSTANTS.GATE_WIDTH / 4}
+          cy={CONSTANTS.OUTPUT_PIN_Y / 2}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -912,7 +786,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           d={waveform}
           fill="none"
           stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={1.5}
+          strokeWidth={1.2}
           strokeLinejoin="round"
           strokeLinecap="round"
           pointerEvents="none"
@@ -940,38 +814,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "NAND3") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.GATE_HEIGHT / 2}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.GATE_HEIGHT / 2}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
         <path
           d={and_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -997,11 +839,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1013,11 +855,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 2);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 2);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.GATE_HEIGHT / 2}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 2}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1029,11 +871,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 3);
             setinputpin(node.id, 2, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1042,10 +884,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1059,38 +901,6 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "AND3") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.GATE_HEIGHT / 2}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.GATE_HEIGHT / 2}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
         <path
           d={and_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1108,11 +918,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1124,11 +934,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 2);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 2);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.GATE_HEIGHT / 2}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 2}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1140,11 +950,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 3);
             setinputpin(node.id, 2, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1153,10 +963,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1170,38 +980,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "OR3") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.GATE_HEIGHT / 2}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.GATE_HEIGHT / 2}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1219,11 +998,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1235,11 +1014,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 2);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 2);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.GATE_HEIGHT / 2}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 2}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1251,11 +1030,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 3);
             setinputpin(node.id, 2, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1264,10 +1043,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1281,38 +1060,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "NOR3") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.GATE_HEIGHT / 2}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.GATE_HEIGHT / 2}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1338,11 +1086,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1354,11 +1102,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 2);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 2);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.GATE_HEIGHT / 2}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 2}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1370,11 +1118,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 3);
             setinputpin(node.id, 2, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1383,10 +1131,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1400,38 +1148,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "XOR3") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.GATE_HEIGHT / 2}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.GATE_HEIGHT / 2}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1456,11 +1173,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1472,11 +1189,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 2);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 2);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.GATE_HEIGHT / 2}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 2}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1488,11 +1205,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 3);
             setinputpin(node.id, 2, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1501,10 +1218,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1518,38 +1235,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "XNOR3") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_TOP}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_TOP}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.GATE_HEIGHT / 2}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.GATE_HEIGHT / 2}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={10}
-          y1={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          x2={CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.INPUT_PIN_Y_BOTTOM}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1582,11 +1268,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_TOP);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE);
             setinputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_TOP}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1598,11 +1284,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 2);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 2);
             setinputpin(node.id, 1, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.GATE_HEIGHT / 2}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 2}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1614,11 +1300,11 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
             e.stopPropagation();
           }}
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.INPUT_PIN_Y_BOTTOM);
+            const p = outputPinPosition(0, CONSTANTS.GRID_SIZE * 3);
             setinputpin(node.id, 2, p.x, p.y);
           }}
-          cx={CONSTANTS.INPUT_PIN_X}
-          cy={CONSTANTS.INPUT_PIN_Y_BOTTOM}
+          cx={0}
+          cy={CONSTANTS.GRID_SIZE * 3}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
@@ -1627,10 +1313,10 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         <circle
           className="pin"
           onClick={() => {
-            const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y);
+            const p = outputPinPosition(CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y);
             setoutputpin(node.id, 0, p.x, p.y);
           }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
+          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE}
           cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1644,18 +1330,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "AND4") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={and_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1665,24 +1340,24 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onClick={() => { setSelectedGate({ id: node.id }); return true }}
         />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 0); setinputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={0}
+          onClick={() => { const p = outputPinPosition(0, 0); setinputpin(node.id, 0, p.x, p.y); }}
+          cx={0} cy={0}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 1, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 1, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 2 * CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 2, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, 3 * CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 2, p.x, p.y); }}
+          cx={0} cy={3 * CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin"
-          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y}
+          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
+          cx={CONSTANTS.GATE_WIDTH} cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
       </g>
     )
@@ -1691,18 +1366,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "NAND4") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={and_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1720,24 +1384,24 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 0); setinputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={0}
+          onClick={() => { const p = outputPinPosition(0, 0); setinputpin(node.id, 0, p.x, p.y); }}
+          cx={0} cy={0}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 1, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 1, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 2 * CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 2, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, 3 * CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 2, p.x, p.y); }}
+          cx={0} cy={3 * CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin"
-          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y}
+          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
+          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE} cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
       </g>
     )
@@ -1746,18 +1410,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "OR4") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1767,24 +1420,24 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           onClick={() => { setSelectedGate({ id: node.id }); return true }}
         />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 0); setinputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={0}
+          onClick={() => { const p = outputPinPosition(0, 0); setinputpin(node.id, 0, p.x, p.y); }}
+          cx={0} cy={0}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 1, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 1, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 2 * CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 2, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, 3 * CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 2, p.x, p.y); }}
+          cx={0} cy={3 * CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin"
-          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y}
+          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
+          cx={CONSTANTS.GATE_WIDTH} cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
       </g>
     )
@@ -1793,18 +1446,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "NOR4") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1822,24 +1464,24 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 0); setinputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={0}
+          onClick={() => { const p = outputPinPosition(0, 0); setinputpin(node.id, 0, p.x, p.y); }}
+          cx={0} cy={0}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 1, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 1, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 2 * CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 2, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, 3 * CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 2, p.x, p.y); }}
+          cx={0} cy={3 * CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin"
-          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y}
+          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
+          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE} cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
       </g>
     )
@@ -1848,18 +1490,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "XOR4") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1876,24 +1507,24 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           pointerEvents="none"
         />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 0); setinputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={0}
+          onClick={() => { const p = outputPinPosition(0, 0); setinputpin(node.id, 0, p.x, p.y); }}
+          cx={0} cy={0}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 1, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 1, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 2 * CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 2, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, 3 * CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 2, p.x, p.y); }}
+          cx={0} cy={3 * CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin"
-          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y}
+          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
+          cx={CONSTANTS.GATE_WIDTH} cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
       </g>
     )
@@ -1902,18 +1533,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   else if (node.type === "XNOR4") {
     return (
       <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`} className={gateClass}>
-        <line x1={10} y1={0} x2={CONSTANTS.INPUT_PIN_X} y2={0} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={2 * CONSTANTS.GATE_HEIGHT / 3} x2={CONSTANTS.INPUT_PIN_X} y2={2 * CONSTANTS.GATE_HEIGHT / 3} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line x1={10} y1={CONSTANTS.GATE_HEIGHT} x2={CONSTANTS.INPUT_PIN_X} y2={CONSTANTS.GATE_HEIGHT} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
-        <line
-          x1={CONSTANTS.GATE_WIDTH}
-          y1={CONSTANTS.OUTPUT_PIN_Y}
-          x2={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X}
-          y2={CONSTANTS.OUTPUT_PIN_Y}
-          stroke={CONSTANTS.GATE_STROKE_COLOR}
-          strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
-        />
+
         <path
           d={or_path}
           fill={CONSTANTS.GATE_FILL_COLOR}
@@ -1938,24 +1558,24 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
         />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 0); setinputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={0}
+          onClick={() => { const p = outputPinPosition(0, 0); setinputpin(node.id, 0, p.x, p.y); }}
+          cx={0} cy={0}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 1, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 1, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, 2 * CONSTANTS.GATE_HEIGHT / 3); setinputpin(node.id, 2, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={2 * CONSTANTS.GATE_HEIGHT / 3}
+          onClick={() => { const p = outputPinPosition(0, 3 * CONSTANTS.GATE_HEIGHT / 4); setinputpin(node.id, 2, p.x, p.y); }}
+          cx={0} cy={3 * CONSTANTS.GATE_HEIGHT / 4}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin" onMouseUp={(e) => e.stopPropagation()}
-          onClick={() => { const p = outputPinPosition(CONSTANTS.INPUT_PIN_X, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
-          cx={CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.GATE_HEIGHT}
+          onClick={() => { const p = outputPinPosition(0, CONSTANTS.GATE_HEIGHT); setinputpin(node.id, 3, p.x, p.y); }}
+          cx={0} cy={CONSTANTS.GATE_HEIGHT}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
         <circle className="pin"
-          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
-          cx={CONSTANTS.GATE_WIDTH - CONSTANTS.INPUT_PIN_X} cy={CONSTANTS.OUTPUT_PIN_Y}
+          onClick={() => { const p = outputPinPosition(CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE, CONSTANTS.OUTPUT_PIN_Y); setoutputpin(node.id, 0, p.x, p.y); }}
+          cx={CONSTANTS.GATE_WIDTH + CONSTANTS.GRID_SIZE} cy={CONSTANTS.OUTPUT_PIN_Y}
           r={CONSTANTS.PIN_RADIUS} fill={CONSTANTS.GATE_FILL_COLOR} stroke={CONSTANTS.GATE_STROKE_COLOR} strokeWidth={CONSTANTS.GATE_STROKE_WIDTH} />
       </g>
     )
@@ -2423,34 +2043,93 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
   }
 
   else if (node.type === "CUSTOM") {
-
     const inputCount = node.inputs?.length ?? 0;
-    const outputCount = node.value?.length ?? 0;
+    const outputCount = node.ext_outputs?.length ?? node.value?.length ?? 0;
 
-    const height = Math.max(
-      CONSTANTS.GATE_HEIGHT,
-      Math.max(inputCount, outputCount) * 20
+    // Calculate the required number of grid rows
+    const minGrids = Math.max(
+      2,
+      Math.ceil(CONSTANTS.GATE_HEIGHT / CONSTANTS.GRID_SIZE)
     );
-    const maxLen = [...node.ext_inputs, ...node.ext_outputs]
-      .reduce((m, p) => Math.max(m, p.name.length), 0) * 20;
-    
-    let width;
 
-    if (maxLen<CONSTANTS.MIN_CUSTOM_COMPONENT_WIDTH) width = CONSTANTS.MIN_CUSTOM_COMPONENT_WIDTH + node.name.length*4;
-    else width = maxLen;
+    const maxPins = Math.max(inputCount, outputCount, minGrids);
+
+    // Center input and output pins vertically
+    const inOffset =
+      Math.floor((maxPins - inputCount) / 2) * CONSTANTS.GRID_SIZE;
+
+    const outOffset =
+      Math.floor((maxPins - outputCount) / 2) * CONSTANTS.GRID_SIZE;
+
+    const bodyHeight = maxPins * CONSTANTS.GRID_SIZE;
+
+    // Generate input pin names
+    const inputPinNames = [];
+    const seenSources = new Set();
+
+    for (const entry of node.ext_inputs ?? []) {
+      if (seenSources.has(entry.sourceId)) continue;
+
+      seenSources.add(entry.sourceId);
+      inputPinNames.push(entry.name ?? "");
+    }
+
+    const inputNames = Array.from({ length: inputCount }, (_, i) => {
+      const name = inputPinNames[i] || `I${i}`;
+
+      return name + (
+        (node.inWidths?.[i] ?? 1) > 1
+          ? `[${node.inWidths[i]}]`
+          : ""
+      );
+    });
+
+    // Generate output pin names
+    const outputNames = Array.from({ length: outputCount }, (_, i) => {
+      const name = node.ext_outputs?.[i]?.name ?? `O${i + 1}`;
+
+      return name + (
+        (node.outWidths?.[i] ?? 1) > 1
+          ? `[${node.outWidths[i]}]`
+          : ""
+      );
+    });
+
+    // Estimate text widths using the corresponding font sizes
+    const inputTextWidth =
+      Math.max(0, ...inputNames.map(name => name.length * 6));
+
+    const outputTextWidth =
+      Math.max(0, ...outputNames.map(name => name.length * 6));
+
+    const componentName = node.name || "";
+
+    const componentNameWidth = componentName.length * 7.5;
+
+    // Both input and output labels must fit inside the rectangle.
+    // The component name must also fit.
+    const requiredWidth = Math.max(
+      CONSTANTS.MIN_CUSTOM_COMPONENT_WIDTH,
+      inputTextWidth + outputTextWidth + 40,
+      componentNameWidth + 40
+    );
+
+    // Snap width to the grid
+    const width =
+      Math.ceil(requiredWidth / CONSTANTS.GRID_SIZE) *
+      CONSTANTS.GRID_SIZE;
 
     return (
       <g
         transform={`translate(${node.x}, ${node.y}) rotate(${rot})`}
         className={gateClass}
       >
-
         {/* Component body */}
         <rect
           x={0}
-          y={0}
+          y={-CONSTANTS.GRID_SIZE}
           width={width}
-          height={height}
+          height={bodyHeight + CONSTANTS.GRID_SIZE}
           fill={CONSTANTS.GATE_FILL_COLOR}
           stroke={CONSTANTS.GATE_STROKE_COLOR}
           strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
@@ -2464,47 +2143,25 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
         {/* Component name */}
         <text
           x={width / 2}
-          y={height / 2}
+          y={(bodyHeight - CONSTANTS.GRID_SIZE) / 2}
           textAnchor="middle"
           dominantBaseline="middle"
           fill={CONSTANTS.CUSTOM_GATE_BODY_TEXT_COLOR}
           fontSize="12"
           pointerEvents="none"
         >
-          {node.name}
+          {componentName}
         </text>
 
         {/* Input pins */}
-        {/* Input pins */}
         {node.inputs?.map((_, i) => {
-
-          const y =
-            height / 2 +
-            (i - (inputCount - 1) / 2) * 20;
-
-          // Build visible input pin names from unique sourceIds.
-          // ext_inputs may contain multiple entries for the same
-          // sourceId when one external input fans out internally.
-          const inputPinNames = [];
-          const seenSources = new Set();
-
-          for (const entry of node.ext_inputs ?? []) {
-            if (seenSources.has(entry.sourceId)) continue;
-
-            seenSources.add(entry.sourceId);
-            inputPinNames.push(entry.name ?? "");
-          }
-
-          const pinName =
-            inputPinNames[i] || `I${i}`;
+          const y = inOffset + i * CONSTANTS.GRID_SIZE;
+          const pinName = inputNames[i];
 
           return (
             <g key={`input-${i}`}>
-
-              {/* Input pin label */}
-              {/* Input pin label */}
               <text
-                x={2}
+                x={10}
                 y={y}
                 textAnchor="start"
                 dominantBaseline="middle"
@@ -2526,51 +2183,32 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
               <circle
                 className="pin"
-                onMouseUp={(e) => {
-                  e.stopPropagation();
+                onMouseUp={(e) => e.stopPropagation()}
+                onClick={() => {
+                  const p = outputPinPosition(0, y);
+
+                  setinputpin(node.id, i, p.x, p.y);
                 }}
-                onClick={(e) => {
-                  setinputpin(
-                    node.id,
-                    i,
-                    outputPinPosition(
-                      CONSTANTS.INPUT_PIN_X,
-                      y
-                    ).x,
-                    outputPinPosition(
-                      CONSTANTS.INPUT_PIN_X,
-                      y
-                    ).y
-                  );
-                }}
-                cx={CONSTANTS.INPUT_PIN_X}
+                cx={0}
                 cy={y}
                 r={CONSTANTS.PIN_RADIUS}
                 fill={CONSTANTS.GATE_FILL_COLOR}
                 stroke={CONSTANTS.GATE_STROKE_COLOR}
                 strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
               />
-
             </g>
           );
         })}
 
         {/* Output pins */}
-        {node.value?.map((_, i) => {
-
-          const y =
-            height / 2 +
-            (i - (outputCount - 1) / 2) * 20;
-
-          const pinName =
-            node.ext_outputs?.[i]?.name ?? `O${i + 1}`;
+        {(node.ext_outputs ?? node.value ?? []).map((_, i) => {
+          const y = outOffset + i * CONSTANTS.GRID_SIZE;
+          const pinName = outputNames[i];
 
           return (
             <g key={`output-${i}`}>
-
-              {/* Output pin label */}
               <text
-                x={width - 2}
+                x={width - 10}
                 y={y}
                 textAnchor="end"
                 dominantBaseline="middle"
@@ -2584,10 +2222,7 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
               <line
                 x1={width}
                 y1={y}
-                x2={
-                  width -
-                  CONSTANTS.INPUT_PIN_X
-                }
+                x2={width - CONSTANTS.INPUT_PIN_X}
                 y2={y}
                 stroke={CONSTANTS.GATE_STROKE_COLOR}
                 strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
@@ -2595,38 +2230,22 @@ export function Gate({ node, toggle, didDrag, startDrag, setoutputpin, setinputp
 
               <circle
                 className="pin"
-                onMouseUp={(e) => {
-                  e.stopPropagation();
-                }}
-                onClick={(e) => {
-                  const p = outputPinPosition(
-                    CONSTANTS.GATE_WIDTH -
-                    CONSTANTS.INPUT_PIN_X,
-                    y
-                  );
+                onMouseUp={(e) => e.stopPropagation()}
+                onClick={() => {
+                  const p = outputPinPosition(width, y);
 
-                  setoutputpin(
-                    node.id,
-                    i,
-                    p.x,
-                    p.y
-                  );
+                  setoutputpin(node.id, i, p.x, p.y);
                 }}
-                cx={
-                  width -
-                  CONSTANTS.INPUT_PIN_X
-                }
+                cx={width}
                 cy={y}
                 r={CONSTANTS.PIN_RADIUS}
                 fill={CONSTANTS.GATE_FILL_COLOR}
                 stroke={CONSTANTS.GATE_STROKE_COLOR}
                 strokeWidth={CONSTANTS.GATE_STROKE_WIDTH}
               />
-
             </g>
           );
         })}
-
       </g>
     );
   }

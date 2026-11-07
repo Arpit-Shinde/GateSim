@@ -37,7 +37,13 @@ import { beautify } from "./utils/beautify";
 import { commitDownload, loadCircuit } from "./utils/fileIO";
 import { redo, undo } from "./utils/undoRedo";
 import { LearnSidebar } from "./components/learnSideBar";
-
+import { InteractiveTutorial } from "./components/interactiveTutorial";
+import { CodeSidebar } from "./components/scripting";
+import { BusDialog } from "./components/busDialog";
+import { Toast } from "./components/toast";
+import { HoverInfo, PropertiesDialog } from "./components/nodeInfo";
+import { busInputToolList, busOutputToolList } from "./components/busNode";
+import { outPinWidth, inPinWidth, busNodeSize } from "./utils/busUtils";
 function App() {
 
   let [graph, setGraph] = useState([]);
@@ -53,11 +59,13 @@ function App() {
   let graphRef = useRef(graph);
   let clockDelaysRef = useRef(clock_delays);
   let [opin, setoPin] = useState(null);
+  let oPinRef = useRef(null);
   let [selectedWire, setSelectedWire] = useState(null);
   let [selectedGate, setSelectedGate] = useState(null);
   let [draginfo, setdraginfo] = useState(null);
   let [didDrag, setDidDrag] = useState(false);
   let [mouse, setMouse] = useState(null);
+  let mouseRef = useRef(null);
   let [theme, setTheme] = useState(false);
   let [pauseSim, setPauseSim] = useState(false);
   let [showClockWindow, setShowClockWindow] = useState(false);
@@ -105,39 +113,102 @@ function App() {
     view,
     addToUndoStack,
     setShowClockWindow,
-    remapTimingSignals
+    remapTimingSignals,
+    graphRef,
+    clockDelaysRef,
+    customComponents
   );
   let [undoStack, setUndoStack] = useState([]);
   let [redoStack, setRedoStack] = useState([]);
   let [showAbout, setShowAbout] = useState(false);
   let [interactivityMode, setInteractivityMode] = useState("DRAG");
+  let [showInteractiveTutorial, setShowInteractiveTutorial] = useState(false);
   let tempGraphIds = new Set(tempGraph.map(n => n.id));
+  let [devTools, setDevTools] = useState(false);
+  let [busDialog, setBusDialog] = useState(null);          // null | "BUS_IN" | "BUS_OUT" | "SPLITTER" | "JOINER"
+  let [toast, setToast] = useState(null);
+  let toastTimerRef = useRef(null);
+  let [hoverId, setHoverId] = useState(null);
+  let [showProperties, setShowProperties] = useState(false);
 
+  function showToast(msg) {
+    setToast(msg);
+    clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  }
+
+  function confirmBusDialog(config) {
+    Add(busDialog, null, null, null, null, config);
+    setBusDialog(null);
+  }
+
+  useEffect(() => {
+    if (!selectedGate) setShowProperties(false);
+  }, [selectedGate]);
   let branchDots = useMemo(() => {
     const dots = [];
 
+    // Helper to check if a point physically lies on a wire's path segments
+    const isPointOnPath = (point, path) => {
+      if (!point || !path || path.length < 2) return false;
+      
+      for (let i = 0; i < path.length - 1; i++) {
+        const p1 = path[i];
+        const p2 = path[i + 1];
+
+        const minX = Math.min(p1.x, p2.x);
+        const maxX = Math.max(p1.x, p2.x);
+        const minY = Math.min(p1.y, p2.y);
+        const maxY = Math.max(p1.y, p2.y);
+
+        // Check if point falls within the bounding box of the segment
+        if (point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY) {
+          // Check collinearity (cross product approach)
+          const crossProduct = Math.abs(
+            (point.y - p1.y) * (p2.x - p1.x) - (point.x - p1.x) * (p2.y - p1.y)
+          );
+          if (crossProduct < 0.1) return true;
+        }
+      }
+      return false;
+    };
+
     for (const parent of graph) {
-      if (parent.type !== "WIRE") continue;
-      if (!parent.path?.length) continue;
+      if (parent.type !== "WIRE" || !parent.path?.length) continue;
 
       for (const child of graph) {
-        if (child.type !== "WIRE") continue;
+        if (child.type !== "WIRE" || !child.path?.length) continue;
 
+        // Check logical connection
         const branchesFromParent = child.inputs?.some(
           input => input?.id === parent.id
         );
 
         if (!branchesFromParent) continue;
 
-        const point = child.path?.[0];
+        const val = (parent.width ?? 1) > 1 ? false : (parent.value?.[0] ?? false);
 
-        if (!point) continue;
+        const cStart = child.path[0];
+        const cEnd = child.path[child.path.length - 1];
+        const pStart = parent.path[0];
+        const pEnd = parent.path[parent.path.length - 1];
 
-        dots.push({
-          x: point.x,
-          y: point.y,
-          value: parent.value?.[0] ?? false
-        });
+        // Because wires can now be drawn forwards, backwards, or bridged, 
+        // we test endpoints to find the true physical junction.
+        let intersect = null;
+        if (isPointOnPath(cStart, parent.path)) intersect = cStart;
+        else if (isPointOnPath(cEnd, parent.path)) intersect = cEnd;
+        else if (isPointOnPath(pStart, child.path)) intersect = pStart;
+        else if (isPointOnPath(pEnd, child.path)) intersect = pEnd;
+        else intersect = cStart; // Fallback to original behavior
+
+        if (intersect) {
+          dots.push({
+            x: intersect.x,
+            y: intersect.y,
+            value: val
+          });
+        }
       }
     }
 
@@ -376,16 +447,31 @@ function App() {
   function setoutputpin(id, index, pinX, pinY) { //sets information about output pin when clicked on a output pin of node
     if (selectMode) return;
     if (interactivityMode === "PAN") return;
-    setoPin({
+    if (oPinRef.current) {
+      let oPinRefCopy = structuredClone(oPinRef.current);
+      oPinRef.current = {
+        gateId: id,
+        outputIndex: index,
+        pinX: pinX,
+        pinY: pinY
+      }
+      setinputpin(oPinRefCopy.gateId, oPinRefCopy.outputIndex, oPinRefCopy.pinX, oPinRefCopy.pinY);
+      return;
+    }
+    oPinRef.current = {
       gateId: id,
       outputIndex: index,
       pinX: pinX,
       pinY: pinY
-    });
-    setMouse({
+    }
+    console.log("setoutputpin called")
+    console.log(oPinRef.current)
+    mouseRef.current = {
       x: pinX,
       y: pinY
-    });
+    }
+    setoPin(oPinRef.current);
+    setMouse(mouseRef.current);
     setWirePath([
 
       { x: pinX, y: pinY }
@@ -394,16 +480,25 @@ function App() {
   }
 
   function setinputpin(id, index, endx, endy) { //when pressed on input pin, adds wire and its relevant connection
-    if (opin === null) return;
+    if (oPinRef.current === null) {
+      setoutputpin(id, index, endx, endy);
+      return;
+    };
     if (selectMode) return;
     if (interactivityMode === "PAN") return;
+    const srcW = outPinWidth(graph[oPinRef.current.gateId], oPinRef.current.outputIndex);
+    const dstW = inPinWidth(graph[id], index);
+    if (srcW !== dstW) {
+      showToast(`Cannot connect: ${srcW}-bit signal to a ${dstW}-bit pin.`);
+      return; // wire stays live so you can pick another pin
+    }
     // console.log(`setinputpin fired. currently, id=${id}, index=${index}`)
     Add(
       "WIRE",
       {
         path: [...wirePath, { x: endx, y: endy }],
-        inputId: opin.gateId,
-        outputIndex: opin.outputIndex
+        inputId: oPinRef.current.gateId,
+        outputIndex: oPinRef.current.outputIndex
       },
       {
         gateId: id,
@@ -411,8 +506,8 @@ function App() {
 
       }
     );
-
-    setoPin(null)
+    oPinRef.current = null;
+    setoPin(null);
 
 
   }
@@ -426,6 +521,23 @@ function App() {
       //branching logic
       const point = getSVGPoint(e, svgRef, view);
 
+      if (oPinRef.current) {
+        oPinRef.current = {
+          ...oPinRef.current,
+          pinX: point.x,
+          pinY: point.y,
+        };
+        setoutputpin(id, 0, point.x, point.y);
+        return;
+      }
+
+
+      oPinRef.current = {
+        gateId: id,
+        outputIndex: 0,
+        pinX: point.x,
+        pinY: point.y
+      }
       setoPin({
         gateId: id,
         outputIndex: 0,
@@ -445,6 +557,10 @@ function App() {
 
   }
 
+  function snap(x) {
+    return Math.round(x / CONSTANTS.GRID_SIZE) * CONSTANTS.GRID_SIZE;
+  }
+
   function startDrag(e, id) {
     if (e.button === 1) return;
     if (selectMode) return;
@@ -453,8 +569,8 @@ function App() {
 
     setdraginfo({
       gateId: id,
-      offsetX: point.x - graph[id].x,
-      offsetY: point.y - graph[id].y
+      offsetX: snap(point.x - graph[id].x),
+      offsetY: snap(point.y - graph[id].y)
     });
 
     setDidDrag(false);
@@ -495,14 +611,14 @@ function App() {
 
       const newGraph = structuredClone(graph);
 
-      newGraph[draginfo.gateId].x = point.x - draginfo.offsetX;
+      newGraph[draginfo.gateId].x = snap(point.x - draginfo.offsetX);
 
-      newGraph[draginfo.gateId].y = point.y - draginfo.offsetY;
+      newGraph[draginfo.gateId].y = snap(point.y - draginfo.offsetY);
 
       setGraph(newGraph);
     }
 
-    else if (opin) {
+    else if (oPinRef.current) {
       const point = getSVGPoint(e, svgRef, view);
 
       setMouse({
@@ -515,21 +631,23 @@ function App() {
   }
 
   function cancelWire(e) {
-    if (e.button === 2 && opin) {
+    if (e.button === 2 && oPinRef.current) {
       e.preventDefault();
       if (wirePath.length >= 2) {
+        console.log("add called here")
+        console.log(oPinRef.current)
         Add(
           "WIRE",
           {
             path: wirePath,
-            inputId: opin.gateId,
-            outputIndex: opin.outputIndex
+            inputId: oPinRef.current.gateId,
+            outputIndex: oPinRef.current.outputIndex
           }
         );
       }
-
+      oPinRef.current = null;
+      mouseRef.current = null;
       setoPin(null)
-
       setMouse(null);
     }
   }
@@ -556,21 +674,27 @@ function App() {
 
       return;
     }
-    if (e.button === 0 && opin) { // live wire + left click = add bend
+    if (e.button === 0 && oPinRef.current) { // live wire + left click = add bend
 
       let point = getSVGPoint(e, svgRef, view);
 
       setWirePath(prev => [
         ...prev,
-        { x: point.x, y: point.y }
+        { x: Math.round(point.x / CONSTANTS.GRID_SIZE) * CONSTANTS.GRID_SIZE, y: Math.round(point.y / CONSTANTS.GRID_SIZE) * CONSTANTS.GRID_SIZE }
       ]);
 
       // console.log("added point to live wire");
-      setoPin(prev => ({
-        ...prev,
+      console.log(oPinRef.current)
+      let oPinRefCopy = structuredClone(oPinRef.current)
+      oPinRef.current = {
+        gateId: oPinRef.current.gateId,
+        outputIndex: oPinRef.current.outputIndex,
         pinX: point.x,
         pinY: point.y
-      }));
+      }
+      console.log("in bending part")
+      console.log(oPinRef.current)
+      setoPin(oPinRef.current);
     }
     setdraginfo(null);
     setPan(null);
@@ -680,8 +804,9 @@ function App() {
     const oldRotation = node.rotation ?? 0;
     const newRotation = (oldRotation + 90) % 360;
 
-    const oldWidth = CONSTANTS.GATE_WIDTH;
-    const oldHeight = CONSTANTS.GATE_HEIGHT;
+    const dims = busNodeSize(node);
+    const oldWidth = dims ? dims.w : CONSTANTS.GATE_WIDTH;
+    const oldHeight = dims ? dims.h : CONSTANTS.GATE_HEIGHT;
 
     const newWidth =
       newRotation % 180 === 0 ? oldWidth : oldHeight;
@@ -744,7 +869,7 @@ function App() {
     let tempgraph = structuredClone(tempGraph)
 
     for (let node of tempgraph) {
-      if (node.type === "INPUT" || node.type === "CLOCK") continue;
+      if (node.type === "INPUT" || node.type === "CLOCK" || node.type === "BUS_IN") continue;
       for (let i = 0; i < node.inputs.length; i++) {
         let input = graph[node.inputs[i].id]; // its a node
         let index = node.inputs[i].index
@@ -774,12 +899,13 @@ function App() {
 
         let source = graph[input.id]
 
-        if (source.type === "INPUT") { //if the node is connected to a toggle
+        if (source.type === "INPUT" || source.type === "BUS_IN") { //connected to a toggle or a bus input
 
           inputs.push({
             id: node.id,
             index: i,
             sourceId: source.id,
+            width: source.type === "BUS_IN" ? source.width : 1,
             name: ""
           });
 
@@ -796,11 +922,12 @@ function App() {
 
     for (let node of graph) {
 
-      if (node.type === "BULB") {
+      if (node.type === "BULB" || node.type === "BUS_OUT") {
         outputs.push({
           id: node.inputs[0].id,
           index: node.inputs[0].index,
           bulbId: node.id,
+          width: node.type === "BUS_OUT" ? node.width : 1,
           name: ""
         })
       }
@@ -815,7 +942,7 @@ function App() {
     const offenders = [];
 
     for (const node of selectedNodes) {
-      if (node.type === "INPUT" || node.type === "CLOCK" || node.type === "WIRE") {
+      if (node.type === "INPUT" || node.type === "CLOCK" || node.type === "WIRE" || node.type === "BUS_IN") {
         continue;
       }
 
@@ -920,8 +1047,8 @@ function App() {
     }
 
     const hasNonBulb = nonWire.some(
-      n => n.type !== "BULB" && n.type !== "INPUT" && n.type !== "CLOCK"
-    );
+      n => n.type !== "BULB" && n.type !== "INPUT" && n.type !== "CLOCK" &&
+        n.type !== "BUS_IN" && n.type !== "BUS_OUT");
     if (!hasNonBulb) {
       alert("Component must contain at least one logic gate (AND, OR, NOT, etc.).");
       return;
@@ -941,8 +1068,11 @@ function App() {
 
     const componentGraph = abstractedGraph.filter(
       node =>
-        node.type !== "INPUT" &&
-        node.type !== "BULB"
+        node =>
+          node.type !== "INPUT" &&
+          node.type !== "BULB" &&
+          node.type !== "BUS_IN" &&
+          node.type !== "BUS_OUT"
     );
 
 
@@ -1295,6 +1425,7 @@ function App() {
 
   return (
     <div className="homepage">
+
       <TopBar
         logo={logo}
         showabout={showabout}
@@ -1315,7 +1446,7 @@ function App() {
         togglePauseSim={handleTogglePauseSim}
         pauseSim={pauseSim}
         RotateGate={RotateGate}
-        showTutorial={showTutorial}
+        showTutorial={() => setShowInteractiveTutorial(true)}
         creatingComponent={creatingComponent}
         beginCreateComponent={beginCreateComponent}
         PushToTempGraph={PushToTempGraph}
@@ -1338,6 +1469,8 @@ function App() {
         loadComponent={loadComponent}
         setInteractivityMode={setInteractivityMode}
         interactivityMode={interactivityMode}
+        showTutorial2={showTutorial}
+        setDevTools={setDevTools}
       />
 
       <div className="tools-and-canvas">
@@ -1354,6 +1487,9 @@ function App() {
           Add={Add}
           GateCard={GateCard}
           RenderCUSTOM={RenderCUSTOM}
+          busInputList={busInputToolList}
+          busOutputList={busOutputToolList}
+          onBusTool={setBusDialog}
         />
         <div className="canvas-wrapper">
           <CanvasArea
@@ -1365,7 +1501,7 @@ function App() {
             stopDrag={stopDrag}
             zoom={zoom}
             cancelWire={cancelWire}
-            opin={opin}
+            opin={oPinRef.current}
             mouse={mouse}
             wirePath={wirePath}
             graph={graph}
@@ -1387,10 +1523,37 @@ function App() {
             Gate={Gate}
             SelectionRectangle={SelectionRectangle}
             setEditingText={setEditingText}
+            onHoverNode={setHoverId}
           />
         </div>
       </div>
+      <HoverInfo node={hoverId !== null ? graph[hoverId] : null} graph={graph} />
+
+      {selectedGate && graph[selectedGate.id] && (
+        <button className="props-button utilities-button" onClick={() => setShowProperties(true)}>
+          PROPERTIES
+        </button>
+      )}
+
+      {showProperties && selectedGate && graph[selectedGate.id] && (
+        <PropertiesDialog
+          node={graph[selectedGate.id]}
+          graph={graph}
+          onClose={() => setShowProperties(false)}
+        />
+      )}
+
+      {busDialog && (
+        <BusDialog
+          mode={busDialog}
+          onCancel={() => setBusDialog(null)}
+          onConfirm={confirmBusDialog}
+        />
+      )}
+
+      <Toast message={toast} />
       {showAbout && <AboutModal onClose={closeAbout} />}
+
       {showDownloadDialog && <DownloadDialog
         cancelDownload={cancelDownload}
         downloadFileName={downloadFileName}
@@ -1509,6 +1672,12 @@ function App() {
         })}
         cancelTextEdit={() => cancelTextEdit(setEditingText)}
       />}
+      {showInteractiveTutorial && (
+        <InteractiveTutorial
+          graph={graph}
+          onClose={() => setShowInteractiveTutorial(false)}
+        />
+      )}
 
       {showTimingDiagram && (
         <TimingDiagram
@@ -1526,6 +1695,18 @@ function App() {
         />
       )}
       {showLearnSidebar && <LearnSidebar onClose={() => setShowLearnSidebar(!showLearnSidebar)}></LearnSidebar>}
+      {devTools && <CodeSidebar
+      onClose={()=>setDevTools(false)}
+        graphRef={graphRef}
+        Add={Add}
+        setoutputpin={setoutputpin}
+        setinputpin={setinputpin}
+        setGraph={setGraph}
+        setClockDelays={setClockDelays}
+        remapTimingSignals={remapTimingSignals}
+        clockDelaysRef={clockDelaysRef}
+        addToUndoStack={addToUndoStack}
+      ></CodeSidebar>}
     </div>
   )
 }

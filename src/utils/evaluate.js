@@ -20,17 +20,60 @@ function is_changed(node, new_value) {
   return null;
 }
 
+// Offset of an output pin inside node.value. Nodes with multi-bit pins
+// (buses, splitters, joiners, custom components) define node.outWidths;
+// all other nodes have one bit per pin.
+export function pinOffset(node, index) {
+  const w = node?.outWidths;
+  if (!w) return index;
+  let o = 0;
+  for (let i = 0; i < index; i++) o += w[i] ?? 1;
+  return o;
+}
+
 function readState(input, graph, map) {
   if (!input || input.index === -1) return false;
-  
-  if (input.id === "__CUSTOM_INPUT__") return input.value ?? false;
 
-  let source;
+  if (input.id === "__CUSTOM_INPUT__") {
+    const v = input.value;
+    return Array.isArray(v) ? !!v[0] : (v ?? false);
+  }
 
-  if (map) source = map.get(input.id);
-  else source = graph[input.id];
+  const source = map ? map.get(input.id) : graph[input.id];
 
-  return source?.value?.[input.index] ?? false;
+  return source?.value?.[pinOffset(source, input.index)] ?? false;
+}
+
+// Reads `width` bits from the pin an input is connected to.
+function readBits(input, graph, map, width) {
+  const out = new Array(width).fill(false);
+  if (!input || input.index === -1) return out;
+
+  if (input.id === "__CUSTOM_INPUT__") {
+    const v = input.value;
+    if (Array.isArray(v)) {
+      for (let i = 0; i < width; i++) out[i] = !!v[i];
+    } else {
+      out[0] = !!v;
+    }
+    return out;
+  }
+
+  const source = map ? map.get(input.id) : graph[input.id];
+  if (!source || !source.value) return out;
+
+  const off = pinOffset(source, input.index);
+  for (let i = 0; i < width; i++) out[i] = !!source.value[off + i];
+  return out;
+}
+
+export function sameBits(a, b) {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+  return a === b;
 }
 
 //returns map having id -> reference to node having that id
@@ -55,8 +98,9 @@ function computeNext(node, graph, map) {
   if (
     type === "INPUT" ||
     type === "CLOCK" ||
-    type === "EXT_SIGNAL"
-  )  return null;
+    type === "EXT_SIGNAL" ||
+    type === "BUS_IN"
+  ) return null;
 
   const inp = node.inputs ?? [];
   const n = inp.length;
@@ -70,40 +114,51 @@ function computeNext(node, graph, map) {
 
   switch (type) {
 
-    case "WIRE":    return is_changed(node, [a]);
-    case "BULB":    return is_changed(node, [a]);
-    case "NOT":     return is_changed(node, [!a]);
+    case "WIRE":
+    case "BUS_OUT":
+    case "SPLITTER":
+      return is_changed(node, readBits(inp[0], graph, map, node.width ?? 1));
 
-    case "AND":     return is_changed(node, [a && b]);
-    case "OR":      return is_changed(node, [a || b]);
-    case "XOR":     return is_changed(node, [a !== b]);
-    case "NAND":    return is_changed(node, [!(a && b)]);
-    case "NOR":     return is_changed(node, [!(a || b)]);
-    case "XNOR":    return is_changed(node, [a === b]);
+    case "JOINER": {
+      const bits = [];
+      (node.inWidths ?? []).forEach((w, i) => {
+        bits.push(...readBits(inp[i], graph, map, w));
+      });
+      return is_changed(node, bits);
+    }
+    case "BULB": return is_changed(node, [a]);
+    case "NOT": return is_changed(node, [!a]);
 
-    case "AND3":    return is_changed(node, [a && b && c]);
-    case "OR3":     return is_changed(node, [a || b || c]);
-    case "NAND3":   return is_changed(node, [!(a && b && c)]);
-    case "NOR3":    return is_changed(node, [!(a || b || c)]);
-    case "XOR3":    return is_changed(node, [(a !== b) !== c]);
-    case "XNOR3":   return is_changed(node, [!((a !== b) !== c)]);
+    case "AND": return is_changed(node, [a && b]);
+    case "OR": return is_changed(node, [a || b]);
+    case "XOR": return is_changed(node, [a !== b]);
+    case "NAND": return is_changed(node, [!(a && b)]);
+    case "NOR": return is_changed(node, [!(a || b)]);
+    case "XNOR": return is_changed(node, [a === b]);
 
-    case "AND4":    return is_changed(node, [a && b && c && d]);
-    case "OR4":     return is_changed(node, [a || b || c || d]);
-    case "NAND4":   return is_changed(node, [!(a && b && c && d)]);
-    case "NOR4":    return is_changed(node, [!(a || b || c || d)]);
-    case "XOR4":    return is_changed(node, [(a !== b) !== (c !== d)]);
-    case "XNOR4":   return is_changed(node, [((a === b) === c) === d]);
+    case "AND3": return is_changed(node, [a && b && c]);
+    case "OR3": return is_changed(node, [a || b || c]);
+    case "NAND3": return is_changed(node, [!(a && b && c)]);
+    case "NOR3": return is_changed(node, [!(a || b || c)]);
+    case "XOR3": return is_changed(node, [(a !== b) !== c]);
+    case "XNOR3": return is_changed(node, [!((a !== b) !== c)]);
 
-    case "MUX2":    return is_changed(node, [c ? b : a]);
-    case "MUX4":    return is_changed(node, [f ? (e ? d : c) : (e ? b : a)]);
+    case "AND4": return is_changed(node, [a && b && c && d]);
+    case "OR4": return is_changed(node, [a || b || c || d]);
+    case "NAND4": return is_changed(node, [!(a && b && c && d)]);
+    case "NOR4": return is_changed(node, [!(a || b || c || d)]);
+    case "XOR4": return is_changed(node, [(a !== b) !== (c !== d)]);
+    case "XNOR4": return is_changed(node, [((a === b) === c) === d]);
+
+    case "MUX2": return is_changed(node, [c ? b : a]);
+    case "MUX4": return is_changed(node, [f ? (e ? d : c) : (e ? b : a)]);
 
     case "HALF_ADDER":
-                    return is_changed(node, [a !== b, a && b]);
+      return is_changed(node, [a !== b, a && b]);
 
 
     case "FULL_ADDER":
-                    return is_changed(node, [(a !== b) !== c, (a && b) || (c && (a !== b))]);
+      return is_changed(node, [(a !== b) !== c, (a && b) || (c && (a !== b))]);
     case "JK": {
       // inputs: a = J, b = CLK, c = K;
 
@@ -121,7 +176,7 @@ function computeNext(node, graph, map) {
 
         // J=0 K=1 -> reset
         else if (c) q = false;
-        
+
         // J=0 K=0 -> hold
       }
 
@@ -131,9 +186,9 @@ function computeNext(node, graph, map) {
       return is_changed(node, [q, !q]);
     }
 
-    case "CUSTOM":  return evaluateCustom(node, graph, map);
+    case "CUSTOM": return evaluateCustom(node, graph, map);
 
-    default:        return null;
+    default: return null;
   }
 }
 
@@ -392,180 +447,86 @@ function propagateFrom(graph, map, seedIds) {
 function evaluateCustom(customNode, graph, map) {
 
   const extInputs = customNode.ext_inputs ?? EMPTY;
-
   const extOutputs = customNode.ext_outputs ?? EMPTY;
-
   const refGraph = customNode.ref_graph ?? EMPTY;
 
-  // map to avoid O(n) find. using this map, we can get a node in refGraph with given id. actually, array index != id here.
   const internalMap = buildMap(refGraph);
 
-  // map which consist sourceid -> index of slot in customNode.inputs from where it recieves signal
+  // sourceId -> slot index in customNode.inputs
   const sourceToIndex = new Map();
-
   for (const ext of extInputs) {
     if (!sourceToIndex.has(ext.sourceId)) {
-      sourceToIndex.set(
-        ext.sourceId,
-        sourceToIndex.size
-      );
+      sourceToIndex.set(ext.sourceId, sourceToIndex.size);
     }
   }
 
   const extConns = customNode.inputs ?? EMPTY;
 
-  // Internal nodes whose input signals changed.
   const seedIds = [];
 
-  // step 1
-  for (const ext of extInputs) { //ext = {id: to which node the input goes, index: to which pin of that node, sourceId: id of the toggle to which this node was connected during abstractGraph }
+  // step 1: push external signals (1 bit or a whole bus) into the internal nodes
+  for (const ext of extInputs) {
 
-    //node in the refGraph which this ext points to
     const internalNode = internalMap.get(ext.id);
-
     if (!internalNode) continue;
 
-    // gets index of slot in customNode.inputs from where it recieves signal
+    const w = ext.width ?? 1;
     const customInputIndex = sourceToIndex.get(ext.sourceId);
+    const conn = extConns[customInputIndex];
 
-    const conn = extConns[customInputIndex]; // {id: id of the node sending external signal, index: ...}
+    const bits = readBits(conn, graph, map, w);          // always an array
+    const signal = w > 1 ? bits : bits[0];               // legacy 1-bit pins stay booleans
 
-    let signal = false; // if conn is null, we default the signal to false
-
-    if (conn) {
-
-      let source;
-
-      if (map) {
-        source = map.get(conn.id);
-      } else {
-        source = graph[conn.id];
-      }
-
-
-      if (source) {
-        signal = source.value?.[conn.index] ?? false; //get the signal
-      }
-    }
-
-
-    // ========================================================
-    // CASE 1:
-    // Internal node is another CUSTOM component
-    // ========================================================
-
+    // CASE 1: internal node is another CUSTOM component
     if (internalNode.type === "CUSTOM") {
 
-      // We need an internal signal node to carry the
-      // external value into the nested CUSTOM component.
-
-      const carrierId =
-        ext._carrierId ??
-        `__ext_${ext.id}_${ext.index}__`;
-
-
+      const carrierId = ext._carrierId ?? `__ext_${ext.id}_${ext.index}__`;
       ext._carrierId = carrierId;
 
-
-      let carrier =
-        internalMap.get(carrierId);
-
-
+      let carrier = internalMap.get(carrierId);
       let carrierChanged = false;
 
-
-      // ------------------------------------------------------
-      // Create carrier if necessary.
-      // ------------------------------------------------------
-
       if (!carrier) {
-
         carrier = {
           type: "EXT_SIGNAL",
           id: carrierId,
-          value: [signal],
+          value: bits.slice(),
           inputs: [],
           outputs: []
         };
-
-
         refGraph.push(carrier);
-
-        internalMap.set(
-          carrierId,
-          carrier
-        );
-
+        internalMap.set(carrierId, carrier);
         carrierChanged = true;
       }
-
-
-      // ------------------------------------------------------
-      // Update carrier if signal changed.
-      // ------------------------------------------------------
-
-      else if (
-        carrier.value[0] !== signal
-      ) {
-
-        carrier.value = [signal];
-
+      else if (!sameBits(carrier.value, bits)) {
+        carrier.value = bits.slice();
         carrierChanged = true;
       }
-
-
-      // ------------------------------------------------------
-      // Connect nested CUSTOM input to carrier.
-      // ------------------------------------------------------
 
       if (internalNode.inputs) {
-
-        const current =
-          internalNode.inputs[ext.index];
-
-
-        if (
-          !current ||
-          current.id !== carrierId
-        ) {
-
-          internalNode.inputs[ext.index] = {
-            id: carrierId,
-            index: 0
-          };
-
+        const current = internalNode.inputs[ext.index];
+        if (!current || current.id !== carrierId) {
+          internalNode.inputs[ext.index] = { id: carrierId, index: 0 };
           carrierChanged = true;
         }
       }
 
-
-      // If the carrier changed, the nested CUSTOM node
-      // needs to be evaluated.
-      if (carrierChanged) {
-        seedIds.push(internalNode.id);
-      }
+      if (carrierChanged) seedIds.push(internalNode.id);
     }
 
-    //for normal gates
+    // CASE 2: ordinary internal node (gate, splitter, joiner, ...)
     else if (internalNode.inputs) {
 
       const current = internalNode.inputs[ext.index];
 
-
-      // ------------------------------------------------------
-      // Already using __CUSTOM_INPUT__
-      // ------------------------------------------------------
-
       if (current && current.id === "__CUSTOM_INPUT__") {
-
-        if (current.value !== signal) {
+        if (!sameBits(current.value, signal)) {
           current.value = signal;
           seedIds.push(internalNode.id);
         }
       }
-
       else {
-        internalNode.inputs[ext.index] = { //write the signal here
+        internalNode.inputs[ext.index] = {
           id: "__CUSTOM_INPUT__",
           index: 0,
           value: signal
@@ -575,32 +536,35 @@ function evaluateCustom(customNode, graph, map) {
     }
   }
 
-  if (seedIds.length > 0) { //same as normal propagate, but graph.id === index invariant isnt there, so we use map. 
-    propagateFrom(
-      refGraph,
-      internalMap,
-      seedIds
-    );
+  if (seedIds.length > 0) {
+    propagateFrom(refGraph, internalMap, seedIds);
   }
 
+  // step 3: collect outputs. Value layout = concatenation of every output pin.
   const oldValue = customNode.value ?? EMPTY;
 
-  const outputCount = extOutputs.length;
+  const total = extOutputs.reduce((s, o) => s + (o.width ?? 1), 0);
+  const nextValue = new Array(total).fill(false);
 
-  const nextValue = new Array(outputCount);
-
-  let differs = oldValue.length !== outputCount;
-
-  for (let i = 0; i < outputCount; i++) {
-    const output = extOutputs[i];
+  let off = 0;
+  for (const output of extOutputs) {
+    const w = output.width ?? 1;
     const internalNode = internalMap.get(output.id);
 
-    const value = internalNode?.value?.[output.index] ?? false;
+    if (internalNode?.value) {
+      const base = pinOffset(internalNode, output.index);
+      for (let j = 0; j < w; j++) {
+        nextValue[off + j] = !!internalNode.value[base + j];
+      }
+    }
+    off += w;
+  }
 
-    nextValue[i] = value;
-
-    if (!differs && oldValue[i] !== value) differs = true;
-    
+  let differs = oldValue.length !== total;
+  if (!differs) {
+    for (let i = 0; i < total; i++) {
+      if (oldValue[i] !== nextValue[i]) { differs = true; break; }
+    }
   }
 
   return differs ? nextValue : null;
@@ -618,17 +582,18 @@ function evaluateGraph(graph, map) {
     if (
       type === "INPUT" ||
       type === "CLOCK" ||
-      type === "EXT_SIGNAL"
+      type === "EXT_SIGNAL" ||
+      type === "BUS_IN"
     ) continue;
-    
+
     const nextValue = computeNext(node, graph, map);
 
     // JK clock bookkeeping.
     if (node.type === "JK") node.lastClock = _lastClock;
-    
+
     // No change.
     if (nextValue === null) continue;
-    
+
     // Commit new value.
     node.value = nextValue;
 
@@ -660,7 +625,7 @@ export function evaluate(
 
 export function settle(graph) {
 
-  for (let i = 0; i<CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
+  for (let i = 0; i < CONSTANTS.MAX_EVALUATION_ITERATIONS; i++) {
     const didChange = evaluateGraph(graph);
     if (!didChange) return true;
   }
@@ -677,7 +642,7 @@ export function propagate(graph, id) {
   let cur = [];
   let nxt = [];
 
-  const visited = new Set(); 
+  const visited = new Set();
 
   //initial frontier
   for (const outputId of source.outputs) {
@@ -705,16 +670,16 @@ export function propagate(graph, id) {
     resultNodes.length = 0;
     resultValues.length = 0;
     resultClocks.length = 0;
-    
+
     for (const nodeId of cur) {
 
       const node = graph[nodeId];
 
       if (!node) continue;
 
-      const nextValue = computeNext(node,graph,null); //null if unchanged, else new value
+      const nextValue = computeNext(node, graph, null); //null if unchanged, else new value
 
-      const isJK =node.type === "JK";
+      const isJK = node.type === "JK";
 
       if (node.type !== "WIRE") {
         evaluates++;
@@ -736,7 +701,7 @@ export function propagate(graph, id) {
 
     const nextVisited = new Set();
 
-    for (let i = 0;i < resultNodes.length;i++) {
+    for (let i = 0; i < resultNodes.length; i++) {
 
       const node = resultNodes[i];
 
@@ -745,13 +710,13 @@ export function propagate(graph, id) {
       const nextValue = resultValues[i];
 
       if (nextValue === null) continue; //null encountered only for JK
-      
+
       // Commit.
       node.value = nextValue;
       const outputs = node.outputs;
 
       if (!outputs) continue;
-      
+
       for (const outputId of outputs) {
         if (nextVisited.has(outputId)) continue;
         nextVisited.add(outputId);
