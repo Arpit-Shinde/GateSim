@@ -8,6 +8,8 @@ function SignUp() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
 
   const handleUsernameChange = (e) => {
     setUsername(e.target.value);
@@ -23,6 +25,16 @@ function SignUp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
+
+    setIsLoading(true);
+    setStatusMessage("Please wait...");
+
+    // If Render is waking from sleep (>4s), let the user know why it's taking a moment
+    const slowWakeTimer = setTimeout(() => {
+      setStatusMessage("Please wait... waking up server (may take ~30s)...");
+    }, 4000);
+
     let info = JSON.stringify({ username, email, password })
     try {
       const response = await fetch(`${CONSTANTS.API_BASE_URL}/auth/signup`,
@@ -51,6 +63,11 @@ function SignUp() {
     catch (error) {
       console.log(error);
       alert("Some error occured. Please try again");
+    }
+    finally {
+      clearTimeout(slowWakeTimer);
+      setIsLoading(false);
+      setStatusMessage("");
     }
 
   };
@@ -96,8 +113,13 @@ function SignUp() {
             </div>
 
             <button type="submit" className="btn-submit">
-              Create Account
+              {isLoading? "Creating Account...":"Create Account"}
             </button>
+            {statusMessage && (
+              <p style={{ marginTop: "12px", fontSize: "14px", color: "#000000" }}>
+                {statusMessage}
+              </p>
+            )}
           </form>
 
           <p className="signup-switch">
