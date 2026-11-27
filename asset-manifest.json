@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/GateSim/static/css/main.dfa2a1dd.css",
-    "main.js": "/GateSim/static/js/main.901bc03b.js",
+    "main.css": "/GateSim/static/css/main.1c17f1f3.css",
+    "main.js": "/GateSim/static/js/main.945a947d.js",
     "static/js/530.4279e4a7.chunk.js": "/GateSim/static/js/530.4279e4a7.chunk.js",
     "static/js/394.a3b3df45.chunk.js": "/GateSim/static/js/394.a3b3df45.chunk.js",
     "static/js/453.6a56dd48.chunk.js": "/GateSim/static/js/453.6a56dd48.chunk.js",
@@ -39,6 +39,7 @@
     "static/media/KaTeX_SansSerif-Italic.woff": "/GateSim/static/media/KaTeX_SansSerif-Italic.8d593cfaa96238d5e2f8.woff",
     "static/media/KaTeX_Typewriter-Regular.woff2": "/GateSim/static/media/KaTeX_Typewriter-Regular.c295e7f71970f03c0549.woff2",
     "static/media/KaTeX_Fraktur-Bold.woff": "/GateSim/static/media/KaTeX_Fraktur-Bold.354501bac435c3264834.woff",
+    "static/media/pointer-click.png": "/GateSim/static/media/pointer-click.f768ab3e5c78c9f57755.png",
     "static/media/KaTeX_Fraktur-Regular.woff": "/GateSim/static/media/KaTeX_Fraktur-Regular.6fdf0ac577be0ba82a4c.woff",
     "static/media/KaTeX_Caligraphic-Bold.ttf": "/GateSim/static/media/KaTeX_Caligraphic-Bold.7489a2fbfb9bfe704420.ttf",
     "static/media/KaTeX_Caligraphic-Regular.ttf": "/GateSim/static/media/KaTeX_Caligraphic-Regular.7e873d3833eb108a0758.ttf",
@@ -68,14 +69,14 @@
     "static/media/KaTeX_Size3-Regular.woff": "/GateSim/static/media/KaTeX_Size3-Regular.7947224e8a9914fa332b.woff",
     "static/media/KaTeX_Size3-Regular.woff2": "/GateSim/static/media/KaTeX_Size3-Regular.e1951519f6f0596f7356.woff2",
     "index.html": "/GateSim/index.html",
-    "main.dfa2a1dd.css.map": "/GateSim/static/css/main.dfa2a1dd.css.map",
-    "main.901bc03b.js.map": "/GateSim/static/js/main.901bc03b.js.map",
+    "main.1c17f1f3.css.map": "/GateSim/static/css/main.1c17f1f3.css.map",
+    "main.945a947d.js.map": "/GateSim/static/js/main.945a947d.js.map",
     "530.4279e4a7.chunk.js.map": "/GateSim/static/js/530.4279e4a7.chunk.js.map",
     "394.a3b3df45.chunk.js.map": "/GateSim/static/js/394.a3b3df45.chunk.js.map",
     "453.6a56dd48.chunk.js.map": "/GateSim/static/js/453.6a56dd48.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.dfa2a1dd.css",
-    "static/js/main.901bc03b.js"
+    "static/css/main.1c17f1f3.css",
+    "static/js/main.945a947d.js"
   ]
 }
