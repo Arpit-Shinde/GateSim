@@ -53,7 +53,7 @@ function Home() {
       </Link>
 
       <a
-        href="https://github.com/Arpit-Shinde/GateSim/releases/download/v1.0.0/GateSim.Installer.exe"
+        href="https://github.com/Arpit-Shinde/GateSim/releases/download/v2.0.0/GateSim.Setup.2.0.0.exe"
         download
         className="btn-secondary"
         style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}

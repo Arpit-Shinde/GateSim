@@ -13,9 +13,9 @@ A browser-based interactive digital logic circuit simulator for learning and exp
 
 <p align ="center">
 
-  <a href="https://arpit-shinde.github.io/GateSim/"><strong>Try GateSim Online</strong></a>
+  <a href="https://gate-sim-hhjn.vercel.app/"><strong>Try GateSim Online</strong></a>
 
-  <a href="https://github.com/Arpit-Shinde/GateSim/releases/download/v1.0.0/GateSim.Installer.exe"><strong>Download for Windows</strong></a>
+  <a href="https://github.com/Arpit-Shinde/GateSim/releases/download/v2.0.0/GateSim.Setup.2.0.0.exe"><strong>Download for Windows</strong></a>
 
   <a href="src/docs/README.md"><strong>View Technical Documentation</strong></a>
 
