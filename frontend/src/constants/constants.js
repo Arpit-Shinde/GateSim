@@ -121,4 +121,4 @@ export const CANVAS_INITIAL_VIEW_HEIGHT = 720;
 
 export const MIN_CUSTOM_COMPONENT_WIDTH = 70;
 
-export const API_BASE_URL = "https://gatesim-backend.onrender.com/auth/signup"
+export const API_BASE_URL = "https://gatesim-backend.onrender.com"
