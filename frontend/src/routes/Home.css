@@ -1,0 +1,194 @@
+.home-container {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-color: rgb(31, 31, 31);
+  color: #e8e8e8;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* Smooth transition for header, main, and footer */
+.home-header,
+.home-main,
+.home-footer {
+  position: relative;
+  z-index: 2;
+  transition:
+    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.home-container.is-leaving .home-header,
+.home-container.is-leaving .home-main,
+.home-container.is-leaving .home-footer {
+  opacity: 0;
+  transform: scale(1.04) translateY(-8px);
+}
+
+/* Subtle dot-grid overlay matching simulator canvas */
+.canvas-grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  background-image: radial-gradient(#262323 1.25px, transparent 1.25px);
+  background-size: 24px 24px;
+  transition: opacity 0.4s ease;
+}
+
+.home-container.is-leaving .canvas-grid-overlay {
+  opacity: 1;
+}
+
+/* Header */
+.home-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.brand-name {
+  font-family: 'Playfair Display',-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto';
+  font-size: 80px !important;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #f5f5f5;
+}
+
+/* Hero Content */
+.home-main {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.home-tag {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #68d391;
+  margin-bottom: 1rem;
+}
+
+.home-title {
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: -130px 0 1.25rem 0;
+  color: #ffffff;
+}
+
+.home-subtitle {
+  font-family: 'Lora';
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #c9c9c9;
+  max-width: 1000px;
+  margin: 1.25rem 0 1.25rem 0;
+}
+
+/* Button (Matches .clock-window-buttons button:last-child) */
+.home-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-primary {
+  display: inline-block;
+  background-color: #e8e8e8;
+  color: #151313;
+  border: 1px solid #e8e8e8;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.btn-primary:hover {
+  background-color: #8e8e8e;
+  color: #151313;
+}
+
+/* Footer */
+.home-footer {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  padding-top: 1.5rem;
+  border-top: 1px solid #4a4545;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: #b8b5b5;
+  letter-spacing: 0.08em;
+}
+
+.btn-secondary {
+  display: inline-block;
+  background-color: transparent;
+  color: #e8e8e8;
+  border: 1px solid #555;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  border-color: #e8e8e8;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.btn-ghost {
+  background: none;
+  border: none;
+  color: #b8b5b5;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+}
+
+.btn-ghost:hover {
+  color: #ffffff;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #b8b5b5;
+  text-decoration: none;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  transition: color 0.15s ease;
+}
+
+.footer-link:hover {
+  color: #ffffff;
+}
