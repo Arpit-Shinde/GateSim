@@ -1,3 +1,5 @@
+import * as CONSTANTS from "../constants/constants";
+
 export async function commitDownload(
     downloadFileName,
     graph,
@@ -211,7 +213,7 @@ export async function commitDownloadCloud(
 
         // console.log(fileDataBase64)
 
-        const response = await fetch("http://localhost:5001/circuits/save", {
+        const response = await fetch(`${CONSTANTS.API_BASE_URL}/circuits/save`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json", 

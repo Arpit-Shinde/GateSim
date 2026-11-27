@@ -769,7 +769,7 @@ function Simulator() {
       alert("Must be Logged In");
       return;
     }
-    const response = await fetch("http://localhost:5001/circuits/list", {
+    const response = await fetch(`${CONSTANTS.API_BASE_URL}/circuits/list`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

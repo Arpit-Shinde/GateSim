@@ -1,3 +1,5 @@
+import * as CONSTANTS from "../constants/constants";
+
 async function loadCloudCircuit(
     fileName,
     setShowCloudLoadDialog,
@@ -11,7 +13,7 @@ async function loadCloudCircuit(
     setClockDelays
 ) {
     const token = localStorage.getItem("token");
-    const response = await fetch(`http://localhost:5001/circuits/load?fileName=${encodeURIComponent(fileName)}`, {
+    const response = await fetch(`${CONSTANTS.API_BASE_URL}/circuits/load?fileName=${encodeURIComponent(fileName)}`, {
         method: "GET",
         headers: {
             token: token

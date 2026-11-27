@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
+import * as CONSTANTS from "../constants/constants";
 
 function Login() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ function Login() {
     e.preventDefault();
     let info = JSON.stringify({ username, email, password })
     try {
-      const response = await fetch("http://localhost:5001/auth/login",
+      const response = await fetch(`${CONSTANTS.API_BASE_URL}/auth/login`,
         {
           method: "POST",
           headers: {"Content-Type": "application/json"}, //required to tell express server that incoming data is of json type, else it ignores and body will be empty
