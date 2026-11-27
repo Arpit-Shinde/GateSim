@@ -89,6 +89,9 @@ async function loadCloudCircuit(
         setRedoStack([]);
 
         setGraph(newGraph);
+        loadedDelays.map((obj) => {
+            obj.next_tick = performance.now() + obj.delay;
+        })
         setClockDelays(loadedDelays);
         setShowCloudLoadDialog(false); //close the window
 
