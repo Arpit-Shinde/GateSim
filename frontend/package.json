@@ -2,7 +2,7 @@
   "name": "GateSim",
   "version": "2.0.0",
   "private": true,
-  "homepage": "https://Arpit-Shinde.github.io/GateSim",
+  "homepage": ".",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
